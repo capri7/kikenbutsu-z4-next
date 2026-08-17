@@ -1,0 +1,21 @@
+/* 製造所等の設置と変更の申請先テーブル */
+.colFacility {
+  width: 22%;
+}
+
+.colConditions {
+  width: 47%;
+}
+
+.colApply {
+  width: 31%;
+}
+
+/* 施設と検査の種類テーブル */
+.colClassification {
+  width: 24%;
+}
+
+.colContent {
+  width: 76%;
+}

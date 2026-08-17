@@ -1,0 +1,21 @@
+/* 貯蔵所の種類テーブル */
+.colStorage {
+  width: 22%;
+}
+
+.colOverviewStorage {
+  width: 78%;
+}
+
+/* 取扱所の種類テーブル */
+.colHandlingOffice {
+  width: 16%;
+}
+
+.colClassification {
+  width: 10%;
+}
+
+.colOverviewHandling {
+  width: 74%;
+}

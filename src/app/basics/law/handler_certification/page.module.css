@@ -1,0 +1,21 @@
+/* 危険物取扱者の免状の区分テーブル */
+.colClassification {
+  width: 15%;
+}
+
+.colDangerousGoods {
+  width: 40%;
+}
+
+.colAttendance {
+  width: 45%;
+}
+
+/* 指定数量未満の危険物の取扱いテーブル */
+.colItems {
+  width: 30%;
+}
+
+.colContents {
+  width: 70%;
+}

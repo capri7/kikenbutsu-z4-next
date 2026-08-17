@@ -1,0 +1,12 @@
+/* 法令編（第1章）専用のデザイントークン。
+   band-card の帯色・テーブルの配色など、この章だけで使う値をここに集約する。
+   構造（padding, border-radius 等）は BasicsShared.module.css 側で共通管理する。 */
+
+.theme {
+  --chapter-accent: var(--color-law, #1e3a8a);
+  --chapter-border: #e5e7eb;
+  --chapter-table-head: color-mix(in srgb, var(--chapter-accent) 12%, white);
+  --chapter-table-row: #fafbfc;
+  --chapter-table-font-size: 1rem;
+  --chapter-figure-max: 520px;
+}

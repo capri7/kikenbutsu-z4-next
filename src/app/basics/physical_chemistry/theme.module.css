@@ -1,0 +1,11 @@
+/* 物理・化学編（第2章）専用のデザイントークン。*/
+
+.theme {
+  --chapter-accent: var(--color-physics, #047857);
+  --chapter-border: #e5e7eb;
+  --chapter-table-head: color-mix(in srgb, var(--chapter-accent) 12%, white);
+  --chapter-table-row: #fafbfc;
+  --chapter-table-font-size: 1rem;
+  --chapter-figure-max: 520px;
+}
+

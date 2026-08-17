@@ -1,0 +1,67 @@
+/* 番号付きリスト（すべてに共通する基準15項目。5・10から再開する箇所あり）
+   shared.compact はlist-style:discのため、番号表記が必要なこの箇所のみ例外的に定義 */
+.orderedCompact {
+  list-style: decimal;
+  margin: 0;
+  padding: 0 0 0 1.2em;
+}
+
+.orderedCompact li {
+  margin: 0.4em 0;
+  line-height: 1.7;
+}
+
+/* 類別タグ（第1〜6類の色分け。このページ専用） */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tagCategory1 {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.tagCategory2 {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.tagCategory3 {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.tagCategory4 {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.tagCategory5 {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.tagCategory6 {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+/* テーブル1：類ごとの共通基準 */
+.colClass {
+  width: 12%;
+}
+
+.colBoard {
+  width: 23%;
+}
+
+.colStandard {
+  width: 65%;
+}

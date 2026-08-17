@@ -1,0 +1,157 @@
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.intro {
+  margin: 0 0 1.5em;
+}
+
+.intro:first-of-type .sectionHeading {
+  margin-top: 0;
+}
+
+.sectionHeading {
+  font-size: 1.4rem;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  border-bottom: 2px solid #ccc;
+  padding-bottom: 0.3em;
+}
+
+.introText {
+  margin: 1em 0;
+  line-height: 1.7;
+}
+
+.chapterLinks {
+  margin-block: 24px 40px;
+}
+
+.chapterGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .chapterGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.chapterCard {
+  --bg: #f4f7fb;
+  --bd: rgba(0, 0, 0, 0.06);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  min-height: 72px;
+  border-radius: 14px;
+  background: var(--bg);
+  border: 1px solid var(--bd);
+  text-decoration: none;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+  transition: transform 0.08s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.chapterCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  background: #eef3fb;
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.chapterCard:active {
+  transform: translateY(0);
+}
+
+.chapterCard:focus-visible {
+  outline: 3px solid #2d6cdf;
+  outline-offset: 2px;
+}
+
+.chapterIcon {
+  font-size: 28px;
+  line-height: 1;
+  width: 32px;
+  text-align: center;
+}
+
+.chapterBody {
+  display: grid;
+  gap: 2px;
+}
+
+.chapterKicker {
+  font-size: 0.9rem;
+  color: #3b5a8a;
+  letter-spacing: 0.02em;
+}
+
+.chapterTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #112033;
+}
+
+.chapterMeta {
+  font-size: 0.85rem;
+  color: #5b6b7c;
+}
+
+.chapterCta {
+  font-size: 22px;
+  opacity: 0.55;
+  transition: translate 0.12s ease, opacity 0.2s ease;
+}
+
+.chapterCard:hover .chapterCta {
+  translate: 2px 0;
+  opacity: 0.9;
+}
+
+.dashboardNote {
+  background-color: #f0f8ff;
+  border-left: 4px solid #4682b4;
+  padding: 1.5em;
+  margin: 2em 0;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dashboardNote h3 {
+  margin-top: 0;
+  font-size: 1.2rem;
+  color: #004080;
+}
+
+.dashboardNote p {
+  margin: 0.8em 0;
+  line-height: 1.6;
+}
+
+.dashboardNote ul {
+  margin: 0.5em 0;
+  padding-left: 1.2em;
+  line-height: 1.7;
+}
+
+.dashboardButton {
+  display: inline-block;
+  margin-top: 1em;
+  padding: 0.6em 1.2em;
+  background: #004080;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.dashboardButton:hover {
+  background: #003060;
+}

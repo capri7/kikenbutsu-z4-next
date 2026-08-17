@@ -1,0 +1,21 @@
+/* 定期保安検査テーブル（1列目見出しは空欄） */
+.colNull {
+  width: 20%;
+}
+
+.colStorage {
+  width: 36%;
+}
+
+.colHandlingOffice {
+  width: 44%;
+}
+
+/* 臨時保安検査テーブル（1列目見出しは空欄） */
+.colItems {
+  width: 22%;
+}
+
+.colTank {
+  width: 78%;
+}

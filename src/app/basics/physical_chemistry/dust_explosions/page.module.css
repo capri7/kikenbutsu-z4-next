@@ -1,0 +1,14 @@
+/* src/app/basics/physical_chemistry/dust_explosions/page.module.css */
+
+/* 粉じん爆発が起きるための3要素／起こりやすい条件：共通テーブルスタイル */
+.conditionTable thead th {
+  background: #e4f5ea;
+  font-size: 1.05rem;
+}
+
+.conditionTable tbody th[scope='row'] {
+  font-weight: 400;
+  text-align: left;
+  font-size: 0.98rem;
+  line-height: 1.6;
+}

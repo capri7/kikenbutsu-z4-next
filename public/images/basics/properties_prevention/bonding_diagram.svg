@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="394" viewBox="0 0 680 335" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>ボンディング</title>
+<desc>タンクの縁と配管、タンクの側面とポンプ本体を、それぞれ導線で直接接続し電位差をなくすボンディングの模式図。</desc>
+
+<text x="340" y="55" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="18" font-weight="500" fill="#2C2C2A">【ボンディング】</text>
+
+<rect x="105" y="130" width="170" height="160" rx="4" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1.5"/>
+<ellipse cx="190" cy="290" rx="85" ry="18" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1.5"/>
+<rect x="110" y="195" width="160" height="90" fill="#B5D4F4"/>
+<ellipse cx="190" cy="195" rx="80" ry="13" fill="#B5D4F4"/>
+<ellipse cx="190" cy="130" rx="85" ry="18" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1.5"/>
+<text x="70" y="100" font-family="'Noto Sans JP', sans-serif" font-size="18" font-weight="500" fill="#2C2C2A">タンク</text>
+
+<path d="M205,235 L205,100 Q205,80 225,80 L445,80 Q470,80 470,105 L470,175" stroke="#888780" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+<path d="M190,112 Q205,70 225,80" stroke="#D85A30" stroke-width="2.5" fill="none"/>
+<circle cx="190" cy="112" r="3.5" fill="#D85A30"/>
+<circle cx="225" cy="80" r="3.5" fill="#D85A30"/>
+
+<path d="M107,175 Q135,300 320,302 Q460,300 480,278" stroke="#D85A30" stroke-width="2.5" fill="none"/>
+<circle cx="107" cy="175" r="3.5" fill="#D85A30"/>
+<circle cx="480" cy="278" r="3.5" fill="#D85A30"/>
+
+<rect x="460" y="175" width="140" height="100" rx="16" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1.5"/>
+<rect x="480" y="275" width="100" height="12" rx="3" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1.5"/>
+<text x="530" y="308" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="18" font-weight="500" fill="#2C2C2A">ポンプ</text>
+</svg>

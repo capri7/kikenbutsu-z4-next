@@ -1,0 +1,9 @@
+/* basics/properties_prevention/theme.module.css */
+.theme {
+  --chapter-accent: var(--color-safety, #b45309);
+  --chapter-border: #e5e7eb;
+  --chapter-table-head: color-mix(in srgb, var(--chapter-accent) 12%, white);
+  --chapter-table-row: #fafbfc;
+  --chapter-table-font-size: 1rem;
+  --chapter-figure-max: 520px;
+}

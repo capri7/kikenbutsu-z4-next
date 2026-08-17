@@ -1,0 +1,75 @@
+/* 番号付きリスト（同時貯蔵できる場合の2項目、取扱いの基準の各工程）
+   shared.compact はlist-style:discのため、番号表記が必要なこの箇所のみ例外的に定義 */
+.orderedCompact {
+  list-style: decimal;
+  margin: 0;
+  padding: 0 0 0 1.2em;
+}
+
+.orderedCompact li {
+  margin: 0.3em 0;
+  line-height: 1.7;
+}
+
+/* 類別タグ（第1〜6類の色分け。このページ専用） */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tagCategory1 {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.tagCategory2 {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.tagCategory3 {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.tagCategory4 {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+/* テーブル1：類ごとの同時貯蔵一覧 */
+.colClass {
+  width: 18%;
+}
+
+.colCondition {
+  width: 82%;
+}
+
+/* テーブル2：容器の積み重ね高さの上限 */
+.colContainerTarget {
+  width: 30%;
+}
+
+.colUpperLimit {
+  width: 15%;
+}
+
+.colRemarks {
+  width: 55%;
+}
+
+/* テーブル3：取扱いの基準 */
+.colHandling {
+  width: 15%;
+}
+
+.colStandard {
+  width: 85%;
+}

@@ -1,0 +1,10 @@
+/* src/app/basics/properties_prevention/class4_extinguishing_methods/page.module.css */
+
+.colCategory {
+  width: 22%;
+  max-width: 96px;
+}
+
+.colProductName {
+  width: auto;
+}

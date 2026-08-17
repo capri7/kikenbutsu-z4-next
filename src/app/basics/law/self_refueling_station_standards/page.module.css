@@ -1,0 +1,95 @@
+/* 品目識別チップ・凡例バッジ（このページ専用）
+   実際の識別色（黄・赤・緑・青）で表示する必要があるため、
+   章のアクセントカラーではなく固有色を使用する */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.15em 0.7em;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9em;
+  border: 1px solid transparent;
+}
+
+.dot {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.chipPremium {
+  background: #fef9c3;
+  color: #854d0e;
+  border-color: #fde68a;
+}
+
+.chipRegular {
+  background: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.chipDiesel {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.chipKerosene {
+  background: #dbeafe;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+/* 凡例バッジ（表の下に並べる色の一覧） */
+.badgesLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+  margin: 0.75rem 0 1.2rem;
+}
+
+.legendBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.3em 0.9em;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: 1px solid transparent;
+}
+
+/* テーブル1：顧客用固定給油設備の構造および設備 */
+.colRequirements {
+  width: 25%;
+}
+
+.colContent {
+  width: 75%;
+}
+
+/* テーブル2：危険物の品目表示と色（識別） */
+.colItemName {
+  width: 25%;
+}
+
+.colNotation {
+  width: 45%;
+}
+
+.colColor {
+  width: 30%;
+}
+
+/* テーブル3：制御卓（コントロールブース）での主な作業 */
+.colTaskItem {
+  width: 20%;
+}
+
+.colTaskContent {
+  width: 80%;
+}

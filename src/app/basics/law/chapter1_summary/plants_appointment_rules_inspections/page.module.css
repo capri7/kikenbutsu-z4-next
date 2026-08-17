@@ -1,0 +1,87 @@
+/* 番号付きリスト（まずはここだけ押さえよう！の4項目）
+   shared.compact はlist-style:discのため、番号表記が必要なこの箇所のみ例外的に定義 */
+.orderedCompact {
+  list-style: decimal;
+  margin: 0;
+  padding: 0 0 0 1.2em;
+}
+
+.orderedCompact li {
+  margin: 0.2em 0;
+  line-height: 1.7;
+}
+
+/* テーブル1：製造所における選任・予防規定・定期点検 */
+.colNull {
+  width: 14%;
+}
+
+.colSupervisor {
+  width: 17%;
+}
+
+.colSecurityGuard {
+  width: 17%;
+}
+
+.colAdministrator {
+  width: 17%;
+}
+
+.colPreventiveProvision {
+  width: 17%;
+}
+
+.colRegularInspection {
+  width: 18%;
+}
+
+/* テーブル2：貯蔵所における選任・予防規定・定期点検 */
+.colClass {
+  width: 14%;
+}
+
+.colSupervisors {
+  width: 17%;
+}
+
+.colSecurityGuards {
+  width: 17%;
+}
+
+.colAdministrators {
+  width: 17%;
+}
+
+.colStorageProvisions {
+  width: 17%;
+}
+
+.colStorageInspection {
+  width: 18%;
+}
+
+/* テーブル3：取扱所における選任・予防規定・定期点検 */
+.colHandlingClass {
+  width: 14%;
+}
+
+.colHandlingSupervisors {
+  width: 17%;
+}
+
+.colHandlingSecurityGuards {
+  width: 17%;
+}
+
+.colHandlingAdministrators {
+  width: 17%;
+}
+
+.colHandlingProvisions {
+  width: 17%;
+}
+
+.colHandlingInspection {
+  width: 18%;
+}

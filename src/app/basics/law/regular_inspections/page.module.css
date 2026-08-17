@@ -1,0 +1,41 @@
+/* テーブル1：定期に点検をしなければならない製造所等 */
+.colPlant {
+  width: 35%;
+}
+
+.colQuantity {
+  width: 65%;
+}
+
+/* テーブル2・3共通：漏れ点検の対象・期間（列名は同じ意味なので共有） */
+.colSubject {
+  width: 30%;
+}
+
+.colPeriod {
+  width: 70%;
+}
+
+/* テーブル4：定期点検のまとめ */
+.colClass {
+  width: 22%;
+}
+
+.colGeneralInspection {
+  width: 34%;
+}
+
+.colLeakCheck {
+  width: 44%;
+}
+
+/* 定期点検まとめ表：テーブル内の番号付きリストを左寄せ＆コンパクトに */
+.tableList {
+  margin: 0.25rem 0;
+  padding-left: 1.2rem;
+  list-style-position: outside;
+}
+
+.tableList li {
+  margin: 0.1rem 0;
+}

@@ -1,0 +1,21 @@
+/* テーブル1：運搬と移送の違い */
+.colItem {
+  width: 18%;
+}
+
+.colTransport {
+  width: 41%;
+}
+
+.colTransfer {
+  width: 41%;
+}
+
+/* テーブル2：運搬容器の収納率・表示事項 */
+.colRule {
+  width: 25%;
+}
+
+.colDetail {
+  width: 75%;
+}

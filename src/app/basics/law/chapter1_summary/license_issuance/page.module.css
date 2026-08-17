@@ -1,0 +1,29 @@
+/* テーブル1：免状の交付・書換え・再交付の手続 */
+.colProcedure {
+  width: 12%;
+}
+
+.colReason {
+  width: 30%;
+}
+
+.colApply {
+  width: 28%;
+}
+
+.colDocument {
+  width: 30%;
+}
+
+/* テーブル2：免状の不交付（欠格事由） */
+.colDisqualification {
+  width: 25%;
+}
+
+.colPeriod {
+  width: 30%;
+}
+
+.colPoints {
+  width: 45%;
+}

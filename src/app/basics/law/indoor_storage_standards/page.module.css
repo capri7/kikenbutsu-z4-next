@@ -1,0 +1,21 @@
+/* テーブル1：屋内貯蔵所の区分ごとの構造・建築物・取扱範囲 */
+.colStorage {
+  width: 25%;
+}
+
+.colBuilding {
+  width: 35%;
+}
+
+.colDangerousGoods {
+  width: 40%;
+}
+
+/* テーブル2：独立専用・平家建の屋内貯蔵所の仕様 */
+.colEquipment {
+  width: 29%;
+}
+
+.colRequirements {
+  width: 71%;
+}

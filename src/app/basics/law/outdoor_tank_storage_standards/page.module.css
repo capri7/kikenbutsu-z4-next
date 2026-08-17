@@ -1,0 +1,32 @@
+/* テーブル1：屋外貯蔵タンク（区分と適用範囲） */
+.colStorage {
+  width: 36%;
+}
+
+.colStandards {
+  width: 64%;
+}
+
+/* テーブル2：防油堤の仕様 */
+.colLabel {
+  width: 25%;
+}
+
+.colBody {
+  width: 75%;
+}
+
+/* 容量レンジバッジ */
+.rangeBadge {
+  display: inline-block;
+  padding: 0.12em 0.6em;
+  margin-inline: 0.1em;
+  border-radius: 12px;
+  border: 1px solid var(--chapter-accent, #0b5cab);
+  background-color: rgba(37, 99, 235, 0.06);
+  color: #111827;
+  font-size: 0.9em;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}

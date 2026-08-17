@@ -1,0 +1,12 @@
+/* テーブル1：選任要件と保安講習の有無 */
+.colPosition {
+  width: 15%;
+}
+
+.colRequirements {
+  width: 45%;
+}
+
+.colSafetyTraining {
+  width: 40%;
+}

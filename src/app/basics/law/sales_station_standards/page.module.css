@@ -1,0 +1,21 @@
+/* 番号付きリスト（共通・第一種・第二種の各要件）
+   shared.compact はlist-style:discのため、番号表記が必要なこの箇所のみ例外的に定義 */
+.orderedCompact {
+  list-style: decimal;
+  margin: 0;
+  padding: 0 0 0 1.2em;
+}
+
+.orderedCompact li {
+  margin: 0.2em 0;
+  line-height: 1.7;
+}
+
+/* テーブル1：販売取扱所の構造および設備 */
+.colHandlingOffice {
+  width: 18%;
+}
+
+.colOverview {
+  width: 82%;
+}

@@ -1,0 +1,25 @@
+/* src/app/basics/properties_prevention/animal_vegetable_oil_properties/page.module.css */
+
+/* 動植物油類の特徴：colgroup幅 */
+.colNature {
+  width: 20%;
+  max-width: 110px;
+}
+
+.colRepresentativeValue {
+  width: 80%;
+}
+
+/* 乾性油の種類とヨウ素価：colgroup幅 */
+.colKinds {
+  width: 30%;
+  max-width: 130px;
+}
+
+.colOilNature {
+  width: 30%;
+}
+
+.colItems {
+  width: 40%;
+}

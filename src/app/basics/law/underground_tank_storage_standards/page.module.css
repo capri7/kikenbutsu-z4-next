@@ -1,0 +1,61 @@
+/* テーブル1：地下貯蔵タンクの一覧表 */
+.colInstallationMethod {
+  width: 35%;
+}
+
+.colTank {
+  width: 65%;
+}
+
+/* テーブル2：数値基準の早見表 */
+.colItem {
+  width: 30%;
+}
+
+.colStandard {
+  width: 70%;
+}
+
+/* テーブル3：通気・安全装置 */
+.colEquipment {
+  width: 25%;
+}
+
+.colSafeStandard {
+  width: 75%;
+}
+
+/* テーブル4：漏えい検知の方式（A〜D別） */
+.colTankType {
+  width: 34%;
+}
+
+.colInspectionHole {
+  width: 33%;
+}
+
+.colInspectionEquipment {
+  width: 33%;
+}
+
+/* テーブル5：二重殻の区分と典型 */
+.colClass {
+  width: 18%;
+}
+
+.colShellOverview {
+  width: 82%;
+}
+
+/* テーブル6：定期点検の指導指針 */
+.colInspectionItems {
+  width: 20%;
+}
+
+.colInspectionDetails {
+  width: 40%;
+}
+
+.colInspectionMethod {
+  width: 40%;
+}

@@ -1,0 +1,16 @@
+/* src/app/basics/physical_chemistry/spontaneous_combustion/page.module.css */
+
+/* 発熱する物質テーブル：colgroup幅 */
+.colHeatGeneration {
+  width: 4rem;
+}
+
+.colMaterial {
+  width: 14rem;
+}
+
+/* 自然発火の要因テーブル：行見出しを通常の太さ・左寄せに */
+.reasonRow {
+  font-weight: 400;
+  text-align: left;
+}

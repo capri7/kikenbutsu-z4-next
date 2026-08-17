@@ -1,0 +1,35 @@
+/* テーブル1：危険物取扱者の区分等 */
+.colLicense {
+  width: 12%;
+}
+
+.colGoods {
+  width: 33%;
+}
+
+.colAttendance {
+  width: 33%;
+}
+
+.colInspectionAttendance {
+  width: 22%;
+}
+
+/* OK/NGバッジ（丙種の取扱可否リスト。このページ専用） */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.badgeOk {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.badgeNg {
+  background: #fee2e2;
+  color: #b91c1c;
+}

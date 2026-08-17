@@ -1,0 +1,34 @@
+/* 表1：法別表第1（類別・性質・品名・特徴） */
+.colClass {
+  width: 14%;
+}
+
+.colNature {
+  width: 20%;
+}
+
+.colName {
+  width: 30%;
+}
+
+.colFeature {
+  width: 36%;
+}
+
+/* 表2：固体・液体・気体の定義 */
+.colState {
+  width: 30%;
+}
+
+.colDefinition {
+  width: 70%;
+}
+
+/* 表3：複数性状物品の分類 */
+.colCombo {
+  width: 50%;
+}
+
+.colApplied {
+  width: 50%;
+}

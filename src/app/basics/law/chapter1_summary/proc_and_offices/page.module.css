@@ -1,0 +1,17 @@
+/* テーブル1：各種手続きと申請先（許可）
+   バニラ版の col-procedure(3rem)/col-items(7rem)/col-purpose(12rem)/col-apply(6rem) の比率を踏襲 */
+.colProcedure {
+  width: 11%;
+}
+
+.colItems {
+  width: 25%;
+}
+
+.colPurpose {
+  width: 43%;
+}
+
+.colApply {
+  width: 21%;
+}

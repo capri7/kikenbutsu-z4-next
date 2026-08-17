@@ -1,0 +1,328 @@
+import type { Metadata } from 'next'
+import Breadcrumbs from '@/components/Breadcrumbs'
+import LicenseIssuanceQuiz from './LicenseIssuanceQuiz'
+import shared from '@/app/basics/BasicsShared.module.css'
+import theme from '@/app/basics/law/theme.module.css'
+import styles from './page.module.css'
+
+export const metadata: Metadata = {
+  title: '基礎知識 | 第1章 10節：免状の交付・書換え・再交付',
+  description:
+    '危険物乙4 第1章10節。免状の交付・書換え・再交付を整理。都道府県知事への申請先、書換え・再交付の申請事由と添付書類、免状の記載事項、免状の全国有効性、返納命令と資格喪失、不交付の条件（返納から1年・罰金刑から2年）を教科書的に確認できる。',
+  alternates: {
+    canonical: 'https://kikenbutsu-z4.com/basics/law/license_issuance',
+  },
+  robots: 'index,follow',
+  openGraph: {
+    title: '基礎知識 | 第1章 10節：免状の交付・書換え・再交付',
+    description:
+      '危険物乙4 第1章10節。免状の交付・書換え・再交付を整理。都道府県知事への申請先、書換え・再交付の申請事由と添付書類、免状の記載事項、免状の全国有効性、返納命令と資格喪失、不交付の条件（返納から1年・罰金刑から2年）を教科書的に確認できる。',
+    type: 'article',
+    url: 'https://kikenbutsu-z4.com/basics/law/license_issuance',
+    siteName: '危険物乙4 危険物取扱者試験対策',
+    images: [{ url: 'https://kikenbutsu-z4.com/images/logo.png' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '基礎知識 | 第1章 10節：免状の交付・書換え・再交付',
+    description:
+      '危険物乙4 第1章10節。免状の交付・書換え・再交付を整理。都道府県知事への申請先、書換え・再交付の申請事由と添付書類、免状の記載事項、免状の全国有効性、返納命令と資格喪失、不交付の条件（返納から1年・罰金刑から2年）を確認できる。',
+    images: ['https://kikenbutsu-z4.com/images/logo.png'],
+  },
+}
+
+export default function LicenseIssuancePage() {
+  return (
+    <>
+      <Breadcrumbs
+        items={[
+          { label: 'トップ', href: '/' },
+          { label: '基礎知識', href: '/basics' },
+          { label: '第1章：危険物に関する法令', href: '/basics/law' },
+          { label: '10節：免状の交付・書換え・再交付' },
+        ]}
+      />
+      <div className={`site-main ${theme.theme}`}>
+        {/* 1. 免状の諸手続 */}
+        <section className={shared.section}>
+          <h2>免状の諸手続</h2>
+          <div className={shared.bandCard}>
+            <p>
+              危険物取扱者の免状の交付・書換え・再交付の手続きは、いずれも<strong>都道府県知事</strong>に申請し、都道府県知事が交付・書換え・再交付を行う。
+            </p>
+            <p>
+              これらの諸手続きのうち<strong>書換え申請</strong>については、免状の<strong>記載事項に変更</strong>が生じた場合、<strong>遅滞なく</strong>申請を行わなければならない。また、<strong>免状</strong>は、それを取得した都道府県の区域内だけでなく、<strong>全国で有効</strong>である。
+            </p>
+          </div>
+
+          <div className={`${shared.callout} ${shared.calloutOk}`}>
+            <h3>まずここだけ押さえよう！</h3>
+            <ul className={shared.compact}>
+              <li>免状に関する手続きは<strong>交付・書換え・再交付</strong>の3つ。</li>
+              <li>いずれの手続きも<strong>申請先は都道府県知事</strong>。</li>
+              <li>
+                <strong>書換え申請</strong>は、氏名・本籍地の変更や写真撮影から10年経過など、記載事項に変更があったときに<strong>遅滞なく</strong>行う。
+              </li>
+              <li>免状の効力は<strong>全国共通</strong>で、有効範囲は都道府県をまたいでも変わらない。</li>
+            </ul>
+          </div>
+
+          <h3>免状の諸手続き事項</h3>
+          <div className={shared.tableContainer}>
+            <table className={shared.styledTable}>
+              <caption className="sr-only">免状の諸手続き事項</caption>
+              <colgroup>
+                <col className={styles.colProcedure} />
+                <col className={styles.colReason} />
+                <col className={styles.colApply} />
+                <col className={styles.colDocuments} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col" className={shared.stickyCol}>手続</th>
+                  <th scope="col">申請事由</th>
+                  <th scope="col">申請先</th>
+                  <th scope="col">添付するもの</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row" className={shared.stickyCol}><strong>交付</strong></th>
+                  <td>試験の合格</td>
+                  <td>試験を行った都道府県知事</td>
+                  <td>合格を証明する書類等</td>
+                </tr>
+                <tr>
+                  <th scope="row" className={shared.stickyCol}><strong>書換え</strong></th>
+                  <td>
+                    <ul className={shared.compact}>
+                      <li>氏名・<strong>本籍地</strong>の変更</li>
+                      <li><strong>免状の写真の撮影から10年経過</strong></li>
+                    </ul>
+                  </td>
+                  <td>免状を<strong>交付</strong>した都道府県知事、または<strong>居住地</strong>または勤務地の<strong>都道府県知事</strong></td>
+                  <td>
+                    戸籍謄本等
+                    <br />
+                    6ヶ月以内に撮影した写真
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row" className={shared.stickyCol}><strong>再交付</strong></th>
+                  <td>
+                    <ul className={shared.compact}>
+                      <li>亡失</li>
+                      <li>滅失</li>
+                      <li>汚損</li>
+                      <li><strong>亡失した免状を発見</strong></li>
+                    </ul>
+                  </td>
+                  <td>免状を交付した都道府県知事、または居住地または勤務地の都道府県知事</td>
+                  <td>
+                    亡失等の理由を証明する書類
+                    <br />
+                    発見した免状（ある場合）を<strong>10日以内に提出</strong>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className={shared.examNotes}>
+            <h4>出る出るポイント！</h4>
+            <ul className={shared.compact}>
+              <li><strong>書換えの理由</strong>は「氏名・本籍地の変更」と「写真撮影から10年経過」の2つをセットで覚える。</li>
+              <li><strong>再交付の理由</strong>は「亡失・滅失・汚損・亡失した免状を発見」の4つ。</li>
+              <li>書換え・再交付の申請先は「<strong>交付した都道府県知事</strong>」または「<strong>居住地／勤務地の都道府県知事</strong>」。</li>
+              <li>免状は<strong>全国有効</strong>で、取得した都道府県以外でも同じ効力を持つ。</li>
+            </ul>
+          </div>
+
+          <div className={shared.examPoints}>
+            <h4>ひっかけ注意！</h4>
+            <ul className={shared.compact}>
+              <li>
+                <strong>住所だけの変更</strong>では書換え不要。→ 本籍地が変わったときに書換えが必要になる。
+              </li>
+              <li>
+                「亡失した免状を発見したとき」は、発見した免状を<strong>10日以内に提出</strong>する。期間を「即日」「30日」などに変えた選択肢に注意。
+              </li>
+              <li>
+                交付の申請先は<strong>試験を行った都道府県知事</strong>。「居住地の都道府県知事」とすり替えた選択肢は誤り。
+              </li>
+            </ul>
+          </div>
+
+          <div className={`${shared.callout} ${shared.calloutWarn}`}>
+            <h3>用語の注意</h3>
+            <p>※「<strong>滅失</strong>」とは、滅びうせること、つまりなくなること。</p>
+            <p>※「<strong>亡失</strong>」とは、失ってなくすこと。</p>
+            <p>
+              ※免状には「<strong>本籍地</strong>」の記載があるが、「居住地・住所」の記載はない。したがって、引越しなどで住所が変わっても、本籍地に変更がなければ免状の書換えは不要である。
+            </p>
+          </div>
+        </section>
+
+        {/* 2. 免状の記載事項 */}
+        <section className={shared.section}>
+          <h2>免状の記載事項</h2>
+          <div className={shared.bandCard}>
+            <p>
+              免状には、危険物取扱者が<strong>誰なのか</strong>、どのような<strong>免状がいつ交付されたか</strong>を明らかにするために、次のような事項が記載されている。
+            </p>
+            <ol className={shared.compact}>
+              <li>氏名・生年月日</li>
+              <li>本籍地の属する都道府県</li>
+              <li>免状の交付年月日・交付番号</li>
+              <li>交付・書換えをした都道府県知事</li>
+              <li>取得した免状の種類</li>
+              <li>免状番号</li>
+              <li>過去10年以内に撮影した写真</li>
+            </ol>
+          </div>
+
+          <div className={shared.examNotes}>
+            <h4>出る出るポイント！</h4>
+            <ul className={shared.compact}>
+              <li>
+                「<strong>氏名・生年月日</strong>」「<strong>本籍地の属する都道府県</strong>」「<strong>取得した免状の種類</strong>」は、記載事項として頻出。
+              </li>
+              <li>写真は<strong>過去10年以内に撮影したもの</strong>が記載される。「10年」という数字は問題でよく問われる。</li>
+              <li>免状には<strong>交付番号</strong>と<strong>免状番号</strong>の2つの番号がある点も、記載事項としておさえておく。</li>
+            </ul>
+          </div>
+
+          <div className={shared.examPoints}>
+            <h4>ひっかけ注意！</h4>
+            <ul className={shared.compact}>
+              <li>
+                記載されるのは<strong>本籍地の属する都道府県</strong>であって、「居住地・住所」ではない。→ 引越しだけでは書換え不要、という前の内容とリンクして出題されやすい。
+              </li>
+              <li>
+                写真の条件を「<strong>6か月以内</strong>」「<strong>5年以内</strong>」などに変えた選択肢は誤り。正しくは<strong>過去10年以内</strong>。
+              </li>
+              <li>
+                記載事項の中から「免状番号」だけを抜いたり、「住所」など<strong>本来書かれていない項目</strong>を混ぜた選択肢に注意。
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section className={shared.signupCta}>
+          <a href="/signup">この範囲の問題を解く（登録無料）</a>
+        </section>
+
+        {/* 3. 免状の返納 */}
+        <section className={shared.section}>
+          <h2>免状の返納</h2>
+          <div className={shared.bandCard}>
+            <p>
+              免状を交付した<strong>都道府県知事</strong>は、危険物取扱者が<strong>消防法またはその命令の規定に違反</strong>したときは、その危険物取扱者に対して<strong>免状の返納</strong>を命じることができる。
+            </p>
+            <p>
+              都道府県知事から免状の<strong>返納を命じられた者</strong>は、免状を返納した時点で、直ちに危険物取扱者の<strong>資格を失う</strong>。
+            </p>
+          </div>
+
+          <div className={`${shared.callout} ${shared.calloutOk}`}>
+            <h3>まずここだけ押さえよう！</h3>
+            <ul className={shared.compact}>
+              <li>消防法やその命令に<strong>違反</strong>すると、都道府県知事は<strong>免状の返納命令</strong>を出せる。</li>
+              <li>返納命令を受けて免状を返すと、危険物取扱者としての<strong>資格はその時点で消える</strong>。</li>
+              <li>「返納」は、免状の効力を<strong>失わせる重い処分</strong>であることをイメージしておく。</li>
+            </ul>
+          </div>
+
+          <div className={shared.examNotes}>
+            <h4>出る出るポイント！</h4>
+            <ul className={shared.compact}>
+              <li>返納命令を出すのは<strong>免状を交付した都道府県知事</strong>。</li>
+              <li>対象となる違反は<strong>消防法およびその命令</strong>に対する違反。</li>
+              <li>免状を返納すると、<strong>資格喪失の時期は「直ちに」</strong>である。</li>
+            </ul>
+          </div>
+
+          <div className={shared.examPoints}>
+            <h4>ひっかけ注意！</h4>
+            <ul className={shared.compact}>
+              <li>
+                「違反しただけで<strong>自動的に</strong>免状が失効する」は誤り。→ <strong>都道府県知事の返納命令</strong>があって初めて返納となる。
+              </li>
+              <li>
+                返納後は<strong>資格停止</strong>ではなく、<strong>資格を失う（喪失）</strong>点に注意。
+              </li>
+              <li>
+                「返納命令の日から1年後に資格を失う」など、時期をずらした選択肢はすべて誤り。正しくは<strong>直ちに資格喪失</strong>。
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        {/* 4. 免状の不交付 */}
+        <section className={shared.section}>
+          <h2>免状の不交付</h2>
+          <div className={shared.bandCard}>
+            <p>
+              都道府県知事は、危険物取扱者試験に<strong>合格した者</strong>であっても、次のいずれかに該当する者に対しては、免状の<strong>交付を行わない</strong>ことができる。
+            </p>
+            <ol className={shared.compact}>
+              <li>
+                都道府県知事から免状の<strong>返納を命じられ</strong>、その日から起算して<strong>1年を経過しない者</strong>。
+              </li>
+              <li>
+                消防法または消防法に基づく命令の規定に違反して<strong>罰金以上の刑</strong>に処せられた者で、その執行が終わり、または執行を受けなくなった日から起算して<strong>2年を経過しない者</strong>。
+              </li>
+            </ol>
+          </div>
+
+          <div className={`${shared.callout} ${shared.calloutOk}`}>
+            <h3>まずここだけ押さえよう！</h3>
+            <ul className={shared.compact}>
+              <li>試験に合格しても、条件によっては<strong>免状が交付されない</strong>（＝不交付）場合がある。</li>
+              <li><strong>返納命令から1年以内</strong>の人には、免状を交付しないことができる。</li>
+              <li>
+                消防法違反で<strong>罰金以上の刑</strong>を受けた人は、刑の執行終了（または執行を受けなくなった日）から<strong>2年以内</strong>は不交付となり得る。
+              </li>
+            </ul>
+          </div>
+
+          <div className={shared.examNotes}>
+            <h4>出る出るポイント！</h4>
+            <ul className={shared.compact}>
+              <li>
+                不交付の<strong>期間</strong>は「返納命令の日から<strong>1年</strong>」と「刑の執行終了日などから<strong>2年</strong>」の<strong>1年・2年</strong>コンビで覚える。
+              </li>
+              <li>不交付の原因はいずれも<strong>消防法・命令違反</strong>またはそれに関連する重い処分に関係している。</li>
+              <li>不交付の決定を行うのも<strong>都道府県知事</strong>である点は、交付・返納と共通。</li>
+            </ul>
+          </div>
+
+          <div className={shared.examPoints}>
+            <h4>ひっかけ注意！</h4>
+            <ul className={shared.compact}>
+              <li>
+                期間のひっかけ：<strong>1年と2年を入れ替えた選択肢</strong>が定番。返納 → 1年、刑の執行終了 → 2年、とセットで覚える。
+              </li>
+              <li>
+                刑の重さは<strong>「罰金以上」</strong>。「懲役以上」や「禁錮以上」などにすり替えた選択肢は誤り。
+              </li>
+              <li>
+                「試験に合格していれば必ず免状が交付される」は誤り。→ 合格していても<strong>不交付になり得る</strong>ことを問う問題に注意。
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        {/* 5. インタラクティブクイズ */}
+        <section className={`${shared.section} ${shared.quizSection}`}>
+          <h2>クイズ</h2>
+          <LicenseIssuanceQuiz />
+        </section>
+
+        <section className={shared.signupCta}>
+          <a href="/signup">この範囲の問題を解く（登録無料）</a>
+        </section>
+      </div>
+    </>
+  )
+}

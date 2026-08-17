@@ -1,0 +1,51 @@
+/* 構造・設備：番号付きリスト（3項目）
+   shared.compact はlist-style:discのため、番号表記が必要なこの箇所のみ例外的に定義 */
+.orderedCompact {
+  list-style: decimal;
+  margin: 0;
+  padding: 0 0 0 1.2em;
+}
+
+.orderedCompact li {
+  margin: 0.2em 0;
+  line-height: 1.7;
+}
+
+/* テーブル1：構造・設備の要点 */
+.colItem {
+  width: 22%;
+}
+
+.colStandard {
+  width: 48%;
+}
+
+.colMemo {
+  width: 30%;
+}
+
+/* テーブル2：設置場所ごとの空地・間隔 */
+.colInstallationForm {
+  width: 22%;
+}
+
+.colRequirements {
+  width: 48%;
+}
+
+.colRemember {
+  width: 30%;
+}
+
+/* テーブル3：通気管の仕様 */
+.colTargetTank {
+  width: 25%;
+}
+
+.colVentilationPipe {
+  width: 30%;
+}
+
+.colPoint {
+  width: 45%;
+}

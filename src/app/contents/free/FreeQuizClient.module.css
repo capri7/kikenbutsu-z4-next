@@ -1,0 +1,46 @@
+.qHead {
+  margin: 0 0 12px;
+}
+
+.qCounter {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.95rem;
+  color: #475569;
+}
+
+.pill {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: #eef2ff;
+  font-weight: 700;
+}
+
+.qTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-top: 0.35rem;
+  line-height: 1.5;
+}
+
+.qProgress {
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.bar {
+  height: 100%;
+  background: #2563eb;
+  transition: width 0.25s ease;
+}
+
+.solved {
+  margin-left: 0.5rem;
+  color: #64748b;
+  font-weight: 600;
+}

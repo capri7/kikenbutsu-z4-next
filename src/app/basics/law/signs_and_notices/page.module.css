@@ -1,0 +1,74 @@
+/* 番号付きリスト（掲示板に表示する5項目）
+   shared.compact はlist-style:discのため、番号表記が必要なこの箇所のみ例外的に定義 */
+.orderedCompact {
+  list-style: decimal;
+  margin: 0;
+  padding: 0 0 0 1.2em;
+}
+
+.orderedCompact li {
+  margin: 0.2em 0;
+  line-height: 1.7;
+}
+
+/* 類別タグ（禁水＝青地白字、火気厳禁・火気注意＝赤地白字。このページ専用） */
+.tag {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid #000;
+  border-radius: 2px;
+  background: #fff;
+  color: #000;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tagWater {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.tagDanger {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+}
+
+/* 色凡例チップ（表の下の補足） */
+.legendNote {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+}
+
+.chip {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid #aaa;
+  border-radius: 2px;
+}
+
+.chipWater {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.chipDanger {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+}
+
+/* テーブル1：掲示板と対応する類別・物品の一覧 */
+.colBoard {
+  width: 20%;
+}
+
+.colClass {
+  width: 15%;
+}
+
+.colItems {
+  width: 65%;
+}

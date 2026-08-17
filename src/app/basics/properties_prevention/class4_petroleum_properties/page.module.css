@@ -1,0 +1,10 @@
+/* src/app/basics/properties_prevention/class4_petroleum_properties/page.module.css */
+
+.colNature {
+  width: 20%;
+  max-width: 130px;
+}
+
+.colRepresentativeValue {
+  width: 80%;
+}

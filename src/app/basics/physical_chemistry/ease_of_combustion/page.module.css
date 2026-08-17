@@ -1,0 +1,27 @@
+/* src/app/basics/physical_chemistry/ease_of_combustion/page.module.css */
+
+/* 燃えやすい要素のテーブル：colgroup幅 */
+.colItem {
+  width: 22%;
+  max-width: 130px;
+}
+
+.colExplanation {
+  width: 40%;
+}
+
+.colPoint {
+  width: 38%;
+}
+
+/* 危険因子まとめ：2カラムレイアウト（960px以上でflex横並び） */
+@media (min-width: 960px) {
+  .dangerFactorWrapper {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .dangerFactorWrapper > * {
+    flex: 1;
+  }
+}

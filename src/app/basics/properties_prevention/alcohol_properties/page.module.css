@@ -1,0 +1,35 @@
+/* src/app/basics/properties_prevention/alcohol_properties/page.module.css */
+
+.colNature {
+  width: 30%;
+  max-width: 70px;
+}
+
+.colRepresentativeValue {
+  width: auto;
+}
+
+.colClass {
+  width: auto;
+}
+
+.colRawMaterial {
+  width: auto;
+}
+
+.colRawPurpose {
+  width: auto;
+}
+
+.colNote {
+  width: 20%;
+  max-width: 130px;
+}
+
+.colNPropanol {
+  width: 40%;
+}
+
+.colIsopropanol {
+  width: 40%;
+}

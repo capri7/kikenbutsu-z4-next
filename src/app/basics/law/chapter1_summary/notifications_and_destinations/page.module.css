@@ -1,0 +1,12 @@
+/* テーブル1：各種届出の有無 */
+.colContents {
+  width: 38%;
+}
+
+.colDeadline {
+  width: 27%;
+}
+
+.colNotification {
+  width: 35%;
+}

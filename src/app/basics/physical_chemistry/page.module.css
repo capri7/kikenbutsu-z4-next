@@ -1,0 +1,56 @@
+/* src/app/basics/physical_chemistry/page.module.css */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.intro {
+  margin: 0 0 1.5em;
+}
+
+.intro:first-of-type .sectionHeading {
+  margin-top: 0;
+}
+
+.sectionHeading {
+  font-size: 1.4rem;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  border-bottom: 2px solid #ccc;
+  padding-bottom: 0.3em;
+}
+
+.introText {
+  margin: 1em 0;
+  line-height: 1.7;
+}
+
+.chapterIndex ul {
+  list-style: none;
+  padding: 0;
+  margin: 1em 0;
+}
+
+/* 背景・文字色・ホバー色は章のアクセントカラー（--chapter-accent）から自動導出する。
+   border-left だけでなく、カード全体を章の色に統一するための修正。 */
+.chapterIndex li {
+  margin: 0.6em 0;
+  font-size: 1rem;
+  background-color: color-mix(in srgb, var(--chapter-accent, var(--color-physics)) 8%, white);
+  margin-bottom: 0.5em;
+  padding: 0.8em 1em;
+  border-radius: 6px;
+  border-left: 4px solid var(--chapter-accent, var(--color-physics));
+  transition: background-color 0.2s;
+}
+
+.chapterIndex li:hover {
+  background-color: color-mix(in srgb, var(--chapter-accent, var(--color-physics)) 16%, white);
+}
+
+.chapterIndex a {
+  text-decoration: none;
+  color: var(--chapter-accent, var(--color-physics));
+  font-weight: 500;
+}
+

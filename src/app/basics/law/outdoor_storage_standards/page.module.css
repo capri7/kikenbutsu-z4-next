@@ -1,0 +1,29 @@
+/* 数値バッジ（引火点の範囲などを示す。このページ専用） */
+.badge {
+  display: inline-block;
+  padding: 0.15em 0.7em;
+  border-radius: 999px;
+  background: var(--chapter-table-head, #e4eaf5);
+  color: var(--chapter-accent, #0b5cab);
+  font-weight: 700;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+/* テーブル1：屋外貯蔵所に貯蔵できる危険物 */
+.colDg {
+  width: 25%;
+}
+
+.colTypicalExample {
+  width: 75%;
+}
+
+/* テーブル2：屋外貯蔵所に貯蔵できない危険物 */
+.colClass {
+  width: 25%;
+}
+
+.colReasonExample {
+  width: 75%;
+}

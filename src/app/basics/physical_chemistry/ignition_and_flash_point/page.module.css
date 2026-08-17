@@ -1,0 +1,16 @@
+/* src/app/basics/physical_chemistry/ignition_and_flash_point/page.module.css */
+
+/* 防爆構造の電気機器の例：colgroup幅 */
+.colEquipment {
+  width: 20%;
+  max-width: 130px;
+}
+
+.colExplanation {
+  width: 80%;
+}
+
+/* リレー原理図：他ノードの780px上限より小さく、340pxに固定 */
+.relayImage {
+  max-width: 340px;
+}

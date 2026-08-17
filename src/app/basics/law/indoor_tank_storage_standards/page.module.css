@@ -1,0 +1,44 @@
+/* テーブル1：設置場所と間隔 */
+.colPlace {
+  width: 30%;
+}
+
+.colStandards {
+  width: 70%;
+}
+
+/* テーブル2：容量制限 */
+.colGeneral {
+  width: 31%;
+}
+
+.colQuantity {
+  width: 69%;
+}
+
+/* テーブル3：無弁通気管の詳細基準 */
+.colPosition {
+  width: 33%;
+}
+
+.colOverview {
+  width: 67%;
+}
+
+/* テーブル4：タンク専用室の構造要件 */
+.colStructure {
+  width: 25%;
+}
+
+.colContent {
+  width: 75%;
+}
+
+/* テーブル5：床・敷居の基準 */
+.colFloorStructure {
+  width: 29%;
+}
+
+.colContents {
+  width: 71%;
+}

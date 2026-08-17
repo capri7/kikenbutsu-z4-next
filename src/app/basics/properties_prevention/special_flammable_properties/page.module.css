@@ -1,0 +1,20 @@
+/* src/app/basics/properties_prevention/special_flammable_properties/page.module.css */
+
+.colSpecialFlammables {
+  width: 100%;
+}
+
+.colNature {
+  width: 30%;
+  max-width: 76px;
+}
+
+.colNumericalValue {
+  width: auto;
+}
+
+/* 特殊引火物の主な特性テーブル：1列のみの長文のため左寄せが必要 */
+.specialFlammablesRow {
+  text-align: left;
+}
+

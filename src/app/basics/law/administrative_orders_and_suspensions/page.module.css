@@ -1,0 +1,36 @@
+/* 類型タグ（措置命令・取消類型など。危険物の類とは無関係のためニュートラル配色。このページ専用） */
+.tagOrder {
+  display: inline-block;
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+  background: #e4eaf5;
+  color: #0b5cab;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+/* 罰金・拘留の対象行為チップ（届出義務違反／命令違反／規定違反） */
+.tagBadge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  margin-left: 0.3em;
+  border-radius: 999px;
+  background: #fff3e0;
+  color: #b45309;
+  font-size: 0.85em;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* テーブル1・2・3：共通のcolgroup幅設定 */
+.colOrder {
+  width: 25%;
+}
+
+.colClass {
+  width: 22%;
+}
+
+.colMatter {
+  width: 75%;
+}

@@ -1,0 +1,51 @@
+/* src/app/basics/physical_chemistry/extinguishing_agents/page.module.css */
+
+/* 全7テーブル共通の装飾（ヘッダー背景・行スタイル） */
+.decoratedTable thead th {
+  background: #e4f5ea;
+  font-size: 1.05rem;
+}
+
+.decoratedTable tbody th[scope='row'] {
+  font-weight: 400;
+  text-align: left;
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
+/* 表3（泡消火剤の比較）のみ、データセルを中央寄せ */
+.centerCells td {
+  text-align: center;
+}
+
+/* 表1：火災の区分 */
+.t1ColClassification { width: 4rem; }
+.t1ColOverview { width: 12rem; }
+
+/* 表2：泡消火器のタイプ */
+.t2ColTypes { width: 5rem; }
+.t2ColDiff { width: 12rem; }
+
+/* 表3：泡消火剤の比較 */
+.t3Col { width: 6rem; }
+
+/* 表4：泡の膨張倍率と用途 */
+.t4ColKind { width: 4rem; }
+.t4ColWay { width: 12rem; }
+
+/* 表5：粉末消火剤の種類 */
+.t5ColMain { width: 8rem; }
+.t5ColColoring { width: auto; }
+
+/* 表6：水系消火器の比較表 */
+.t6ColExtinguisher { width: 6rem; }
+.t6ColAgent { width: 10rem; }
+.t6ColShape { width: 4rem; }
+.t6ColFire { width: 12rem; }
+.t6ColEffect { width: 10rem; }
+
+/* 表7：水系消火器以外の比較表 */
+.t7ColExtinguisher { width: 7rem; }
+.t7ColAgent { width: 10rem; }
+.t7ColFire { width: 12rem; }
+.t7ColEffect { width: 10rem; }

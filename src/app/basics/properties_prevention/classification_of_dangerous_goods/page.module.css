@@ -1,0 +1,14 @@
+/* src/app/basics/properties_prevention/classification_of_dangerous_goods/page.module.css */
+
+.colClassification {
+  width: 16%;
+  max-width: 110px;
+}
+
+.colCondition {
+  width: 22%;
+}
+
+.colState {
+  width: 62%;
+}

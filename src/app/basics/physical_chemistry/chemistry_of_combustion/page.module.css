@@ -1,0 +1,12 @@
+/* テーブル1：燃焼の種類 */
+.colType {
+  width: 20%;
+}
+
+.colDescription {
+  width: 55%;
+}
+
+.colExample {
+  width: 25%;
+}

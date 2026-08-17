@@ -1,0 +1,25 @@
+/* src/app/basics/properties_prevention/class4_properties/page.module.css */
+
+/* 比重が1より大きいもの */
+.colCategory1 {
+  width: 22%;
+  max-width: 110px;
+}
+
+.colProductName1 {
+  width: 30%;
+}
+
+.colSpecificGravity {
+  width: auto;
+}
+
+/* 非水溶性と水溶性 */
+.colCategory2 {
+  width: 22%;
+  max-width: 110px;
+}
+
+.colProductName2 {
+  width: auto;
+}

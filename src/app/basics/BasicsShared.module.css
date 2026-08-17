@@ -1,0 +1,493 @@
+.section {
+  max-width: 1100px;
+  margin: 0 auto 48px;
+}
+
+/* ================== セクション間隔・見出し ================== */
+.section + .section {
+  margin-top: 1.6rem;
+}
+
+@media (min-width: 768px) {
+  .section + .section {
+    margin-top: 2.2rem;
+  }
+}
+
+.section h2 {
+  font-size: clamp(22px, 2.6vw, 26px);
+  line-height: 1.35;
+  font-weight: 700;
+  margin-top: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+/* ================== band-card（結論ボックス。色は --chapter-accent で章別に上書き） ================== */
+.bandCard {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--chapter-border, #e5e7eb);
+  border-radius: 8px;
+  padding: 1rem 1.2rem 1rem 1.4rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  margin-bottom: 0.75rem;
+}
+
+.bandCard::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: var(--chapter-accent, #0b5cab);
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+.bandCard p {
+  margin: 0 0 0.6rem;
+  line-height: 1.7;
+}
+
+/* ================== 出る出るポイント（exam-notes） ================== */
+.examNotes {
+  background: #fff8e8;
+  border: 2px dashed #f1c073;
+  border-radius: 12px;
+  padding: 18px 18px 16px;
+  margin: 20px 0 18px;
+}
+
+.examNotes h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: clamp(16px, 2.1vw, 18px);
+  font-weight: 700;
+  color: #2b2b2b;
+}
+
+.examNotes h4::before {
+  content: '📝';
+  font-size: 1.1em;
+}
+
+.examNotes p {
+  margin: 0;
+}
+
+/* ================== ひっかけ注意（exam-points） ================== */
+.examPoints {
+  background: #edf4ff;
+  border: 2px dashed #5792f1;
+  border-radius: 12px;
+  padding: 18px 18px 16px;
+  margin: 20px 0 18px;
+}
+
+.examPoints h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: clamp(16px, 2.1vw, 18px);
+  font-weight: 700;
+  color: #2b2b2b;
+}
+
+.examPoints h4::before {
+  content: '⚡️';
+  font-size: 1.1em;
+}
+
+/* ================== コールアウト（callout / callout.ok） ================== */
+.callout {
+  border-radius: 12px;
+  padding: 18px 18px 16px;
+  margin: 20px 0 18px;
+}
+
+.callout h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: clamp(16px, 2.1vw, 18px);
+  font-weight: 700;
+  color: #2b2b2b;
+}
+
+.calloutOk {
+  background: #ecfdf5;
+  border: 2px dashed #a7f3d0;
+  color: #064e3b;
+}
+
+.calloutOk h3::before {
+  content: '✅';
+  font-size: 1.1em;
+}
+
+.calloutList {
+  background: #f5f3ff;
+  border: 2px dashed #c4b5fd;
+  color: #4c1d95;
+}
+
+.calloutList h3::before {
+  content: '📌';
+  font-size: 1.1em;
+}
+
+.calloutWarn {
+  background: #fffbeb;
+  border: 2px dashed #fcd34d;
+  color: #78350f;
+}
+
+.calloutWarn h3::before {
+  content: '⚠️';
+  font-size: 1.1em;
+}
+
+.calloutNg {
+  background: #fef2f2;
+  border: 2px dashed #fecaca;
+  color: #7f1d1d;
+}
+
+.calloutNg h3::before {
+  content: '⛔️';
+  font-size: 1.1em;
+}
+
+
+/* ================== 共通リスト（compact） ================== */
+.compact {
+  list-style: disc;
+  margin: 0;
+  padding: 0 0 0 1.2em;
+}
+
+.compact li {
+  margin: 0.2em 0;
+  line-height: 1.7;
+}
+
+/* ================== 図解（formula-card） ================== */
+.formulaCard {
+  --r: 12px;
+  margin: 16px auto;
+  max-width: 780px;
+  padding: 16px 20px;
+  background: #eef1f9;
+  border-radius: var(--r);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.circuitSvg {
+  display: block;
+  width: 100%;
+  max-width: var(--chapter-figure-max, 520px);
+  height: auto;
+  margin: 0 auto;
+  border-radius: 0;
+  background: transparent;
+}
+
+.figureCaption {
+  font-size: 0.95rem;
+  color: #374151;
+  margin-top: 12px;
+}
+
+.muted {
+  color: #6b7280;
+}
+
+/* ================== テーブル：仕組み（横スクロール・sticky列） ================== */
+.tableContainer {
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 1.2rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+.tableContainer::-webkit-scrollbar {
+  height: 8px;
+}
+
+.tableContainer::-webkit-scrollbar-thumb {
+  background: #cfd8e3;
+  border-radius: 4px;
+}
+
+/* テーブルの色・サイズは --chapter-table-* トークンで章別に上書き */
+.styledTable {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fff;
+  border: 1px solid var(--chapter-border, #e5e7eb);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  font-size: var(--chapter-table-font-size, 0.95rem);
+  table-layout: fixed;
+}
+
+.styledTable thead th {
+  background: var(--chapter-table-head, #f9fafb);
+  color: #111827;
+  font-weight: 700;
+  text-align: left;
+  border-bottom: 1px solid var(--chapter-border, #e5e7eb);
+  padding: 0.75rem 0.9rem;
+  white-space: nowrap;
+}
+
+.styledTable tbody td,
+.styledTable tbody th {
+  border-bottom: 1px solid #eef2f6;
+  border-right: 1px solid #eef2f6;
+  padding: 0.85rem 0.9rem;
+  vertical-align: top;
+  line-height: 1.7;
+}
+
+.styledTable tbody th[scope='row'] {
+  font-weight: 400;
+  font-size: 0.98rem;
+}
+
+.styledTable tbody tr:nth-child(odd) {
+  background: var(--chapter-table-row, #fafbfc);
+}
+
+.styledTable tbody td:last-child {
+  border-right: 0;
+}
+
+.styledTable small {
+  font-size: 0.9em;
+  color: #6b7280;
+}
+
+.stickyCol {
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 2;
+  border-right: 1px solid #eef2f6;
+  padding-left: 0.9rem;
+  font-weight: 700;
+}
+
+.tableContainer thead .stickyCol {
+  z-index: 3;
+  background: var(--chapter-table-head, #f9fafb);
+}
+
+@media (max-width: 480px) {
+  .styledTable {
+    min-width: 560px;
+  }
+
+  .styledTable thead th,
+  .styledTable tbody td,
+  .styledTable tbody th {
+    padding: 0.6rem 0.7rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* ================== クイズ（全章共通の1問クイズUI） ================== */
+.quizSection {
+  margin-top: 2rem;
+  margin-bottom: 2.5rem;
+}
+
+.quizForm {
+  --gap-2: 12px;
+  --gap-3: 16px;
+}
+
+.quizOptions {
+  display: grid;
+  gap: var(--gap-2);
+  margin-block: var(--gap-2) var(--gap-3);
+  width: fit-content;
+  list-style: none;
+  padding: 0;
+}
+
+.quizOption {
+  position: relative;
+  display: block;
+  padding: 12px 14px;
+  border: 1px solid #d5d8de;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  line-height: 1.5;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.quizOption:hover {
+  background: #fafbfd;
+}
+
+.quizOption input {
+  margin-right: 0.6em;
+}
+
+.quizOptionCorrect {
+  border-color: #16a34a;
+  background: #e8f7ec;
+}
+
+.quizOptionWrong {
+  border-color: #dc2626;
+  background: #fdecec;
+}
+
+.quizOptionLocked {
+  opacity: 0.95;
+  cursor: default;
+}
+
+.quizFeedback {
+  margin-top: var(--gap-3);
+  margin-bottom: 1.5rem;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f5f7fb;
+  font-weight: 600;
+  line-height: 1.8;
+}
+
+.quizRetryWrap {
+  margin-bottom: 1.5rem;
+}
+
+.quizRetry {
+  display: inline-block;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #cfd6e4;
+  background: #fff;
+  font-weight: 700;
+  color: #111827;
+  cursor: pointer;
+}
+
+.quizRetry:hover {
+  background: #fafbfd;
+}
+
+/* ================== 次に進むCTA ================== */
+.signupCta {
+  text-align: center;
+  margin: 48px 0;
+}
+
+.signupCta a {
+  display: inline-block;
+  background: #2563eb;
+  color: #fff;
+  padding: 14px 28px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 1rem;
+}
+
+/* ================== 定義リスト（summaryGrid：dt/dd 2列レイアウト） ================== */
+.summaryGrid {
+  margin: 0.3rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem 1.2rem;
+}
+
+.summaryGridRow {
+  display: contents;
+}
+
+.summaryGrid dt {
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.summaryGrid dd {
+  margin: 0;
+  color: #374151;
+  line-height: 1.6;
+}
+
+.summaryGrid dd > p {
+  margin: 0.15rem 0;
+}
+
+.summaryGrid dd > p + p {
+  margin-top: 0.45rem;
+}
+
+@media (min-width: 640px) {
+  .summaryGrid {
+    grid-template-columns: minmax(110px, 0.9fr) minmax(0, 2.1fr);
+    align-items: baseline;
+  }
+}
+
+/* BasicsShared.module.cssに追加 */
+
+/* ================== 類バッジ（危険物の類別。全章共通） ================== */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  font-weight: 500;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.category1 {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.category2 {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.category3 {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.category4 {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.category5 {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.category6 {
+  background: #e5e7eb;
+  color: #111827;
+}
+

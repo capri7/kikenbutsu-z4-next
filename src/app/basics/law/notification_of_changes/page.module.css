@@ -1,0 +1,29 @@
+.colItem {
+  width: 23%;
+}
+
+.colContent {
+  width: 46%;
+}
+
+.colLimit {
+  width: 15%;
+}
+
+.colApply {
+  width: 16%;
+}
+
+.vcol {
+  padding: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.vtext {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100%;
+}

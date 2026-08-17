@@ -1,0 +1,26 @@
+/* src/app/basics/physical_chemistry/flammability_range/page.module.css */
+
+/* 燃焼範囲（爆発範囲）と引火点の例：colgroup幅 */
+.colGas {
+  width: 4rem;
+}
+
+.colVol {
+  width: 3rem;
+}
+
+.colFlashPoint {
+  width: 3rem;
+}
+
+@media (max-width: 768px) {
+  .colGas {
+    width: 9rem;
+  }
+  .colVol {
+    width: 5.5rem;
+  }
+  .colFlashPoint {
+    width: 6.5rem;
+  }
+}

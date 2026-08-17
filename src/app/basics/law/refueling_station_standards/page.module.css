@@ -1,0 +1,126 @@
+/* 数値バッジ（間口・奥行・離隔距離などを示す。このページ専用） */
+.badge {
+  display: inline-block;
+  padding: 0.15em 0.7em;
+  border-radius: 999px;
+  background: var(--chapter-table-head, #e4eaf5);
+  color: var(--chapter-accent, #0b5cab);
+  font-weight: 700;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+/* 番号付きリスト（本人確認等の3項目・販売記録の6項目）
+   shared.compact はlist-style:discのため、番号表記が必要なこの箇所のみ例外的に定義 */
+.orderedCompact {
+  list-style: decimal;
+  margin: 0;
+  padding: 0 0 0 1.2em;
+}
+
+.orderedCompact li {
+  margin: 0.2em 0;
+  line-height: 1.7;
+}
+
+/* テーブル1：給油空地・注油空地の要件 */
+.colSpaceClass {
+  width: 15%;
+}
+
+.colSpaceScale {
+  width: 30%;
+}
+
+.colSpaceRequirements {
+  width: 55%;
+}
+
+/* テーブル2：道路境界等からの間隔（離隔） */
+.colDistanceFormat {
+  width: 25%;
+}
+
+.colDistanceStandard {
+  width: 25%;
+}
+
+.colDistanceSupplement {
+  width: 50%;
+}
+
+/* テーブル3：設置できる建築物等の用途 */
+.colUsageClass {
+  width: 25%;
+}
+
+.colUsagePurpose {
+  width: 75%;
+}
+
+/* テーブル4：設置できない建築物・設備の例 */
+.colForbiddenClass {
+  width: 25%;
+}
+
+.colForbiddenContents {
+  width: 75%;
+}
+
+/* テーブル5：給油取扱所の付随設備 */
+.colEquipmentName {
+  width: 22%;
+}
+
+.colEquipmentOverview {
+  width: 78%;
+}
+
+/* テーブル7：移動タンク貯蔵所 → 専用タンク等への注入 */
+.colInjectionPrinciple {
+  width: 20%;
+}
+
+.colInjectionContent {
+  width: 80%;
+}
+
+/* テーブル8：本人確認の方法 */
+.colIdItem {
+  width: 20%;
+}
+
+.colIdContent {
+  width: 80%;
+}
+
+/* テーブル9：使用目的の確認 */
+.colPurposeCheck {
+  width: 20%;
+}
+
+.colPurposeExample {
+  width: 80%;
+}
+
+/* テーブル10：構造による区分（全体像） */
+.colStructureClass {
+  width: 20%;
+}
+
+.colStructureOverview {
+  width: 80%;
+}
+
+/* テーブル11：屋内型の細分類 */
+.colIndoorType {
+  width: 16%;
+}
+
+.colIndoorNoUse {
+  width: 42%;
+}
+
+.colIndoorUse {
+  width: 42%;
+}

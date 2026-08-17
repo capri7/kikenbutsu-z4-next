@@ -1,0 +1,111 @@
+/* 第1章まとめ：11項目のリンクカードグリッド（basics.css の .chapter-card 系を忠実に移植） */
+.chapterLinks {
+  margin-block: 24px 40px;
+}
+
+.chapterGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 900px) {
+  .chapterGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.chapterCard {
+  --bg: #f4f7fb;
+  --bd: rgba(0, 0, 0, 0.06);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  min-height: 72px;
+  border-radius: 14px;
+  background: var(--bg);
+  border: 1px solid var(--bd);
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.chapterCard:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  background: #eef3fb;
+  border-color: rgba(0, 0, 0, 0.1);
+  text-decoration: none;
+}
+
+.chapterCard:active {
+  transform: translateY(0);
+}
+
+.chapterCard:focus-visible {
+  outline: 3px solid #2d6cdf;
+  outline-offset: 2px;
+}
+
+.chapterIcon {
+  font-size: 28px;
+  line-height: 1;
+  width: 32px;
+  text-align: center;
+}
+
+/* ⑪相当（丸数字の絵文字が存在しないため、CSSで丸枠を描画） */
+.numCircle {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-weight: 700;
+  line-height: 1;
+  font-size: 16px;
+}
+
+.chapterBody {
+  display: grid;
+  gap: 2px;
+}
+
+.chapterKicker {
+  font-size: 0.9rem;
+  color: #3b5a8a;
+  letter-spacing: 0.02em;
+}
+
+.chapterTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #112033;
+}
+
+.chapterMeta {
+  font-size: 0.85rem;
+  color: #5b6b7c;
+}
+
+.chapterCta {
+  font-size: 22px;
+  opacity: 0.55;
+  transition:
+    translate 0.12s ease,
+    opacity 0.2s ease;
+}
+
+.chapterCard:hover .chapterCta {
+  opacity: 0.9;
+}

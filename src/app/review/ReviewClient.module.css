@@ -1,0 +1,81 @@
+.headerRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.countBadge {
+  background: #e8f0fe;
+  color: #1a56db;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.85rem;
+}
+
+.muted {
+  color: #888;
+}
+
+.catSection {
+  margin-top: 24px;
+}
+
+.catTitle {
+  font-size: 1.1rem;
+  font-weight: bold;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 4px;
+}
+
+.subGroup {
+  margin-top: 12px;
+}
+
+.subTitle {
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.card {
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.cardTitle {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.cardMeta {
+  color: #888;
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+
+.cardActions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btnPrimary {
+  color: #1a56db;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.btnDanger {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+}

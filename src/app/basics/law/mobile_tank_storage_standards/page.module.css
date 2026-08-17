@@ -1,0 +1,239 @@
+/* 詰め替えの条件：番号付きリスト（4項目）
+   shared.compact はlist-style:discのため、番号表記が必要なこの箇所のみ例外的に定義 */
+.orderedCompact {
+  list-style: decimal;
+  margin: 0;
+  padding: 0 0 0 1.2em;
+}
+
+.orderedCompact li {
+  margin: 0.2em 0;
+  line-height: 1.7;
+}
+
+/* テーブル1：移動タンク貯蔵所の種類 */
+.colFormat {
+  width: 20%;
+}
+
+.colOverview {
+  width: 55%;
+}
+
+.colTypicalExample {
+  width: 25%;
+}
+
+/* テーブル2：水圧試験の条件 */
+.colTargetTank {
+  width: 25%;
+}
+
+.colTestPressure {
+  width: 25%;
+}
+
+.colTime {
+  width: 50%;
+}
+
+/* テーブル3：容量・間仕切の基準 */
+.colCapacityItem {
+  width: 18%;
+}
+
+.colCapacityStandard {
+  width: 42%;
+}
+
+.colCapacitySupplement {
+  width: 40%;
+}
+
+/* テーブル4：排出口・底弁・閉鎖装置 */
+.colOutletItem {
+  width: 20%;
+}
+
+.colOutletStandard {
+  width: 50%;
+}
+
+.colOutletSupplement {
+  width: 30%;
+}
+
+/* テーブル5：配管・電気設備・静電気対策 */
+.colPlumbingItem {
+  width: 20%;
+}
+
+.colPlumbingStandard {
+  width: 50%;
+}
+
+.colPlumbingSupplement {
+  width: 30%;
+}
+
+/* テーブル6：表示・標識 */
+.colSignItem {
+  width: 20%;
+}
+
+.colSignStandard {
+  width: 50%;
+}
+
+.colSignSupplement {
+  width: 30%;
+}
+
+/* テーブル7：消防用設備（消火器） */
+.colFireExtinguishing {
+  width: 20%;
+}
+
+.colFireEquipment {
+  width: 80%;
+}
+
+/* テーブル8：貯蔵時の取扱い基準 */
+.colHandlingItem {
+  width: 18%;
+}
+
+.colHandlingStandard {
+  width: 47%;
+}
+
+.colHandlingPurpose {
+  width: 35%;
+}
+
+/* テーブル9：備付書類 */
+.colDocumentItem {
+  width: 25%;
+}
+
+.colDocumentList {
+  width: 75%;
+}
+
+/* テーブル10：注入時の基本 */
+.colInjectionItem {
+  width: 20%;
+}
+
+.colInjectionList {
+  width: 80%;
+}
+
+/* テーブル11：容器への直接詰め替え */
+.colPrinciple {
+  width: 25%;
+}
+
+.colException {
+  width: 40%;
+}
+
+.colScope {
+  width: 35%;
+}
+
+/* テーブル12：静電気対策・接地・上部注入 */
+.colStaticElectricity {
+  width: 18%;
+}
+
+.colStaticStandard {
+  width: 47%;
+}
+
+.colStaticSupplement {
+  width: 35%;
+}
+
+/* テーブル13：エンジン停止の要件 */
+.colEngineStopped {
+  width: 20%;
+}
+
+.colStoppedCondition {
+  width: 80%;
+}
+
+/* テーブル14：用語の整理（移送／運搬） */
+.colWord {
+  width: 15%;
+}
+
+.colTransportDefinition {
+  width: 55%;
+}
+
+.colExample {
+  width: 30%;
+}
+
+/* テーブル15：乗車義務・携帯義務 */
+.colDutyItem {
+  width: 20%;
+}
+
+.colDutyStandard {
+  width: 45%;
+}
+
+.colDutySupplement {
+  width: 35%;
+}
+
+/* テーブル16：出発前の点検 */
+.colDepartureInspection {
+  width: 20%;
+}
+
+.colInspectionNote {
+  width: 80%;
+}
+
+/* テーブル17：長時間にわたるおそれがある移送と要員確保 */
+.colTransferJudgment {
+  width: 20%;
+}
+
+.colTransferCondition {
+  width: 50%;
+}
+
+.colTransferMeasures {
+  width: 30%;
+}
+
+/* テーブル18：停止場所・緊急時の措置 */
+.colEmergencyScene {
+  width: 20%;
+}
+
+.colEmergencyStandard {
+  width: 40%;
+}
+
+.colEmergencyReport {
+  width: 40%;
+}
+
+/* テーブル19：特定危険物の移送（経路届・携帯） */
+.colTransferSubject {
+  width: 20%;
+}
+
+.colTransferProcedure {
+  width: 45%;
+}
+
+.colTransferItems {
+  width: 35%;
+}

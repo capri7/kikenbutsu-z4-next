@@ -1,0 +1,26 @@
+/* テーブル1：指定数量の倍数と保有空地の幅 */
+.colClass1 {
+  width: 37%;
+}
+
+.colMultiple {
+  width: 31%;
+}
+
+.colWidth {
+  width: 32%;
+}
+
+/* テーブル2：製造所等の指定数量の倍数と保有空地の幅 */
+.colClass2 {
+  width: 22%;
+}
+
+.colPoints {
+  width: 78%;
+}
+
+/* 数値が途中で折り返されないようにする */
+.nowrap {
+  white-space: nowrap;
+}

@@ -1,0 +1,21 @@
+/* 番号付きリスト（点検実施者の3パターン）
+   shared.compact はlist-style:discのため、番号表記が必要なこの箇所のみ例外的に定義 */
+.orderedCompact {
+  list-style: decimal;
+  margin: 0;
+  padding: 0 0 0 1.2em;
+}
+
+.orderedCompact li {
+  margin: 0.2em 0;
+  line-height: 1.7;
+}
+
+/* テーブル1：定期点検の有無 */
+.colItems {
+  width: 22%;
+}
+
+.colContents {
+  width: 78%;
+}

@@ -1,0 +1,183 @@
+/* 番号付きリスト（各種手順・条件の列挙）
+   shared.compact はlist-style:discのため、番号表記が必要なこの箇所のみ例外的に定義 */
+.orderedCompact {
+  list-style: decimal;
+  margin: 0;
+  padding: 0 0 0 1.2em;
+}
+
+.orderedCompact li {
+  margin: 0.3em 0;
+  line-height: 1.7;
+}
+
+/* 類別タグ（第1〜5種の色分け。このページ専用） */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.tagCategory1 {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.tagCategory2 {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.tagCategory3 {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.tagCategory4 {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.tagCategory5 {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+/* 「第4種または第5種」の複合行専用（単一区分に属さないことを示す無彩色） */
+.tagCombined {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+/* 消火設備リスト（1セル内に複数設備名を縦並び） */
+.equipList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+}
+
+/* details/summary の補足ノート */
+.note {
+  margin: 0.75rem 0 1.2rem;
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fafbfc;
+}
+
+.note summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.note p {
+  margin: 0.6em 0 0;
+  line-height: 1.7;
+}
+
+.note h3 {
+  margin: 0.8em 0 0.4em;
+}
+
+/* 計算式の表示 */
+.formulaLine {
+  margin: 0.6em 0;
+  padding: 10px 14px;
+  background: #eef1f9;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+/* テーブル1：消火設備の種類 */
+.colClass {
+  width: 18%;
+}
+
+.colName {
+  width: 82%;
+}
+
+/* テーブル2：所要単位に対応する消火設備の消火能力の基準 */
+.colItem {
+  width: 20%;
+}
+
+.colValue {
+  width: 62%;
+}
+
+/* テーブル3：種別の設備基準テーブル */
+.colKinds {
+  width: 25%;
+}
+
+.colStandard {
+  width: 57%;
+}
+
+/* テーブル4：消火の困難性による区分（マトリクス） */
+.colKind {
+  width: 25%;
+}
+
+.colMatrixNarrow {
+  width: 15%;
+}
+
+.matrixCenter {
+  text-align: center;
+}
+
+.matrixMust {
+  text-align: center;
+  font-weight: 700;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.matrixDash {
+  text-align: center;
+  color: #9ca3af;
+}
+
+/* テーブル5・6：【A】【B】著しく消火が困難／消火が困難な製造所等 */
+.colInstallationTarget {
+  width: 75%;
+}
+
+/* テーブル7：【C】その他の製造所等 */
+.colTarget {
+  width: 30%;
+}
+
+.colEquip {
+  width: 55%;
+}
+
+/* テーブル8・9：消火設備と適応する危険物の火災（区分＋設備名の二段見出し） */
+.colKindcell {
+  width: 28%;
+}
+
+.colAdapt {
+  width: 14.4%;
+  text-align: center;
+}
+
+.kind {
+  font-weight: 700;
+}
+
+.equip {
+  font-weight: 400;
+  font-size: 0.92em;
+  color: #4b5563;
+  margin-top: 0.2em;
+}
