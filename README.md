@@ -50,6 +50,16 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 
 ![画面遷移図](./public/diagrams/screen-flow-diagram.svg)
 
+### ユーザーフロー
+
+**検索流入からメール登録まで**
+
+![ユーザーフロー1](./public/diagrams/user-flow-part1-signup.svg)
+
+**マイページ利用開始から有料転換まで**
+
+![ユーザーフロー2](./public/diagrams/user-flow-part2-conversion.svg)
+
 ## 4. 詳細設計 （DBスキーマ、API設計、Stripe/Supabase連携のシーケンス図）
 
 ## 5. 実装・技術スタック
