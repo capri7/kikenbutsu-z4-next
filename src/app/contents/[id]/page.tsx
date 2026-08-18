@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { ToastProvider } from '@/lib/toast'
 import QuestionClient from './QuestionClient'
 import { fetchQuestionData } from '@/lib/dataLoader.server'
@@ -26,7 +27,9 @@ export default async function QuestionPage({ params }: Props) {
 
   return (
     <ToastProvider>
-      <QuestionClient question={question} />
+      <Suspense fallback={null}>
+        <QuestionClient question={question} />
+      </Suspense>
     </ToastProvider>
   )
 }
