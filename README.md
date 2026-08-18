@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 危険物乙4試験対策 — 弱点特化型学習プラットフォーム
 
-## Getting Started
+危険物取扱者乙種第4類（乙4）の受験者向けに、誤答・復習リストと分野別進捗の可視化により
+「弱点を優先的に潰す」学習フローを実現したWebサービスです。
+Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進捗管理を含む
+フルスタックの個人開発として、要件定義から実装・運用まで単独で担当しました。
 
-First, run the development server:
+**公開サイト**: [https://kikenbutsu-z4.com](https://kikenbutsu-z4.com)（現行版・バニラJS）
+**本リポジトリ**: 上記サービスのNext.js移行版（開発中）
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 1. プロジェクト概要（要件定義）
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 背景
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+危険物取扱者乙種第4類（乙4）は年間約20万人が受験する国家資格だが、合格率は3〜4割程度と低く、多くの受験者が複数回受験を経験する。試験範囲自体は法改正の影響を受けにくく、長期的に需要が安定している分野である。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 対象ユーザー（ペルソナ）
+- 社会人で、就業しながら学習時間を確保する必要がある
+- 乙4受験の経験があり、過去に不合格を経験している
+- 独学で学習を進めており、自分の弱点分野を客観的に把握できていない
+- 継続学習が苦手で、モチベーションの維持に課題がある
 
-## Learn More
+## 課題
+既存の教材の多くは、問題を解く機能自体は提供するが、「どの分野が弱点か」「何を優先して復習すべきか」を可視化する仕組みが弱い。受験者は同じ範囲を何度も反復しても、弱点そのものが埋まらないまま再受験を繰り返すケースが多い。
+危険物取扱者乙種第4類（乙4）は年間約20万人が受験する国家資格だが、合格率は3〜4割程度と低く、多くの受験者が複数回受験を経験する。一方で試験範囲自体は法改正の影響を受けにくく、出題内容が長期間にわたって大きく変化しない分野である。このため、教材としての改修コストが低く、長期的に安定した需要が見込める領域として本プロジェクトを選定した。
 
-To learn more about Next.js, take a look at the following resources:
+##解決アプローチ
+以下の機能により、「弱点を可視化し、優先的に潰す」という学習フローを実現した。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+マイページでの分野別正答率のグラフ表示（弱点の可視化）
+誤答リスト（不正解時に自動追加、正解で自動解除）
+復習リスト（ユーザーが任意で追加）
+試験日カウントダウン（残り日数の明確化）
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 機能一覧
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| カテゴリ | 認証条件 | 機能 |
+|---|---|---|
+| 基礎知識学習 | 不要 | 節ごとのミニクイズ付き解説ページ（法令・物理化学・性質と火災予防 全3章） |
+| 練習問題（無料体験） | 不要 | 無料32問体験（静的データ、簡易版のヒント・解説） |
+| マイページ | メール登録のみ（ログイン不要） | ①大分野・小分野別の練習問題（大分野タップで該当分野からランダム出題、小分野タップで該当節のみ出題）　②誤答リストUI　③復習リストUI　④学習カレンダー　⑤試験日カウントダウン　⑥分野別進捗グラフ　⑦サブスクリプション購入への導線 |
+| 決済・会員管理 | メール登録＋ログイン | Stripeサブスクリプション決済、請求情報確認、Webhookによる状態同期 |
+| メール登録・ログイン | ― | メール登録（サインアップ）、ログイン、パスワードリセット |
+| 法務・SEO | 不要 | プライバシーポリシー（問い合わせ先記載）、利用規約、特商法表記、OGP設定 |
+
+
+基本設計（画面遷移図、機能一覧、ユーザーフロー）
+詳細設計（DBスキーマ、API設計、Stripe/Supabase連携のシーケンス図）
+実装・技術スタック
+テスト・品質保証（今回のSuspenseケーススタディを含む）
+今後の課題
