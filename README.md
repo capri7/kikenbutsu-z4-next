@@ -48,7 +48,7 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 
 ### 画面遷移図
 
-![画面遷移図](./diagrams/screen-flow-diagram.svg)
+![画面遷移図](./public/diagrams/screen-flow-diagram.svg)
 
 ## 4. 詳細設計 （DBスキーマ、API設計、Stripe/Supabase連携のシーケンス図）
 
