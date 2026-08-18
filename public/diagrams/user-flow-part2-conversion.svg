@@ -1,0 +1,29 @@
+<svg width="680" height="424" viewBox="0 0 680 424" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>ユーザーフロー：マイページ利用開始から有料転換まで</title>
+<desc>メール登録後、マイページで無料100問を開始し、誤答リストが蓄積され、苦手分野を復習し、最終的に有料登録に至るまでの流れ</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="#5f5e5a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+
+<rect x="210" y="40" width="260" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+<text x="340" y="60" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#3C3489">マイページで無料100問開始</text>
+<text x="340" y="80" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#534AB7">メール登録のみで利用可</text>
+
+<rect x="210" y="136" width="260" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+<text x="340" y="156" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#3C3489">誤答問題が自動で蓄積</text>
+<text x="340" y="176" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#534AB7">誤答リストに自動追加・自動解除</text>
+
+<rect x="210" y="232" width="260" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+<text x="340" y="252" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#3C3489">苦手分野を優先的に復習</text>
+<text x="340" y="272" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#534AB7">分野別進捗グラフで確認</text>
+
+<rect x="210" y="328" width="260" height="56" rx="8" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+<text x="340" y="348" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#712B13">有料登録へ</text>
+<text x="340" y="368" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#993C1D">全1,573問が利用可能に</text>
+
+<line x1="340" y1="96" x2="340" y2="136" stroke="#5f5e5a" stroke-width="1" marker-end="url(#arrow)"/>
+<line x1="340" y1="192" x2="340" y2="232" stroke="#5f5e5a" stroke-width="1" marker-end="url(#arrow)"/>
+<line x1="340" y1="288" x2="340" y2="328" stroke="#5f5e5a" stroke-width="1" marker-end="url(#arrow)"/>
+</svg>
