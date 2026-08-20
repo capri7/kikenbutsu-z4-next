@@ -1,0 +1,43 @@
+<svg width="680" height="520" viewBox="0 0 680 520" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>乙4試験対策サイトの画面遷移図</title>
+<desc>基礎知識学習と学習ガイドを入口に、メール登録を経てマイページ、決済ページへ至る画面遷移の全体像</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="#5f5e5a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+
+<rect x="70" y="40" width="260" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="200" y="60" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#0C447C">基礎知識学習</text>
+<text x="200" y="80" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#185FA5">認証不要</text>
+
+<rect x="350" y="40" width="260" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="480" y="60" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#0C447C">学習ガイド</text>
+<text x="480" y="80" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#185FA5">認証不要・ハブページ</text>
+
+<rect x="350" y="136" width="260" height="56" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+<text x="480" y="156" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#0C447C">無料32問体験</text>
+<text x="480" y="176" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#185FA5">認証不要</text>
+
+<rect x="210" y="232" width="260" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="340" y="252" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#085041">メール登録</text>
+<text x="340" y="272" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#0F6E56">認証不要・ここから開始</text>
+
+<rect x="480" y="232" width="130" height="44" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="545" y="254" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#085041">ログイン</text>
+
+<rect x="210" y="328" width="260" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+<text x="340" y="348" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#3C3489">マイページ</text>
+<text x="340" y="368" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#534AB7">メール登録のみで利用可</text>
+
+<rect x="210" y="424" width="260" height="56" rx="8" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+<text x="340" y="444" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="14" font-weight="500" fill="#712B13">決済ページ</text>
+<text x="340" y="464" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="12" fill="#993C1D">メール登録＋ログイン必須</text>
+
+<line x1="270" y1="96" x2="270" y2="232" stroke="#5f5e5a" stroke-width="1" marker-end="url(#arrow)"/>
+<line x1="480" y1="96" x2="480" y2="136" stroke="#5f5e5a" stroke-width="1" marker-end="url(#arrow)"/>
+<path d="M480 192 L480 212 L410 212 L410 232" fill="none" stroke="#5f5e5a" stroke-width="1" marker-end="url(#arrow)"/>
+<line x1="340" y1="288" x2="340" y2="328" stroke="#5f5e5a" stroke-width="1" marker-end="url(#arrow)"/>
+<path d="M545 276 L545 300 L450 300 L450 328" fill="none" stroke="#5f5e5a" stroke-width="1" marker-end="url(#arrow)"/>
+<line x1="340" y1="384" x2="340" y2="424" stroke="#5f5e5a" stroke-width="1" marker-end="url(#arrow)"/>
+</svg>
