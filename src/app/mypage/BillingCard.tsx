@@ -23,6 +23,8 @@ export default function BillingCard({ userId }: { userId: string }) {
         .from('subscriptions')
         .select('stripe_customer_id, status, current_period_end')
         .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(1)
         .maybeSingle()
       if (cancelled) return
       if (!error && data) setSubscription(data)
