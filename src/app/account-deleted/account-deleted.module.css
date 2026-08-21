@@ -1,8 +1,25 @@
 .container {
   max-width: 480px;
   margin: 0 auto;
-  padding: 3rem 1.5rem;
+  padding: 4rem 1.5rem;
   text-align: center;
+  min-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  width: 56px;
+  height: 56px;
+  line-height: 56px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 auto 1.25rem;
 }
 
 .title {
@@ -13,7 +30,7 @@
 
 .message {
   font-size: 1rem;
-  line-height: 1.8;
+  line-height: 1.9;
   color: #374151;
   margin-bottom: 2rem;
 }
@@ -21,7 +38,7 @@
 .link {
   display: inline-block;
   padding: 0.75rem 1.5rem;
-  background: #2563eb;
+  background: #111827;
   color: #fff;
   border-radius: 0.6rem;
   font-weight: 600;
@@ -29,5 +46,5 @@
 }
 
 .link:hover {
-  background: #1d4ed8;
+  background: #1f2937;
 }
