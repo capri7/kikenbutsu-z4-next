@@ -9,6 +9,8 @@ import PaidUpsellSection from './PaidUpsellSection'
 import CategoryProgress from './CategoryProgress'
 import ReviewMistakesSection from './ReviewMistakesSection'
 import BillingCard from './BillingCard'
+import WithdrawalCard from './WithdrawalCard'
+
 
 export default function MypageClient({ userEmail, userId }: { userEmail: string; userId: string }) {
   return (
@@ -37,6 +39,7 @@ export default function MypageClient({ userEmail, userId }: { userEmail: string;
               <CategoryProgress userId={userId} />
               <ReviewMistakesSection userId={userId} />
               <BillingCard userId={userId} />
+              <WithdrawalCard userId={userId} />
             </div>
           </div>
         </div>

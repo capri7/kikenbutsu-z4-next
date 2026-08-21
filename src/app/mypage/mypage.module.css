@@ -437,3 +437,24 @@
   font-size: 0.9rem;
 }
 
+.dangerZone {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem 1.25rem;
+  background: #fef2f2;
+  border-radius: 0.75rem;
+  border: 1px solid #fecaca;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.btnDanger {
+  background: #fff;
+  color: #dc2626;
+  border-color: #dc2626;
+}
+
+.btnDanger:hover {
+  background: #fef2f2;
+  border-color: #b91c1c;
+}
+
