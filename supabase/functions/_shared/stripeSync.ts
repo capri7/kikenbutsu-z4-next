@@ -44,6 +44,6 @@ export async function upsertSubscriptions(args: {
     payload.current_period_end = args.current_period_end;
     payload.expires_at = args.current_period_end;
   }
-  const { error } = await admin.from("subscriptions").upsert(payload, { onConflict: "user_id" });
+  const { error } = await admin.from("subscriptions").upsert(payload, { onConflict: "stripe_subscription_id" });
   if (error) throw error;
 }
