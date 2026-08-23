@@ -54,7 +54,6 @@ export async function getMistakeItems(): Promise<MistakeItem[]> {
       questions(title, order)
     `)
     .eq('user_id', user.id)
-    .is('deleted_at', null)
     .order('last_seen_at', { ascending: false })
 
   if (error || !data) return []
