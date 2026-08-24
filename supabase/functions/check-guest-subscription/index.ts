@@ -77,7 +77,6 @@ Deno.serve(async (req) => {
           stripe_subscription_id: active.id,
           status,
           current_period_end: currentPeriodEnd,
-          expires_at: currentPeriodEnd,
           livemode: active.livemode,
         });
 
