@@ -29,7 +29,7 @@ export async function upsertUserProfiles(args: {
 
 export async function upsertSubscriptions(args: {
   user_id: string; stripe_customer_id: string | null; stripe_subscription_id: string;
-  status: string | null; current_period_end: string | null; expires_at: string | null;
+  status: string | null; current_period_end: string | null;
   livemode: boolean | null;
 }) {
   const payload: any = {
@@ -42,7 +42,6 @@ export async function upsertSubscriptions(args: {
   };
   if (args.current_period_end) {
     payload.current_period_end = args.current_period_end;
-    payload.expires_at = args.current_period_end;
   }
   const { error } = await admin.from("subscriptions").upsert(payload, { onConflict: "stripe_subscription_id" });
   if (error) throw error;

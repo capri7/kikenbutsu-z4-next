@@ -123,7 +123,6 @@ async function syncFromSubscription(
     stripe_subscription_id: sub.id,
     status,
     current_period_end: currentPeriodEnd,
-    expires_at: currentPeriodEnd,
     livemode,
   });
 
