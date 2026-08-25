@@ -33,7 +33,7 @@ export default function ContentsPage() {
   return (
     <>
       <Breadcrumbs items={[{ label: 'トップ', href: '/' }, { label: '学習ガイド' }]} />
-      <div className="site-main">
+      <main className="site-main">
         <div className={styles.container}>
           <section className={styles.section}>
 
@@ -240,7 +240,7 @@ export default function ContentsPage() {
           </div>
         </section>
       </div>
-    </div>
+    </main>
    </>
   )
 }

@@ -194,6 +194,11 @@ export default function SignupForm() {
         安全に送信されます
       </p>
 
+      <p className={styles.registerBenefit}>
+        メールアドレスを登録すると、解いた問題の記録が保存され、
+        進捗・復習リスト・誤答リストをいつでも確認できます。
+      </p>
+
       <form onSubmit={handleSubmit} className="auth-form" noValidate aria-busy={busy}>
         <div
           ref={feedbackRef}

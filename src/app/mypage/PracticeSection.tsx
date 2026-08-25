@@ -149,7 +149,7 @@ export default function PracticeSection({ userId }: { userId: string }) {
         <p className={styles.note}>
           無料コース：100問
           <br />
-          サブスク登録：1472問
+          サブスク登録：1473問
         </p>
       </div>
 

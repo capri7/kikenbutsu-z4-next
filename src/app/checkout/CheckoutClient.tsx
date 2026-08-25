@@ -47,7 +47,7 @@ export default function CheckoutClient() {
   }
 
   return (
-    <div className="site-main page-checkout">
+    <main className="site-main page-checkout">
       <div className="auth-card">
         <img src="/images/logo.svg" alt="危険物乙4対策サイトロゴ" className="auth-logo" />
 
@@ -108,6 +108,7 @@ export default function CheckoutClient() {
           </p>
         )}
       </div>
-    </div>
+    </main>
+
   )
 }

@@ -8,5 +8,9 @@ export const metadata: Metadata = {
 }
 
 export default function SignupPage() {
-  return <SignupForm />
+  return (
+    <main className="site-main">
+      <SignupForm />
+    </main>
+  )
 }

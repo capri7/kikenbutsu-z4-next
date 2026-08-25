@@ -117,6 +117,7 @@ export default function LoginPage() {
   }
 
   return (
+   <main className="site-main">
     <div className="auth-card">
       <h2 className={styles.heading}>ログイン</h2>
 
@@ -205,8 +206,14 @@ export default function LoginPage() {
       </form>
 
       <p>
+        メールアドレスを登録すると、解いた問題の記録が保存され、
+        進捗・復習リスト・誤答リストをいつでも確認できます。
+      </p>
+
+      <p>
         初めての方は <Link href="/signup">新規登録</Link>
       </p>
     </div>
+  </main>
   )
 }
