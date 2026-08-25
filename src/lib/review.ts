@@ -4,8 +4,6 @@ import { createClient } from '@/lib/supabase/client'
 export type AddToReviewParams = {
   questionId: string
   title?: string | null
-  category?: string | null
-  subcategory?: string | null
   subcategoryId?: string | null
   contentPath: string
 }
@@ -19,8 +17,6 @@ export type AddToReviewResult =
 export async function addToReview({
   questionId,
   title,
-  category,
-  subcategory,
   subcategoryId,
   contentPath,
 }: AddToReviewParams): Promise<AddToReviewResult> {
@@ -35,8 +31,6 @@ export async function addToReview({
     user_id: user.id,
     question_id: questionId,
     title: title || null,
-    category: category || null,
-    subcategory: subcategory || null,
     subcategory_id: subcategoryId || null,
     content_path: contentPath,
     status: 'active',
@@ -53,8 +47,6 @@ export async function addToReview({
 
       .update({
         title: payload.title,
-        category: payload.category,
-        subcategory: payload.subcategory,
         subcategory_id: payload.subcategory_id,
         content_path: payload.content_path,
         status: 'active',
