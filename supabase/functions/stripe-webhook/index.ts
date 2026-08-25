@@ -149,6 +149,29 @@ Deno.serve(async (req) => {
 
     const livemode = !!event.livemode;
 
+    // 冪等性チェック: Stripeは同一イベントを複数回配信することがあるため、
+    // 既に処理済みのevent.idであれば即座にスキップする
+    const { data: existingEvent } = await admin
+      .from("stripe_events")
+      .select("id")
+      .eq("id", event.id)
+      .maybeSingle();
+
+    if (existingEvent) {
+      console.log("[webhook] duplicate event, skipping:", event.id);
+      return new Response("ok (duplicate)", { status: 200 });
+    }
+
+    const { error: logError } = await admin.from("stripe_events").insert({
+      id: event.id,
+      type: event.type,
+      livemode,
+      payload: event,
+    });
+    if (logError) {
+      console.error("[webhook] failed to log stripe event:", logError);
+    }
+
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
