@@ -31,6 +31,7 @@ export async function upsertSubscriptions(args: {
   user_id: string; stripe_customer_id: string | null; stripe_subscription_id: string;
   status: string | null; current_period_end: string | null;
   livemode: boolean | null;
+  cancel_at_period_end?: boolean | null;
 }) {
   const payload: any = {
     user_id: args.user_id,
@@ -42,6 +43,9 @@ export async function upsertSubscriptions(args: {
   };
   if (args.current_period_end) {
     payload.current_period_end = args.current_period_end;
+  }
+  if (args.cancel_at_period_end !== undefined && args.cancel_at_period_end !== null) {
+    payload.cancel_at_period_end = args.cancel_at_period_end;
   }
   const { error } = await admin.from("subscriptions").upsert(payload, { onConflict: "stripe_subscription_id" });
   if (error) throw error;

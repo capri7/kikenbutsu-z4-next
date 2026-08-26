@@ -124,6 +124,7 @@ async function syncFromSubscription(
     status,
     current_period_end: currentPeriodEnd,
     livemode,
+    cancel_at_period_end: sub.cancel_at_period_end ?? null,
   });
 
   return user_id;
@@ -149,8 +150,6 @@ Deno.serve(async (req) => {
 
     const livemode = !!event.livemode;
 
-    // 冪等性チェック: Stripeは同一イベントを複数回配信することがあるため、
-    // 既に処理済みのevent.idであれば即座にスキップする
     const { data: existingEvent } = await admin
       .from("stripe_events")
       .select("id")
@@ -176,7 +175,6 @@ Deno.serve(async (req) => {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
 
-        // まずは保険で profiles に customer / email を紐付け
         const uidFromSession = (
           session.metadata?.user_id ||
           session.client_reference_id ||
@@ -199,7 +197,6 @@ Deno.serve(async (req) => {
           });
         }
 
-        // 本命の subscription から確定値を同期
         if (session.subscription) {
           const sub = await stripe.subscriptions.retrieve(
             String(session.subscription),
@@ -261,7 +258,6 @@ Deno.serve(async (req) => {
       }
 
       default:
-        // 未使用イベントは200で返す
         break;
     }
 

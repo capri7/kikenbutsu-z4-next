@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
 
   const { data: subRow, error: subErr } = await admin
     .from("subscriptions")
-    .select("id, status, current_period_end")
+    .select("id, status, current_period_end, cancel_at_period_end")
     .eq("user_id", user_id)
     .order("updated_at", { ascending: false })
     .limit(1)
@@ -58,6 +58,11 @@ Deno.serve(async (req) => {
   const isPaid = ACTIVE_STATUSES.includes(status);
 
   if (isPaid) {
+    // Stripe側でまだ解約されていない場合は拒否する（フロントのボタン制御をバイパスされても防ぐ保険）
+    if (!subRow?.cancel_at_period_end) {
+      return j({ error: "SUBSCRIPTION_NOT_CANCELLED" }, 400, headers);
+    }
+
     const { error: updateErr } = await admin
       .from("subscriptions")
       .update({ deletion_requested: true, updated_at: new Date().toISOString() })
