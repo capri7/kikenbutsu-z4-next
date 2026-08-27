@@ -60,7 +60,7 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 
 ## 4. 詳細設計 （DBスキーマ、API設計、Stripe/Supabase連携のシーケンス図）
 
-### ER図
+### ER図（DBスキーマ）
 
 ![ER図](./public/diagrams/er-diagram.svg)
 
