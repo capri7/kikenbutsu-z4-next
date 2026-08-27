@@ -64,6 +64,10 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 
 ![ER図](./public/diagrams/er-diagram.svg)
 
+### シーケンス図（決済〜Webhook同期）
+
+![Stripe/Supabase連携シーケンス図](./public/diagrams/sequence-diagram-stripe-webhook.svg)
+
 
 ### 設計判断のハイライト
 
