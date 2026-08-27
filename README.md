@@ -5,8 +5,7 @@
 Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進捗管理を含む
 フルスタックの個人開発として、要件定義から実装・運用まで単独で担当しました。
 
-**公開サイト**: [https://kikenbutsu-z4.com](https://kikenbutsu-z4.com)（現行版・バニラJS）
-**本リポジトリ**: 上記サービスのNext.js移行版（開発中）
+**公開サイト**: [https://kikenbutsu-z4.com](https://kikenbutsu-z4.com)（本リポジトリを2026年8月にVercelへ本番デプロイ・ドメイン移行済み）
 
 ## 1. プロジェクト概要（要件定義）
 
