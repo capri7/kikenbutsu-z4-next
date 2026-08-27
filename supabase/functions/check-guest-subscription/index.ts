@@ -10,17 +10,34 @@ const SERVICE_ROLE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2024-06-20" });
 
-const baseHeaders = {
-  "content-type": "application/json; charset=utf-8",
-  "access-control-allow-origin": "*",
-  "access-control-allow-headers": "authorization, content-type, apikey, x-client-info",
-  "access-control-allow-methods": "POST, OPTIONS",
-};
-const j = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: baseHeaders });
+ // ---- CORS（許可リスト方式。billing-portal / create-checkout-session と統一） ----
+ const ALLOWED_ORIGINS = new Set([
+   "https://kikenbutsu-z4.com",
+   "https://www.kikenbutsu-z4.com",
+   "http://localhost:5173",
+   "http://localhost:3000"
+ ]);
+ 
+ function corsHeaders(origin: string | null) {
+   const allowOrigin = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://kikenbutsu-z4.com";
+   return {
+     "content-type": "application/json; charset=utf-8",
+     "access-control-allow-origin": allowOrigin,
+     "access-control-allow-headers": "authorization, content-type, apikey, x-client-info",
+     "access-control-allow-methods": "POST, OPTIONS",
+     "vary": "Origin",
+   };
+ }
+ 
+ Deno.serve(async (req) => {
+   const origin = req.headers.get("origin");
+   const headers = corsHeaders(origin);
+   const j = (body: unknown, status = 200) =>
+     new Response(JSON.stringify(body), { status, headers });
+ 
+   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: baseHeaders });
+
   if (req.method !== "POST")   return j({ error: "METHOD_NOT_ALLOWED" }, 405);
 
   // 認証: リクエストのJWTから本人を確定する。email/user_idはリクエストボディから信用しない
