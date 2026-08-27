@@ -5,14 +5,13 @@
 Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進捗管理を含む
 フルスタックの個人開発として、要件定義から実装・運用まで単独で担当しました。
 
-**公開サイト**: [https://kikenbutsu-z4.com](https://kikenbutsu-z4.com)（現行版・バニラJS）
-**本リポジトリ**: 上記サービスのNext.js移行版（開発中）
+**公開サイト**: [https://kikenbutsu-z4.com](https://kikenbutsu-z4.com)（本リポジトリを2026年8月にVercelへ本番デプロイ・ドメイン移行済み）
 
 ## 1. プロジェクト概要（要件定義）
 
 ## 背景
 
-危険物取扱者乙種第4類（乙4）は年間約20万人が受験する国家資格だが、合格率は3〜4割程度と低く、多くの受験者が複数回受験を経験する。試験範囲自体は法改正の影響を受けにくく、長期的に需要が安定している分野である。
+危険物取扱者乙種第4類（乙4）は年間約20万人が受験する国家資格だが、合格率は3〜4割程度と低く、多くの受験者が複数回受験を経験する。一方で試験範囲自体は法改正の影響を受けにくく、出題内容が長期間にわたって大きく変化しない分野である。このため、教材としての改修コストが低く、長期的に安定した需要が見込める領域として本プロジェクトを選定した。
 
 ## 対象ユーザー（ペルソナ）
 - 社会人で、就業しながら学習時間を確保する必要がある
@@ -22,7 +21,6 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 
 ## 課題
 既存の教材の多くは、問題を解く機能自体は提供するが、「どの分野が弱点か」「何を優先して復習すべきか」を可視化する仕組みが弱い。受験者は同じ範囲を何度も反復しても、弱点そのものが埋まらないまま再受験を繰り返すケースが多い。
-危険物取扱者乙種第4類（乙4）は年間約20万人が受験する国家資格だが、合格率は3〜4割程度と低く、多くの受験者が複数回受験を経験する。一方で試験範囲自体は法改正の影響を受けにくく、出題内容が長期間にわたって大きく変化しない分野である。このため、教材としての改修コストが低く、長期的に安定した需要が見込める領域として本プロジェクトを選定した。
 
 ## 解決アプローチ
 以下の機能により、「弱点を可視化し、優先的に潰す」という学習フローを実現した。
@@ -62,7 +60,7 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 
 ## 4. 詳細設計 （DBスキーマ、API設計、Stripe/Supabase連携のシーケンス図）
 
-### ER図
+### ER図（DBスキーマ）
 
 ![ER図](./public/diagrams/er-diagram.svg)
 
@@ -112,6 +110,26 @@ Stripeの公式仕様では、Webhookは「少なくとも1回」配信される
 
 **理由**
 論理削除と物理削除（CASCADE）が1つのテーブル群の中に混在すると、「退会済みユーザーのデータがどこまで残っているか」をテーブルごとに個別に把握しないと判断できず、削除漏れの温床になる。乙4のような学習データサービスでは、退会後もユーザーの誤答履歴等が特定の個人と紐づいた形でDBに残り続けることは、プライバシー・個人情報保護の観点で放置できないリスクである。削除ルールをFKレベルで`CASCADE`に統一したことで、「`auth.users`から消せば関連データも必ず消える」という単一の保証をDB構造そのものに持たせ、アプリケーション側の削除処理漏れに依存しない設計にした。
+
+### API設計（Supabase Edge Functions）
+
+Next.js側にはAPI Routesを持たず、Stripe秘密鍵の使用や外部API連携が必要な処理のみをSupabase Edge Functions（Deno）に集約している。単純なCRUD（誤答リスト・復習リスト等）は、Row Level Security（RLS）を前提にクライアントから直接PostgRESTへ問い合わせる構成とした。
+
+| エンドポイント | メソッド | 認証 | 用途 |
+|---|---|---|---|
+| `create-checkout-session` | POST | 不要（`verify_jwt: false`） | Stripe Checkoutセッションを作成し、決済ページのURLを返す |
+| `checkout-session-info` | POST | 不要（`verify_jwt: false`） | 決済完了後、`session_id`から決済ステータス・メールアドレスを取得（`/success`ページで使用） |
+| `billing-portal` | POST | 必須（Supabase JWT） | Stripeカスタマーポータルのセッションを作成し、請求情報確認・サブスク解約導線を提供 |
+| `check-guest-subscription` | POST | 必須（Supabase JWT） | ログイン前に決済したゲストユーザーのStripe契約を、メールアドレス突合でアカウントに紐付け |
+| `request-account-deletion` | POST | 必須（Supabase JWT） | 退会予約。有料会員は契約終了日まで猶予する`deletion_requested`フラグを立て、無料会員は即時削除 |
+| `cancel-account-deletion` | POST | 必須（Supabase JWT） | 退会予約の取り消し（`deletion_requested`フラグを戻す） |
+| `stripe-webhook` | POST | Stripe署名検証（`verify_jwt: false`） | Stripeからのイベント通知を受信し、サブスク状態をDBに同期 |
+
+#### 運用上の学び：`verify_jwt`とWebhook認証の落とし穴
+
+`stripe-webhook`は当初`verify_jwt: true`でデプロイされており、SupabaseプラットフォームレベルのJWT検証が、関数のコードに到達する前に全リクエストを`401 UNAUTHORIZED_NO_AUTH_HEADER`で拒否していた。StripeのWebhookはSupabaseのJWTではなく独自の署名（`stripe-signature`ヘッダー）で認証するため、この設定では関数内の署名検証ロジックに一切到達できず、サブスクリプションの状態同期が機能しない状態が続いていた。
+
+Edge Functionのログを確認し、Stripe側からのリクエスト自体は届いているが401で弾かれていることを特定。`supabase/config.toml`に`[functions.stripe-webhook] verify_jwt = false`を追加して解消した。あわせて、GitHub ActionsのデプロイワークフローがトリガーパスとしてEdge Functionsのコード（`supabase/functions/**`）のみを監視しており、`config.toml`単体の変更では自動デプロイが走らない設計上の穴も同時に発見し、トリガーパスに`supabase/config.toml`を追加して修正した。
 
 ## 5. 実装・技術スタック
 
