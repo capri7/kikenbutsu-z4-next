@@ -111,6 +111,26 @@ Stripeの公式仕様では、Webhookは「少なくとも1回」配信される
 **理由**
 論理削除と物理削除（CASCADE）が1つのテーブル群の中に混在すると、「退会済みユーザーのデータがどこまで残っているか」をテーブルごとに個別に把握しないと判断できず、削除漏れの温床になる。乙4のような学習データサービスでは、退会後もユーザーの誤答履歴等が特定の個人と紐づいた形でDBに残り続けることは、プライバシー・個人情報保護の観点で放置できないリスクである。削除ルールをFKレベルで`CASCADE`に統一したことで、「`auth.users`から消せば関連データも必ず消える」という単一の保証をDB構造そのものに持たせ、アプリケーション側の削除処理漏れに依存しない設計にした。
 
+### API設計（Supabase Edge Functions）
+
+Next.js側にはAPI Routesを持たず、Stripe秘密鍵の使用や外部API連携が必要な処理のみをSupabase Edge Functions（Deno）に集約している。単純なCRUD（誤答リスト・復習リスト等）は、Row Level Security（RLS）を前提にクライアントから直接PostgRESTへ問い合わせる構成とした。
+
+| エンドポイント | メソッド | 認証 | 用途 |
+|---|---|---|---|
+| `create-checkout-session` | POST | 不要（`verify_jwt: false`） | Stripe Checkoutセッションを作成し、決済ページのURLを返す |
+| `checkout-session-info` | POST | 不要（`verify_jwt: false`） | 決済完了後、`session_id`から決済ステータス・メールアドレスを取得（`/success`ページで使用） |
+| `billing-portal` | POST | 必須（Supabase JWT） | Stripeカスタマーポータルのセッションを作成し、請求情報確認・サブスク解約導線を提供 |
+| `check-guest-subscription` | POST | 必須（Supabase JWT） | ログイン前に決済したゲストユーザーのStripe契約を、メールアドレス突合でアカウントに紐付け |
+| `request-account-deletion` | POST | 必須（Supabase JWT） | 退会予約。有料会員は契約終了日まで猶予する`deletion_requested`フラグを立て、無料会員は即時削除 |
+| `cancel-account-deletion` | POST | 必須（Supabase JWT） | 退会予約の取り消し（`deletion_requested`フラグを戻す） |
+| `stripe-webhook` | POST | Stripe署名検証（`verify_jwt: false`） | Stripeからのイベント通知を受信し、サブスク状態をDBに同期 |
+
+#### 運用上の学び：`verify_jwt`とWebhook認証の落とし穴
+
+`stripe-webhook`は当初`verify_jwt: true`でデプロイされており、SupabaseプラットフォームレベルのJWT検証が、関数のコードに到達する前に全リクエストを`401 UNAUTHORIZED_NO_AUTH_HEADER`で拒否していた。StripeのWebhookはSupabaseのJWTではなく独自の署名（`stripe-signature`ヘッダー）で認証するため、この設定では関数内の署名検証ロジックに一切到達できず、サブスクリプションの状態同期が機能しない状態が続いていた。
+
+Edge Functionのログを確認し、Stripe側からのリクエスト自体は届いているが401で弾かれていることを特定。`supabase/config.toml`に`[functions.stripe-webhook] verify_jwt = false`を追加して解消した。あわせて、GitHub ActionsのデプロイワークフローがトリガーパスとしてEdge Functionsのコード（`supabase/functions/**`）のみを監視しており、`config.toml`単体の変更では自動デプロイが走らない設計上の穴も同時に発見し、トリガーパスに`supabase/config.toml`を追加して修正した。
+
 ## 5. 実装・技術スタック
 
 ## 6. テスト・品質保証 （今回のSuspenseケーススタディを含む）
