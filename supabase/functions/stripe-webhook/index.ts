@@ -130,47 +130,9 @@ async function syncFromSubscription(
   return user_id;
 }
 
-// ---------------- handler ----------------
-Deno.serve(async (req) => {
+// ---------------- イベント種別ごとの実処理（バックグラウンド実行） ----------------
+async function processEvent(event: Stripe.Event, livemode: boolean) {
   try {
-    const sig = req.headers.get("stripe-signature");
-    const body = await req.text();
-
-    let event: Stripe.Event;
-    try {
-      event = await stripe.webhooks.constructEventAsync(
-        body,
-        sig!,
-        STRIPE_WEBHOOK_SECRET,
-      );
-    } catch (err) {
-      console.error("[webhook] signature verification failed:", err);
-      return new Response("invalid signature", { status: 400 });
-    }
-
-    const livemode = !!event.livemode;
-
-    const { data: existingEvent } = await admin
-      .from("stripe_events")
-      .select("id")
-      .eq("id", event.id)
-      .maybeSingle();
-
-    if (existingEvent) {
-      console.log("[webhook] duplicate event, skipping:", event.id);
-      return new Response("ok (duplicate)", { status: 200 });
-    }
-
-    const { error: logError } = await admin.from("stripe_events").insert({
-      id: event.id,
-      type: event.type,
-      livemode,
-      payload: event,
-    });
-    if (logError) {
-      console.error("[webhook] failed to log stripe event:", logError);
-    }
-
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
@@ -260,6 +222,55 @@ Deno.serve(async (req) => {
       default:
         break;
     }
+  } catch (e) {
+    console.error("[webhook] background processing failed:", event.id, e);
+  }
+}
+
+// ---------------- handler ----------------
+Deno.serve(async (req) => {
+  try {
+    const sig = req.headers.get("stripe-signature");
+    const body = await req.text();
+
+    let event: Stripe.Event;
+    try {
+      event = await stripe.webhooks.constructEventAsync(
+        body,
+        sig!,
+        STRIPE_WEBHOOK_SECRET,
+      );
+    } catch (err) {
+      console.error("[webhook] signature verification failed:", err);
+      return new Response("invalid signature", { status: 400 });
+    }
+
+    const livemode = !!event.livemode;
+
+    const { data: existingEvent } = await admin
+      .from("stripe_events")
+      .select("id")
+      .eq("id", event.id)
+      .maybeSingle();
+
+    if (existingEvent) {
+      console.log("[webhook] duplicate event, skipping:", event.id);
+      return new Response("ok (duplicate)", { status: 200 });
+    }
+
+    const { error: logError } = await admin.from("stripe_events").insert({
+      id: event.id,
+      type: event.type,
+      livemode,
+      payload: event,
+    });
+    if (logError) {
+      console.error("[webhook] failed to log stripe event:", logError);
+    }
+
+    // 署名検証・冪等性チェック・イベント記録までは同期で終わらせ、
+    // Stripe APIへの追加呼び出しを伴う実処理はバックグラウンドに回して即座に200を返す
+    EdgeRuntime.waitUntil(processEvent(event, livemode));
 
     return new Response("ok", { status: 200 });
   } catch (e) {
