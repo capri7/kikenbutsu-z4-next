@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     return cors(500, {
       error: "STRIPE_ERROR",
-      detail: String(e)
+      message: String(e)
     }, origin);
   }
 });
