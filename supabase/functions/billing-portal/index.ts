@@ -1,87 +1,50 @@
 // supabase/functions/billing-portal/index.ts
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Stripe from "https://esm.sh/stripe@14?target=denonext";
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { admin } from "../_shared/stripeSync.ts";
+import { corsHeaders } from "../_shared/cors.ts";
+import { getAuthenticatedUser } from "../_shared/auth.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"), {
   apiVersion: "2024-06-20"
 });
 
-const allow = new Set([
-  "https://kikenbutsu-z4.com",
-  "https://www.kikenbutsu-z4.com",
-  "http://localhost:5173",
-  "http://localhost:3000"
-]);
+const j = (body, status, headers) =>
+  new Response(JSON.stringify(body), { status, headers });
 
-function cors(origin) {
-  const o = allow.has(origin) ? origin : "https://kikenbutsu-z4.com";
-  return {
-    "Access-Control-Allow-Origin": o,
-    "Access-Control-Allow-Headers": "authorization, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Vary": "Origin"
-  };
-}
+Deno.serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const headers = corsHeaders(origin);
 
-serve(async (req) => {
-  const origin = req.headers.get("origin") ?? "";
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors(origin) });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
 
   try {
-    const supabase = createClient(Deno.env.get("SUPABASE_URL"), Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
-    const jwt = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-    const { data: { user }, error: userErr } = await supabase.auth.getUser(jwt);
-    if (userErr || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "content-type": "application/json", ...cors(origin) }
-      });
-    }
+    const { user, error: authErr } = await getAuthenticatedUser(req);
+    if (authErr) return j({ error: authErr }, 401, headers);
 
-    const { data: profile, error: profErr } = await supabase
+    const { data: profile, error: profErr } = await admin
       .from("user_profiles")
       .select("stripe_customer_id")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (profErr) {
-      return new Response(JSON.stringify({ error: "Profile lookup failed" }), {
-        status: 500,
-        headers: { "content-type": "application/json", ...cors(origin) }
-      });
-    }
+    if (profErr) return j({ error: "PROFILE_LOOKUP_FAILED", message: profErr.message }, 500, headers);
 
     const customerId = profile?.stripe_customer_id ?? null;
-    if (!customerId) {
-      return new Response(JSON.stringify({ error: "No Stripe customer linked" }), {
-        status: 400,
-        headers: { "content-type": "application/json", ...cors(origin) }
-      });
-    }
+    if (!customerId) return j({ error: "NO_STRIPE_CUSTOMER" }, 400, headers);
 
     const body = await req.json().catch(() => ({}));
 
     const return_url = body.return_url;
-    if (!return_url) {
-      return new Response(JSON.stringify({ error: "MISSING_RETURN_URL" }), {
-        status: 400,
-        headers: { "content-type": "application/json", ...cors(origin) }
-      });
-    }
+    if (!return_url) return j({ error: "MISSING_RETURN_URL" }, 400, headers);
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url
     });
 
-    return new Response(JSON.stringify({ url: session.url }), {
-      headers: { "content-type": "application/json", ...cors(origin) }
-    });
+    return j({ url: session.url }, 200, headers);
   } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), {
-      status: 500,
-      headers: { "content-type": "application/json", ...cors(origin) }
-    });
+    return j({ error: "STRIPE_ERROR", message: String(e) }, 500, headers);
   }
 });
