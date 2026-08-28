@@ -1,52 +1,27 @@
 // supabase/functions/check-guest-subscription/index.ts
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Stripe from "https://esm.sh/stripe@14?target=denonext";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { toIsoOrNull, upsertUserProfiles, upsertSubscriptions } from "../_shared/stripeSync.ts";
+import { corsHeaders } from "../_shared/cors.ts";
+import { getAuthenticatedUser } from "../_shared/auth.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
-const SUPABASE_URL      = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2024-06-20" });
 
- // ---- CORS（許可リスト方式。billing-portal / create-checkout-session と統一） ----
- const ALLOWED_ORIGINS = new Set([
-   "https://kikenbutsu-z4.com",
-   "https://www.kikenbutsu-z4.com",
-   "http://localhost:5173",
-   "http://localhost:3000"
- ]);
- 
- function corsHeaders(origin: string | null) {
-   const allowOrigin = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://kikenbutsu-z4.com";
-   return {
-     "content-type": "application/json; charset=utf-8",
-     "access-control-allow-origin": allowOrigin,
-     "access-control-allow-headers": "authorization, content-type, apikey, x-client-info",
-     "access-control-allow-methods": "POST, OPTIONS",
-     "vary": "Origin",
-   };
- }
- 
- Deno.serve(async (req) => {
-   const origin = req.headers.get("origin");
-   const headers = corsHeaders(origin);
-   const j = (body: unknown, status = 200) =>
-     new Response(JSON.stringify(body), { status, headers });
- 
-   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
+Deno.serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const headers = corsHeaders(origin);
+  const j = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers });
 
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
 
   if (req.method !== "POST")   return j({ error: "METHOD_NOT_ALLOWED" }, 405);
 
   // 認証: リクエストのJWTから本人を確定する。email/user_idはリクエストボディから信用しない
-  const jwt = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-  if (!jwt) return j({ error: "UNAUTHORIZED" }, 401);
-
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-  const { data: { user }, error: userErr } = await admin.auth.getUser(jwt);
-  if (userErr || !user) return j({ error: "UNAUTHORIZED" }, 401);
+  const { user, error: authErr } = await getAuthenticatedUser(req);
+  if (authErr) return j({ error: authErr }, 401);
 
   const user_id = user.id;
   const email = (user.email ?? "").trim().toLowerCase();
@@ -106,3 +81,13 @@ const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2024-06-20" });
     return j({ error: "STRIPE_ERROR", message: String(e) }, 500);
   }
 });
+
+
+
+
+
+
+
+
+
+
