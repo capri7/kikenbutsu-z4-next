@@ -304,9 +304,30 @@ type CheckGuestSubscriptionResponse =
 | `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
 
 
+#### `billing-portal`
 
+Stripeカスタマーポータル（請求情報の確認・支払い方法の変更・サブスク解約）へのセッションURLを発行する。呼び出し前に、ログイン中ユーザーの`user_profiles.stripe_customer_id`をDBから引いており、リクエストボディからは`return_url`のみを受け取る（`customer_id`をクライアントから信用しない設計は他エンドポイントと共通）。
 
+\`\`\`typescript
+type BillingPortalRequest = {
+  return_url: string; // ポータルから戻ってくる先のURL
+};
 
+type BillingPortalResponse = {
+  url: string; // Stripeカスタマーポータルへのリダイレクト先
+};
+\`\`\`
+
+**エラー**
+
+| コード | ステータス | 発生条件 |
+|---|---|---|
+| `UNAUTHORIZED` | 401 | JWTが無い、または無効 |
+| `PROFILE_LOOKUP_FAILED` | 500 | `user_profiles`テーブルへの問い合わせ失敗（`message`に詳細） |
+| `NO_STRIPE_CUSTOMER` | 400 | `stripe_customer_id`が未登録（一度もStripe決済をしていないユーザー） |
+| `MISSING_RETURN_URL` | 400 | `return_url`が未指定 |
+| `STRIPE_ERROR` | 500 | Stripe API呼び出し失敗（`message`に詳細） |
+| `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
 
 
 #### 運用上の学び：`verify_jwt`とWebhook認証の落とし穴
