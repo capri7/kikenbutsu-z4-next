@@ -336,11 +336,6 @@ type BillingPortalResponse = {
 
 Edge Functionのログを確認し、Stripe側からのリクエスト自体は届いているが401で弾かれていることを特定。`supabase/config.toml`に`[functions.stripe-webhook] verify_jwt = false`を追加して解消した。あわせて、GitHub ActionsのデプロイワークフローがトリガーパスとしてEdge Functionsのコード（`supabase/functions/**`）のみを監視しており、`config.toml`単体の変更では自動デプロイが走らない設計上の穴も同時に発見し、トリガーパスに`supabase/config.toml`を追加して修正した。
 
-## 5. 実装・技術スタック
-
-
-**認証はmiddlewareを使わずページ単位で実装**：`src/middleware.ts`は存在せず、`src/lib/supabase/server.ts`（Server Component用）・`client.ts`（Client Component用）を各ページ・APIエンドポイントが個別に呼び出す構成。
-
 
 ## 5. 実装・技術スタック
 
@@ -368,11 +363,16 @@ Edge Functionのログを確認し、Stripe側からのリクエスト自体は�
 
 ### 技術的なハイライト
 
-**React Compiler（`reactCompiler: true`）の有効化**：`next.config.ts`でReact Compilerを有効化し、`useMemo`/`useCallback`による手動最適化に頼らず、ビルド時の自動メモ化に委ねている。個人開発でレビュアーがいない環境では、手動最適化の付け忘れ・過剰適用のどちらのリスクも避けられる利点がある。
+**React Compilerの有効化とその設計判断**：`next.config.ts`で`reactCompiler: true`を設定し、`babel-plugin-react-compiler`をビルドパイプラインに組み込んでいる。React Compilerはビルド時の静的解析でコンポーネント・値の依存関係を追跡し、`useMemo`/`useCallback`/`React.memo`が担っていた再レンダリング抑制を自動生成コードに置き換える。手動メモ化への依存を排除する狙いは、依存配列の記述漏れによる再レンダリング抑制の失敗（バグとして顕在化しにくい）と、過剰な`useMemo`によるメモリオーバーヘッドの両方を、実装者のスキルに関係なく機械的に防げる点にある。レビュアー不在の個人開発では、このクラスのバグは気づかれないまま本番に残りやすいため、コンパイラに委譲する判断はリスク低減として合理的である。
 
-**旧URL構造からの301リダイレクト**：バニラJS版からNext.js版への移行時、URL構造の変更に伴うリダイレクト設定が漏れており、Google Search Consoleにインデックス済みの66件のURLが404になっていた（4章参照とは別に、実装後に発覚し対応した障害）。Search ConsoleのエクスポートデータとNext.jsの実ルート一覧を機械的に突き合わせ、`next.config.ts`の`redirects()`に64件のマッピングを登録して解消した。
+**301リダイレクトによるSEO資産の保全**：バニラJS版からNext.js版への移行時、URL構造が変わったにもかかわらずリダイレクトを設定しておらず、Google Search Consoleにインデックス済みの66件のURLが404を返す状態になっていた。302（一時的リダイレクト）ではなく`next.config.ts`の`redirects()`で`permanent: true`（301）を明示しているのは、検索エンジンに「恒久的な移転」であることを伝え、旧URLに蓄積されたインデックス評価・被リンク評価を新URLに引き継がせるため。`redirects()`はビルド時に解決され、Vercelのエッジ層でリダイレクトが完結するため、クライアントサイドでの一瞬の404表示やリダイレクトチェーンによる遅延が発生しない。
 
-**認証はmiddlewareを使わずページ単位で実装**：`src/middleware.ts`は存在せず、`src/lib/supabase/server.ts`（Server Component用）・`client.ts`（Client Component用）を各ページ・APIエンドポイントが個別に呼び出す構成。
+**Cookieベースのセッションリフレッシュ設計（`src/proxy.ts`）**：Next.js 16で`middleware.ts`は`proxy.ts`に名称変更されており（旧名のままだとビルドが警告なしに失敗する）、本プロジェクトは初期実装の段階からこれに対応済みである。セッション検証には`getSession()`ではなく`getUser()`を使用している。`getSession()`はローカルのCookieに保存された値をそのまま信頼するため、Cookieの偽装に対して脆弱であるのに対し、`getUser()`はSupabase Authサーバーに問い合わせてJWTを再検証するため、なりすましを防げる。また、Cookieの更新を`request.cookies`と`response.cookies`の両方に対して行っているのは、`request`側を更新しないと同一リクエスト内で後続実行されるServer Componentsが古いセッションを参照し続けてしまい、`response`側を更新しないとブラウザに新しいトークンが返らないため。この2段階の伝播はSupabase公式が明示的に要求している実装パターンであり、省略するとセッション切れの検知が遅延する。
+
+
+
+
+
 
 ## 6. テスト・品質保証 （今回のSuspenseケーススタディを含む）
 
