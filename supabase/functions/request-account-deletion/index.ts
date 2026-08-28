@@ -1,29 +1,10 @@
 // supabase/functions/request-account-deletion/index.ts
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const SUPABASE_URL     = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+import { admin } from "../_shared/stripeSync.ts";
+import { corsHeaders } from "../_shared/cors.ts";
+import { getAuthenticatedUser } from "../_shared/auth.ts";
 
 const ACTIVE_STATUSES = ["active", "trialing", "past_due"];
-
-const ALLOWED_ORIGINS = new Set([
-  "https://kikenbutsu-z4.com",
-  "https://www.kikenbutsu-z4.com",
-  "http://localhost:5173",
-  "http://localhost:3000"
-]);
-
-function corsHeaders(origin) {
-  const allowOrigin = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://kikenbutsu-z4.com";
-  return {
-    "content-type": "application/json; charset=utf-8",
-    "access-control-allow-origin": allowOrigin,
-    "access-control-allow-headers": "authorization, content-type, apikey, x-client-info",
-    "access-control-allow-methods": "POST, OPTIONS",
-    "vary": "Origin"
-  };
-}
 
 const j = (body, status, headers) =>
   new Response(JSON.stringify(body), { status, headers });
@@ -35,12 +16,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
   if (req.method !== "POST") return j({ error: "METHOD_NOT_ALLOWED" }, 405, headers);
 
-  const jwt = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-  if (!jwt) return j({ error: "UNAUTHORIZED" }, 401, headers);
-
-  const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-  const { data: { user }, error: userErr } = await admin.auth.getUser(jwt);
-  if (userErr || !user) return j({ error: "UNAUTHORIZED" }, 401, headers);
+  const { user, error: authErr } = await getAuthenticatedUser(req);
+  if (authErr) return j({ error: authErr }, 401, headers);
 
   const user_id = user.id;
 
