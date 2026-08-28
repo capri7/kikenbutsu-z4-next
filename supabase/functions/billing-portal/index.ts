@@ -17,6 +17,7 @@ Deno.serve(async (req) => {
   const headers = corsHeaders(origin);
 
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
+  if (req.method !== "POST") return j({ error: "METHOD_NOT_ALLOWED" }, 405, headers);
 
   try {
     const { user, error: authErr } = await getAuthenticatedUser(req);
