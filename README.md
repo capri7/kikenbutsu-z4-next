@@ -223,6 +223,7 @@ type RequestAccountDeletionResponse =
 | `DELETE_FAILED` | 500 | `auth.users`削除失敗（`message`に詳細） |
 | `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
 
+
 #### `stripe-webhook`
 
 Stripeからのイベント通知を受信する。**リクエスト/レスポンスとも、他6エンドポイントとは形式が異なる。**
@@ -234,10 +235,10 @@ Stripeからのイベント通知を受信する。**リクエスト/レスポ�
 // リクエストボディ：Stripe.Event（stripe-signatureヘッダーで署名検証）
 
 // レスポンス（プレーンテキスト、Content-Type指定なし）
-// 200 "ok"              : 正常処理
+// 200 "ok"              : 正常受理（実処理はバックグラウンドで継続）
 // 200 "ok (duplicate)"  : stripe_eventsテーブルに同一event.idが既存（Stripeのリトライによる重複配信を無視）
 // 400 "invalid signature" : 署名検証失敗
-// 400 "handler error: ${message}" : ハンドラ内の未捕捉例外
+// 400 "handler error: ${message}" : 署名検証〜冪等性チェックまでの間の未捕捉例外
 \`\`\`
 
 **処理するイベント種別**
@@ -247,11 +248,18 @@ Stripeからのイベント通知を受信する。**リクエスト/レスポ�
 | `checkout.session.completed` | `session.metadata.user_id`または`client_reference_id`から会員を特定し、`user_profiles`を更新。紐づくサブスクリプションがあれば同期 |
 | `customer.subscription.created`/`updated`/`deleted` | `subscriptions`/`user_profiles`をStripeの最新状態に同期。`deleted`の場合、`deletion_requested`フラグが立っていれば`auth.users`を物理削除する（`request-account-deletion`が立てた予約フラグを、実際の契約終了タイミングでここが実行に移す2段階構成） |
 | `invoice.paid`/`invoice.payment_succeeded` | 紐づくサブスクリプションを取得し同期 |
-| それ以外 | 何もしない（`200 "ok"`のみ返す） |
+| それ以外 | 何もしない |
 
 **冪等性の仕組み**
 
 Stripeは同一イベントを複数回配信することがあるため、`stripe_events`テーブルに`event.id`を記録し、既存であれば処理をスキップする。
+
+**設計判断：即時レスポンスとバックグラウンド処理の分離**
+
+署名検証・冪等性チェック・イベント記録は同期的に完了させて`200`を即座に返し、Stripe APIへの追加呼び出しを伴う実同期処理（`user_profiles`/`subscriptions`更新、`auth.users`削除）は`EdgeRuntime.waitUntil()`でバックグラウンドに回している。Stripeの10秒タイムアウト・リトライ設計に対して、処理が重い場合でも安定してレスポンスできるようにするための対応。
+
+
+
 
 
 #### 運用上の学び：`verify_jwt`とWebhook認証の落とし穴
