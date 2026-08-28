@@ -344,7 +344,7 @@ Edge Functionのログを確認し、Stripe側からのリクエスト自体は�
 | 技術 | バージョン | 採用理由 |
 |---|---|---|
 | Next.js（App Router） | 16.2.10 | Server Components前提の設計で、認証済みユーザー情報の取得をサーバー側に寄せられる。バニラJS版（`dangerous-materials-fe4`）からの移植先として選定し、現在は本番ドメイン`kikenbutsu-z4.com`で稼働中 |
-| React | 19.2.4 | React Compiler（後述）を利用するため19系が前提 |
+| React | 19.2.4 | React Compilerがネイティブ対応する最新版。React 17/18でも`react-compiler-runtime`パッケージを追加すれば利用可能だが、19系であれば追加パッケージ無しでビルトインのランタイムAPIが使える |
 | TypeScript | ^5 | `strict: true`。API設計のリクエスト/レスポンス型を明示する運用（4章参照）はTypeScriptの型システムを前提にしている |
 | CSS Modules | - | コンポーネント単位でスタイルを閉じ込める目的で全面採用（92ファイル） |
 | Tailwind CSS | v4 | デザイントークン（`--color-navy`等）の一元管理と、一部コンポーネントのユーティリティクラスに限定利用。CSS Modulesと併用し、レイアウト崩れが起きやすい細かい調整のみTailwindに寄せる方針 |
