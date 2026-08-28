@@ -258,6 +258,53 @@ Stripeは同一イベントを複数回配信することがあるため、`stri
 
 署名検証・冪等性チェック・イベント記録は同期的に完了させて`200`を即座に返し、Stripe APIへの追加呼び出しを伴う実同期処理（`user_profiles`/`subscriptions`更新、`auth.users`削除）は`EdgeRuntime.waitUntil()`でバックグラウンドに回している。Stripeの10秒タイムアウト・リトライ設計に対して、処理が重い場合でも安定してレスポンスできるようにするための対応。
 
+#### `cancel-account-deletion`
+
+`request-account-deletion`で立てた退会予約を取り消す。リクエストボディは持たず、JWTのみで本人を特定する点は`request-account-deletion`と同じ。
+
+`request-account-deletion`との非対称性が1点ある：`request-account-deletion`は「サブスクリプション未登録＝無料会員」として即時削除に倒すが、`cancel-account-deletion`は行が無ければ`NO_SUBSCRIPTION`（404）で明示的に拒否する。これは「取り消す対象の予約が存在しない」ことを黙って200で返すと、フロントが誤操作に気づけなくなるための設計。既に取り消し済み（`deletion_requested`が既に`false`）の場合はエラーにせず、`already: true`を付けて200で返す（二重送信・多重クリックを異常系として扱わないため）。
+
+\`\`\`typescript
+// リクエストボディなし（Authorizationヘッダーのみ）
+
+type CancelAccountDeletionResponse =
+  | { cancelled: true; already?: true } // 取り消し成功（already: trueは元々取り消し済みだった場合）
+\`\`\`
+
+**エラー**
+
+| コード | ステータス | 発生条件 |
+|---|---|---|
+| `UNAUTHORIZED` | 401 | JWTが無い、または無効 |
+| `NO_SUBSCRIPTION` | 404 | `subscriptions`テーブルに該当ユーザーの行が存在しない |
+| `DB_ERROR` | 500 | `subscriptions`テーブルへの問い合わせ・更新失敗（`message`に詳細） |
+| `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
+
+#### `check-guest-subscription`
+
+未ログイン状態で決済したゲストユーザーが、後からログイン（会員登録）した際に、メールアドレス突合でStripeの契約をアカウントに紐付ける。リクエストボディは持たず、JWTから取得したログイン中ユーザーのメールアドレスのみで検索する（`email`をリクエストボディから受け取らない設計。他人のメールアドレスを指定して契約を横取りされないようにするため）。
+
+Stripe Customer検索→該当顧客ごとにサブスクリプション検索、という2段階のStripe API呼び出しを行い、`active`/`trialing`状態の契約が見つかった時点で`user_profiles`/`subscriptions`に同期して返す。複数のStripe顧客が同じメールアドレスを持つケース（ゲスト決済を複数回行った等）を想定し、ループで全顧客を走査している。
+
+\`\`\`typescript
+// リクエストボディなし（Authorizationヘッダーのみ）
+
+type CheckGuestSubscriptionResponse =
+  | { matched: true; subscription_id: string }
+  | { matched: false; reason: "NO_CUSTOMER" | "NO_ACTIVE_SUBSCRIPTION" };
+\`\`\`
+
+**エラー**
+
+| コード | ステータス | 発生条件 |
+|---|---|---|
+| `UNAUTHORIZED` | 401 | JWTが無い、または無効 |
+| `NO_EMAIL_ON_ACCOUNT` | 400 | ログイン中ユーザーにメールアドレスが設定されていない |
+| `STRIPE_ERROR` | 500 | Stripe API呼び出し失敗（`message`に詳細） |
+| `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
+
+
+
 
 
 
