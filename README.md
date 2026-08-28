@@ -129,6 +129,131 @@ Next.js側にはAPI Routesを持たず、Stripe秘密鍵の使用や外部API連
 | `cancel-account-deletion` | POST | 必須（Supabase JWT） | 退会予約の取り消し（`deletion_requested`フラグを戻す） |
 | `stripe-webhook` | POST | Stripe署名検証（`verify_jwt: false`） | Stripeからのイベント通知を受信し、サブスク状態をDBに同期 |
 
+#### リクエスト/レスポンス型定義
+
+全エンドポイント共通のエラー形式を先に定義し、各エンドポイントの型はこれを参照する。
+
+\`\`\`typescript
+// 全エンドポイント共通のエラーレスポンス形式
+type ErrorResponse = {
+  error: string;    // UPPER_SNAKE_CASEのエラーコード（例: MISSING_PRICE_ID）
+  message?: string; // Stripe/DBエラー時の詳細メッセージ（人間可読な補足情報）
+};
+\`\`\`
+
+
+#### `create-checkout-session`
+
+Stripe Checkoutセッションを作成する。`user_id`を任意項目にしているのは、未ログイン状態での購入（ゲスト決済）を許容するためで、ログイン後に`check-guest-subscription`でメールアドレス突合による紐付けを行う設計と対応している。
+
+\`\`\`typescript
+type CreateCheckoutSessionRequest = {
+  priceId: string;
+  user_id?: string;       // 未ログイン購入（ゲスト決済）時は省略可
+  email?: string;
+  success_url: string;
+  cancel_url: string;
+};
+
+type CreateCheckoutSessionResponse = {
+  url: string;  // Stripe Checkoutへのリダイレクト先
+  id: string;   // Checkout Session ID
+};
+\`\`\`
+
+**エラー**
+
+| コード | ステータス | 発生条件 |
+|---|---|---|
+| `MISSING_PRICE_ID` | 400 | `priceId`が未指定 |
+| `MISSING_REDIRECT_URL` | 400 | `success_url`/`cancel_url`のいずれかが未指定 |
+| `PRICE_NOT_ALLOWED` | 400 | 環境変数`PRICE_IDS`の許可リストに含まれない`priceId`（`priceId`を含めて返却） |
+| `INVALID_JSON` | 400 | リクエストボディがJSONとしてパース不能 |
+| `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
+| `STRIPE_ERROR` | 500 | Stripe API呼び出し失敗（`message`に詳細） |
+
+#### `checkout-session-info`
+
+決済完了後の`/success`ページで、Stripe Checkoutの`session_id`から決済結果を取得する。メールアドレスは`customer_details.email`を優先し、取得できない場合のみ追加でCustomerオブジェクトを取得する（Checkout完了直後は`customer_details`が未確定なケースがあるための保険的フォールバック）。このエンドポイントはセッション個人情報を返すため、`cache-control: no-store`を明示している。
+
+\`\`\`typescript
+type CheckoutSessionInfoRequest = {
+  session_id: string;
+};
+
+type CheckoutSessionInfoResponse = {
+  email: string | null;
+  customer_id: string | null;
+  status: string;           // Stripe Checkout Sessionのstatus（'open' | 'complete' | 'expired' など）
+  payment_status: string;   // 'paid' | 'unpaid' | 'no_payment_required'
+  subscription_id: string | null;
+};
+\`\`\`
+
+**エラー**
+
+| コード | ステータス | 発生条件 |
+|---|---|---|
+| `MISSING_SESSION_ID` | 400 | `session_id`が未指定 |
+| `INVALID_JSON` | 400 | リクエストボディがJSONとしてパース不能 |
+| `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
+| `STRIPE_ERROR` | 500 | Stripe API呼び出し失敗（`message`に詳細） |
+
+#### `request-account-deletion`
+
+退会予約。リクエストボディは持たず、Supabase JWTのみで本人を特定する（`user_id`等をボディから受け取らない設計。フロントから偽装されたIDを信用しない）。
+
+有料会員（`active`/`trialing`/`past_due`）と無料会員でレスポンスの形が分岐する。有料会員の場合、即時削除はしない。Stripe側の契約終了日（`current_period_end`）まで猶予を持たせる`deletion_requested`フラグを立て、ユーザー希望で退会予約（Stripe側の契約終了日での退会）をすることができる。無料会員は猶予する契約が存在しないため`auth.users`を即時削除する。この非対称性を1つのエンドポイントに集約したのは、フロント側が会員種別を意識せず同じボタン・同じAPI呼び出しで退会フローを完結できるようにするため。
+
+\`\`\`typescript
+// リクエストボディなし（Authorizationヘッダーのみ）
+
+type RequestAccountDeletionResponse =
+  | { scheduled: true; effective_date: string | null } // 有料会員：契約終了日まで猶予
+  | { deleted: true };                                  // 無料会員：即時削除
+\`\`\`
+
+**エラー**
+
+| コード | ステータス | 発生条件 |
+|---|---|---|
+| `UNAUTHORIZED` | 401 | JWTが無い、または無効 |
+| `DB_ERROR` | 500 | `subscriptions`テーブルへの問い合わせ・更新失敗（`message`に詳細） |
+| `SUBSCRIPTION_NOT_CANCELLED` | 400 | 有料会員かつStripe側で`cancel_at_period_end`が未設定（フロントのボタン制御がバイパスされても、Stripe側で解約手続きが完了していない退会予約を拒否する保険） |
+| `DELETE_FAILED` | 500 | `auth.users`削除失敗（`message`に詳細） |
+| `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
+
+#### `stripe-webhook`
+
+Stripeからのイベント通知を受信する。**リクエスト/レスポンスとも、他6エンドポイントとは形式が異なる。**
+
+- リクエスト：JSONではなくStripeが生成する生のイベントペイロード。`stripe-signature`ヘッダーの署名検証（`stripe.webhooks.constructEventAsync`）でのみ認証し、Supabase JWTは使わない（呼び出し元がStripeのみで、フロントから直接叩かれることがないため）
+- レスポンス：JSONではなく**プレーンテキスト**。Stripeはレスポンスのステータスコードのみを見てリトライ要否を判断するため、構造化されたエラーコードを返す必要がない
+
+\`\`\`typescript
+// リクエストボディ：Stripe.Event（stripe-signatureヘッダーで署名検証）
+
+// レスポンス（プレーンテキスト、Content-Type指定なし）
+// 200 "ok"              : 正常処理
+// 200 "ok (duplicate)"  : stripe_eventsテーブルに同一event.idが既存（Stripeのリトライによる重複配信を無視）
+// 400 "invalid signature" : 署名検証失敗
+// 400 "handler error: ${message}" : ハンドラ内の未捕捉例外
+\`\`\`
+
+**処理するイベント種別**
+
+| イベント | 処理内容 |
+|---|---|
+| `checkout.session.completed` | `session.metadata.user_id`または`client_reference_id`から会員を特定し、`user_profiles`を更新。紐づくサブスクリプションがあれば同期 |
+| `customer.subscription.created`/`updated`/`deleted` | `subscriptions`/`user_profiles`をStripeの最新状態に同期。`deleted`の場合、`deletion_requested`フラグが立っていれば`auth.users`を物理削除する（`request-account-deletion`が立てた予約フラグを、実際の契約終了タイミングでここが実行に移す2段階構成） |
+| `invoice.paid`/`invoice.payment_succeeded` | 紐づくサブスクリプションを取得し同期 |
+| それ以外 | 何もしない（`200 "ok"`のみ返す） |
+
+**冪等性の仕組み**
+
+Stripeは同一イベントを複数回配信することがあるため、`stripe_events`テーブルに`event.id`を記録し、既存であれば処理をスキップする。
+
+
 #### 運用上の学び：`verify_jwt`とWebhook認証の落とし穴
 
 `stripe-webhook`は当初`verify_jwt: true`でデプロイされており、SupabaseプラットフォームレベルのJWT検証が、関数のコードに到達する前に全リクエストを`401 UNAUTHORIZED_NO_AUTH_HEADER`で拒否していた。StripeのWebhookはSupabaseのJWTではなく独自の署名（`stripe-signature`ヘッダー）で認証するため、この設定では関数内の署名検証ロジックに一切到達できず、サブスクリプションの状態同期が機能しない状態が続いていた。
