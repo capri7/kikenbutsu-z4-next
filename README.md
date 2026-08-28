@@ -337,13 +337,18 @@ type BillingPortalResponse = {
 Edge Functionのログを確認し、Stripe側からのリクエスト自体は届いているが401で弾かれていることを特定。`supabase/config.toml`に`[functions.stripe-webhook] verify_jwt = false`を追加して解消した。あわせて、GitHub ActionsのデプロイワークフローがトリガーパスとしてEdge Functionsのコード（`supabase/functions/**`）のみを監視しており、`config.toml`単体の変更では自動デプロイが走らない設計上の穴も同時に発見し、トリガーパスに`supabase/config.toml`を追加して修正した。
 
 ## 5. 実装・技術スタック
+
+
+**認証はmiddlewareを使わずページ単位で実装**：`src/middleware.ts`は存在せず、`src/lib/supabase/server.ts`（Server Component用）・`client.ts`（Client Component用）を各ページ・APIエンドポイントが個別に呼び出す構成。
+
+
 ## 5. 実装・技術スタック
 
 ### フロントエンド
 
 | 技術 | バージョン | 採用理由 |
 |---|---|---|
-| Next.js（App Router） | 16.2.10 | Server Components前提の設計で、認証済みユーザー情報の取得をサーバー側に寄せられる。バニラJS版（`dangerous-materials-fe4`）からの移植先として選定 |
+| Next.js（App Router） | 16.2.10 | Server Components前提の設計で、認証済みユーザー情報の取得をサーバー側に寄せられる。バニラJS版（`dangerous-materials-fe4`）からの移植先として選定し、現在は本番ドメイン`kikenbutsu-z4.com`で稼働中 |
 | React | 19.2.4 | React Compiler（後述）を利用するため19系が前提 |
 | TypeScript | ^5 | `strict: true`。API設計のリクエスト/レスポンス型を明示する運用（4章参照）はTypeScriptの型システムを前提にしている |
 | CSS Modules | - | コンポーネント単位でスタイルを閉じ込める目的で全面採用（92ファイル） |
@@ -358,14 +363,16 @@ Edge Functionのログを確認し、Stripe側からのリクエスト自体は�
 | Supabase Auth | 認証（JWT発行、`@supabase/ssr`でサーバー/クライアント両対応のセッション管理） |
 | Supabase Edge Functions（Deno） | Stripe秘密鍵を扱う処理・外部API連携の集約先（4章のAPI設計参照） |
 | Stripe | 決済・サブスクリプション管理 |
-| Vercel | Next.jsアプリのホスティング（Next.js版は本README作成時点で未デプロイ、バニラ版が本番稼働中） |
+| Vercel | Next.jsアプリのホスティング（本番稼働中） |
 | GitHub Actions | Edge Functionsのデプロイパイプライン（`supabase/functions/**`と`config.toml`の変更を検知して自動デプロイ） |
 
 ### 技術的なハイライト
 
 **React Compiler（`reactCompiler: true`）の有効化**：`next.config.ts`でReact Compilerを有効化し、`useMemo`/`useCallback`による手動最適化に頼らず、ビルド時の自動メモ化に委ねている。個人開発でレビュアーがいない環境では、手動最適化の付け忘れ・過剰適用のどちらのリスクも避けられる利点がある。
 
-**認証はmiddlewareを使わずページ単位で実装**：`src/middleware.ts`は存在せず、`src/lib/supabase/server.ts`（Server Component用）・`client.ts`（Client Component用）を各ページ・APIエンドポイントが個別に呼び出す構成。認可ロジックを集約するmiddleware方式ではなく、ページごとに明示的にチェックする方式を選んだ。
+**旧URL構造からの301リダイレクト**：バニラJS版からNext.js版への移行時、URL構造の変更に伴うリダイレクト設定が漏れており、Google Search Consoleにインデックス済みの66件のURLが404になっていた（4章参照とは別に、実装後に発覚し対応した障害）。Search ConsoleのエクスポートデータとNext.jsの実ルート一覧を機械的に突き合わせ、`next.config.ts`の`redirects()`に64件のマッピングを登録して解消した。
+
+**認証はmiddlewareを使わずページ単位で実装**：`src/middleware.ts`は存在せず、`src/lib/supabase/server.ts`（Server Component用）・`client.ts`（Client Component用）を各ページ・APIエンドポイントが個別に呼び出す構成。
 
 ## 6. テスト・品質保証 （今回のSuspenseケーススタディを含む）
 
