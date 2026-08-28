@@ -8,7 +8,7 @@ export const ALLOWED_ORIGINS = new Set([
 export function corsHeaders(origin: string | null) {
   const allowOrigin = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://kikenbutsu-z4.com";
   return {
-    "content-type": "application/json; charset=utf-8",
+    "content-type": "application/json",
     "access-control-allow-origin": allowOrigin,
     "access-control-allow-headers": "authorization, content-type, apikey, x-client-info",
     "access-control-allow-methods": "POST, OPTIONS",

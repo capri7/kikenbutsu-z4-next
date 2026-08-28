@@ -1,6 +1,7 @@
 // supabase/functions/create-checkout-session/index.ts
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Stripe from "https://esm.sh/stripe@14?target=denonext";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
 const ALLOW_LIST = (Deno.env.get("PRICE_IDS") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -8,25 +9,6 @@ const ALLOW_LIST = (Deno.env.get("PRICE_IDS") ?? "").split(",").map((s) => s.tri
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: "2024-06-20"
 });
-
-// ---- CORS（許可リスト方式。billing-portal等他のEdge Functionと統一） ----
-const ALLOWED_ORIGINS = new Set([
-  "https://kikenbutsu-z4.com",
-  "https://www.kikenbutsu-z4.com",
-  "http://localhost:5173",
-  "http://localhost:3000"
-]);
-
-function corsHeaders(origin) {
-  const allowOrigin = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://kikenbutsu-z4.com";
-  return {
-    "content-type": "application/json; charset=utf-8",
-    "access-control-allow-origin": allowOrigin,
-    "access-control-allow-headers": "authorization, content-type, apikey, x-client-info",
-    "access-control-allow-methods": "POST, OPTIONS",
-    "vary": "Origin"
-  };
-}
 
 const j = (body, status, headers) =>
   new Response(JSON.stringify(body), { status, headers });
