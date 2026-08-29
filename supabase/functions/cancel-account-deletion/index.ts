@@ -3,6 +3,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { admin } from "../_shared/stripeSync.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getAuthenticatedUser } from "../_shared/auth.ts";
+import { decideCancelDeletion } from "./decision.ts";
 
 const j = (body, status, headers) =>
   new Response(JSON.stringify(body), { status, headers });
@@ -28,16 +29,21 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (subErr) return j({ error: "DB_ERROR", message: subErr.message }, 500, headers);
-  if (!subRow) return j({ error: "NO_SUBSCRIPTION" }, 404, headers);
 
-  if (!subRow.deletion_requested) {
+  const decision = decideCancelDeletion(subRow);
+
+  if (decision.action === "reject") {
+    return j({ error: decision.error }, 404, headers);
+  }
+
+  if (decision.action === "noop") {
     return j({ cancelled: true, already: true }, 200, headers);
   }
 
   const { error: updateErr } = await admin
     .from("subscriptions")
     .update({ deletion_requested: false, updated_at: new Date().toISOString() })
-    .eq("id", subRow.id);
+    .eq("id", decision.subscriptionId);
 
   if (updateErr) return j({ error: "DB_ERROR", message: updateErr.message }, 500, headers);
 
