@@ -2,6 +2,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Stripe from "https://esm.sh/stripe@14?target=denonext";
 import { corsHeaders } from "../_shared/cors.ts";
+import { validateCheckoutRequest } from "./decision.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
 const ALLOW_LIST = (Deno.env.get("PRICE_IDS") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -32,16 +33,12 @@ Deno.serve(async (req) => {
 
   const { priceId, user_id, email, success_url, cancel_url } = body;
 
-  if (!priceId) return j({ error: "MISSING_PRICE_ID" }, 400, headers);
-
-  // success_url / cancel_url は呼び出し元が必ず明示的に渡す（デフォルト値は持たない）
-  if (!success_url || !cancel_url) {
-    return j({ error: "MISSING_REDIRECT_URL" }, 400, headers);
-  }
-
-  // 任意の価格制限（PRICE_IDS が設定されていればチェック）
-  if (ALLOW_LIST.length && !ALLOW_LIST.includes(priceId)) {
-    return j({ error: "PRICE_NOT_ALLOWED", priceId }, 400, headers);
+  const validation = validateCheckoutRequest({ priceId, success_url, cancel_url }, ALLOW_LIST);
+  if (!validation.valid) {
+    if (validation.error === "PRICE_NOT_ALLOWED") {
+      return j({ error: validation.error, priceId: validation.priceId }, 400, headers);
+    }
+    return j({ error: validation.error }, 400, headers);
   }
 
   try {
