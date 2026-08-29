@@ -389,7 +389,7 @@ Edge Functions（Deno）とNext.js（Node/Vite）でランタイムが異なる�
 
 | 層 | 対象 | ツール |
 |---|---|---|
-| Edge Functions | 分岐ロジック（判定関数として切り出したもの） | `Deno.test` |y
+| Edge Functions | 分岐ロジック（判定関数として切り出したもの） | `Deno.test` |
 | Next.js単体テスト | ユーティリティ関数・同期Client Components | Vitest + React Testing Library |
 | E2Eテスト | サインアップ〜決済〜マイページ等のフロー、非同期Server Components | Playwright（未着手） |
 
