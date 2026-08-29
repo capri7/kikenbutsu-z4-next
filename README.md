@@ -397,20 +397,19 @@ Edge Functions（Deno）とNext.js（Node/Vite）でランタイムが異なる�
 
 ### 現在のテストカバレッジ
 
-| 関数 | 状態 |
+| 対象 | 状態 |
 |---|---|
 | `request-account-deletion` | ✅ `decision.ts`切り出し済み、7パターンをユニットテスト |
 | `cancel-account-deletion` | ✅ `decision.ts`切り出し済み、4パターンをユニットテスト |
-| `stripe-webhook` | ✅ `_shared/periodEnd.ts`切り出し済み |
 | `stripe-webhook` | ✅ `decision.ts`切り出し済み、6パターンをユニットテスト |
+| `_shared/periodEnd.ts`（`stripe-webhook`・`check-guest-subscription`共通） | ✅ 7パターンをユニットテスト |
 | `create-checkout-session`・`checkout-session-info`・`check-guest-subscription`・`billing-portal` | 未着手 |
 | Next.js側（Vitest） | 未着手 |
 | E2E（Playwright） | 未着手 |
 
-
 ### 共通ロジックの抽出とテストの重複排除（`_shared/periodEnd.ts`）
 
-`stripe-webhook`のテストを書く過程で、`check-guest-subscription`にも**同一の契約終了日解決ロジックがコピペされている**ことが判明した。`check-guest-subscription`側のコードには「stripe-webhookと同じ取得順に統一」というコメントが残っており、これは**コメントによる手動同期**という、DRY原則の観点で最も壊れやすいパターンだった。片方だけ修正してもう片方を直し忘れると、2つの関数でユーザーに見せる契約終了日の計算が食い違う状態になり得るが、コメントはこの不整合を検知する仕組みを何も提供しない。
+`stripe-webhook`のテストを書く過程で、`check-guest-subscription`にも同一の契約終了日解決ロジックが存在していることに気づいた。当時は「stripe-webhookと同じ取得順に統一」というコメントを残すことで整合性を保とうとしていたが、コメントによる手動同期は、片方を修正してもう片方を直し忘れた場合にそれを検知する仕組みを何も提供しない、壊れやすいパターンである。テストを書く過程でこの重複に気づいたこと自体が、テストを書く価値を示している。
 
 対応として、ロジックを`supabase/functions/_shared/periodEnd.ts`に切り出し、`stripe-webhook`・`check-guest-subscription`の両方が同じ関数を参照する形にした（7パターンをユニットテスト）。
 
