@@ -405,6 +405,18 @@ Edge Functions（Deno）とNext.js（Node/Vite）でランタイムが異なる�
 | Next.js側（Vitest） | 未着手 |
 | E2E（Playwright） | 未着手 |
 
+### `stripe-webhook`のユニットテスト（13パターン）
+
+Edge FunctionsはSupabase/Stripeへの実際の呼び出しと分岐ロジックが密結合しており、そのままではDB・外部APIに接続しないとテストできない。分岐ロジックだけを`decision.ts`として切り出し、実際の接続を挟まず`Deno.test`で全パターンを検証できる形にした。全関数を同じ密度でテストするのではなく、金銭・個人情報の削除が絡み誤りの影響が大きい`stripe-webhook`を最優先で着手した。
+
+3つの判定ロジックを検証している。
+
+- **契約終了日の解決順序**（`items.data[0].current_period_end` → `current_period_end` → `cancel_at` → `trial_end` → `ended_at`。優先順位を誤るとユーザーに見せる契約終了日がずれる。Unixエポック`0`という境界値でnullish coalescing演算子（`??`）が正しく機能するかも確認している）
+- **冪等性チェックの応答決定**（Stripeは同一イベントを複数回配信することがあり、重複を後続処理に進めてしまうと二重同期・二重課金処理につながる）
+- **アカウント物理削除の実行条件**（`deletion_requested`フラグと`user_id`解決の両方が揃った場合のみ`auth.users`を削除する。片方だけでは削除しないことを個別に検証し、退会予約と無関係なユーザーが誤って削除されることを防ぐ）
+
+実装ロジック自体は変更せず、既存の分岐を関数として切り出した上でテストを追加した。
+
 ## 7. 今後の課題
 
 
