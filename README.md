@@ -417,7 +417,7 @@ Edge Functions（Deno）とNext.js（Node/Vite）でランタイムが異なる�
 
 ### `stripe-webhook`のユニットテスト（6パターン）
 
-Edge FunctionsはSupabase/Stripeへの実際の呼び出しと分岐ロジックが密結合しており、そのままではDB・外部APIに接続しないとテストできない。分岐ロジックだけを`decision.ts`として切り出し、実際の接続を挟まず`Deno.test`で全パターンを検証できる形にした。全関数を同じ密度でテストするのではなく、金銭・個人情報の削除が絡み誤りの影響が大きい`stripe-webhook`を最優先で着手した。
+_shared/periodEnd.tsを作成し、重複を排除したことで、分岐ロジックだけを`decision.ts`として切り出すことができた。実際の接続を挟まず`Deno.test`で全パターンを検証できる形に修正。全関数を同じ密度でテストするのではなく、金銭・個人情報の削除が絡み誤りの影響が大きい`stripe-webhook`を最優先で着手した。
 
 契約終了日の解決ロジックは上記の通り`_shared/periodEnd.ts`に切り出したため、`stripe-webhook`固有では残り2つの判定ロジックを検証している。
 
