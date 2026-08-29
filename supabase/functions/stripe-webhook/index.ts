@@ -12,7 +12,7 @@ import {
   decideWebhookResponse,
   shouldPhysicallyDeleteUser,
 } from "./decision.ts";
-import { resolveCurrentPeriodEnd } from "../_shared/periodEnd.ts";
+import { resolveCurrentPeriodEnd, type PeriodEndSource } from "../_shared/periodEnd.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
 const STRIPE_WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET")!;
@@ -62,11 +62,12 @@ async function getEmailForSubscription(
       const inv = await stripe.invoices.retrieve(invId);
       if (inv.customer_email) return inv.customer_email;
     }
+
     const customerId =
       typeof sub.customer === "string" ? sub.customer : sub.customer?.id;
     if (customerId) {
       const cust = await stripe.customers.retrieve(customerId);
-      const email = (cust as any)?.email as string | undefined;
+      const email = "deleted" in cust ? undefined : (cust.email ?? undefined);
       if (email) return email;
     }
   } catch (e) {
@@ -105,7 +106,13 @@ async function syncFromSubscription(
   const email = await getEmailForSubscription(sub);
   const status = (sub.status ?? "none").toLowerCase();
 
-   const periodEndSec = resolveCurrentPeriodEnd(sub as any);
+
+  // Stripeは2025-03-31のBasil APIバージョンでSubscription直下のcurrent_period_endを廃止し、
+  // items.data[].current_period_endに移行した。当プロジェクトはBasil以前のAPIバージョン
+  // （2024-06-20）を使っており実行時には直下のフィールドが存在するが、esm.sh経由で読み込む
+  // 型定義はBasil以降の形を反映しているため、型とランタイムの実態がズレる。
+  // PeriodEndSourceへの限定キャストで、読み取る5フィールドの範囲だけ安全性を確保している。
+  const periodEndSec = resolveCurrentPeriodEnd(sub as unknown as PeriodEndSource);
   const currentPeriodEnd = toIsoOrNull(periodEndSec);
 
   await upsertUserProfiles({

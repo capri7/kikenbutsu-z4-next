@@ -5,13 +5,15 @@
  * 優先順位: items.data[0].current_period_end > current_period_end > cancel_at > trial_end > ended_at
  * どれも存在しなければ null。
  */
-export function resolveCurrentPeriodEnd(sub: {
+export type PeriodEndSource = {
   items?: { data?: Array<{ current_period_end?: number | null }> };
   current_period_end?: number | null;
   cancel_at?: number | null;
   trial_end?: number | null;
   ended_at?: number | null;
-}): number | null {
+};
+
+export function resolveCurrentPeriodEnd(sub: PeriodEndSource): number | null {
   return (
     sub.items?.data?.[0]?.current_period_end ??
     sub.current_period_end ??

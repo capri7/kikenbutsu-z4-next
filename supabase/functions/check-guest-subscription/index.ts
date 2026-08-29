@@ -4,7 +4,7 @@ import Stripe from "https://esm.sh/stripe@14?target=denonext";
 import { toIsoOrNull, upsertUserProfiles, upsertSubscriptions } from "../_shared/stripeSync.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getAuthenticatedUser } from "../_shared/auth.ts";
-import { resolveCurrentPeriodEnd } from "../_shared/periodEnd.ts";
+import { resolveCurrentPeriodEnd, type PeriodEndSource } from "../_shared/periodEnd.ts";
 import { findActiveSubscription } from "./decision.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
 
   if (req.method !== "POST")   return j({ error: "METHOD_NOT_ALLOWED" }, 405);
 
-// 認証: リクエストのJWTから本人を確定する。email/user_idはリクエストボディから信用しない
+  // 認証: リクエストのJWTから本人を確定する。email/user_idはリクエストボディから信用しない
   const { user, error: authErr } = await getAuthenticatedUser(req);
   if (authErr) return j({ error: authErr }, 401);
 
@@ -45,7 +45,12 @@ Deno.serve(async (req) => {
       const active = findActiveSubscription(subs.data);
 
       if (active) {
-        const periodEndSec = resolveCurrentPeriodEnd(active as any);
+        // Stripeは2025-03-31のBasil APIバージョンでSubscription直下のcurrent_period_endを廃止し、
+        // items.data[].current_period_endに移行した。当プロジェクトはBasil以前のAPIバージョン
+        // （2024-06-20）を使っており実行時には直下のフィールドが存在するが、esm.sh経由で読み込む
+        // 型定義はBasil以降の形を反映しているため、型とランタイムの実態がズレる。
+        // PeriodEndSourceへの限定キャストで、読み取る5フィールドの範囲だけ安全性を確保している。
+        const periodEndSec = resolveCurrentPeriodEnd(active as unknown as PeriodEndSource);
         const currentPeriodEnd = toIsoOrNull(periodEndSec);
         const status = active.status.toLowerCase();
 
