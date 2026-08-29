@@ -4,6 +4,8 @@ import Stripe from "https://esm.sh/stripe@14?target=denonext";
 import { toIsoOrNull, upsertUserProfiles, upsertSubscriptions } from "../_shared/stripeSync.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getAuthenticatedUser } from "../_shared/auth.ts";
+import { resolveCurrentPeriodEnd } from "../_shared/periodEnd.ts";
+import { findActiveSubscription } from "./decision.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
 
@@ -19,7 +21,7 @@ Deno.serve(async (req) => {
 
   if (req.method !== "POST")   return j({ error: "METHOD_NOT_ALLOWED" }, 405);
 
-  // 認証: リクエストのJWTから本人を確定する。email/user_idはリクエストボディから信用しない
+// 認証: リクエストのJWTから本人を確定する。email/user_idはリクエストボディから信用しない
   const { user, error: authErr } = await getAuthenticatedUser(req);
   if (authErr) return j({ error: authErr }, 401);
 
@@ -40,18 +42,10 @@ Deno.serve(async (req) => {
         limit: 10,
       });
 
-      const active = subs.data.find(
-        (s) => s.status === "active" || s.status === "trialing"
-      );
+      const active = findActiveSubscription(subs.data);
 
       if (active) {
-        // stripe-webhookと同じ取得順（items.data[0]優先）に統一
-        const periodEndSec =
-          (active as any).items?.data?.[0]?.current_period_end ??
-          (active as any).current_period_end ??
-          (active as any).cancel_at ??
-          (active as any).trial_end ??
-          (active as any).ended_at ?? null;
+        const periodEndSec = resolveCurrentPeriodEnd(active as any);
         const currentPeriodEnd = toIsoOrNull(periodEndSec);
         const status = active.status.toLowerCase();
 
@@ -81,13 +75,3 @@ Deno.serve(async (req) => {
     return j({ error: "STRIPE_ERROR", message: String(e) }, 500);
   }
 });
-
-
-
-
-
-
-
-
-
-
