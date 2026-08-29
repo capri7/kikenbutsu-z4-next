@@ -406,7 +406,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `check-guest-subscription` | ✅ 6パターン |
 | `create-checkout-session` | ✅ 7パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いためE2Eでカバー） |
-| Next.js側（Vitest） | 未着手 |
+| Next.js側（Vitest） | ✅ 9パターン（`getFeedbackMessage`5・`formatChoiceText`4） |
 | E2E（Playwright） | 未着手 |
 
 ### `request-account-deletion`（7パターン）
@@ -447,6 +447,22 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 Stripe Checkoutセッション作成前のリクエストバリデーション（`priceId`必須、`success_url`/`cancel_url`必須、環境変数`PRICE_IDS`による価格許可リスト）を検証している。
 
 チェック順序（`priceId`→リダイレクトURL→許可リスト）を意図的にテストで固定した。優先度の低いチェックが先に実行されて誤ったエラーコードを返す、という将来の実装変更によるリグレッションを防ぐため。`checkout-session-info`・`billing-portal`は判定ロジックがほぼ無いので、ユニットテストではなく後述のE2Eでカバーする方針とした。
+
+### Next.js側（Vitest）：`getFeedbackMessage` / `formatChoiceText`（9パターン）
+
+クイズの正誤判定ロジック（`src/lib/feedback.ts`）を検証している。既にSupabaseへの呼び出しを含まない純粋関数として実装されていたため、Edge Functionsのような切り出し作業は不要だった。
+
+このロジックには、否定形問題（「適切でないものを選べ」形式、`feedback_mode: 'negation'`）特有の分岐がある。`questionIsCorrect`（公式な正解番号と一致したか）は常に選択番号だけで決まるのに対し、`contentIsCorrect`（選んだ選択肢の内容が客観的に正しいか）は否定形問題の場合に反転する。この2つの値が意図的に食い違う4パターン（通常問題の正解/不正解、否定形問題の正解/不正解）を個別に検証し、この分岐を取り違えた場合に成績記録が反転するリスクに備えた。
+
+### Next.js側（Vitest）：`getFeedbackMessage` / `formatChoiceText`（9パターン）
+
+クイズの正誤判定ロジック（`src/lib/feedback.ts`）を検証している。既にSupabaseへの呼び出しを含まない純粋関数として実装されていたため、Edge Functionsのような切り出し作業は不要だった。
+
+このロジックには、否定形問題（「適切でないものを選べ」形式）特有の注意点がある。例えば「ガソリンの性質として誤っているものを選べ」という設問で、選択肢3が「誤った内容」＝公式の正解だとする。受験者が選択肢3を選んだ場合、「設問に正解した」ことにはなるが、「選んだ選択肢3自体の内容」は誤りである。この2つは別物であり、`questionIsCorrect`（設問に正解したか）と`contentIsCorrect`（選んだ内容自体が正しいか）という2つの値に分けて管理している。否定形問題でこの2つが逆転することを取り違えると、成績記録が反転しかねないため、通常問題・否定形問題それぞれで正解/不正解の4パターンを個別に検証した。
+
+**セットアップ**：Next.js公式ドキュメントに沿って、Vitest・React Testing Library・jsdomを導入した。`vitest.config.mts`で`supabase/**`を検索対象から除外している（Edge Functions側は`Deno.test`という別のテストランナーを使っており、混在させるとVitestが誤って実行しようとしてエラーになるため）。
+
+
 
 ## 7. 今後の課題
 
