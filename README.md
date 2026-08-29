@@ -390,7 +390,7 @@ Edge Functions（Deno）とNext.js（Node/Vite）でランタイムが異なる�
 | 層 | 対象 | ツール |
 |---|---|---|
 | Edge Functions | 分岐ロジック（判定関数として切り出したもの） | `Deno.test` |
-| Next.js単体テスト | ユーティリティ関数・同期Client Components | Vitest + React Testing Library（未着手） |
+| Next.js単体テスト | ユーティリティ関数・同期Client Components | Vitest + React Testing Library |
 | E2Eテスト | サインアップ〜決済〜マイページ等のフロー、非同期Server Components | Playwright（未着手） |
 
 Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密結合しており、そのままではDB・外部APIに接続しないとテストできない。そこで各関数の分岐ロジックだけを`decision.ts`として切り出し、実際の接続を挟まず全パターンを検証できる形にした。全関数を同じ密度でテストするのではなく、金銭・個人情報の削除が絡み誤りの影響が大きい関数（`request-account-deletion`・`cancel-account-deletion`・`stripe-webhook`）から優先的に着手している。
