@@ -421,7 +421,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 
 ロジックを`supabase/functions/_shared/periodEnd.ts`に切り出し、`stripe-webhook`・`check-guest-subscription`の両方が同じ関数を参照する形にした。優先順位（`items.data[0].current_period_end` → `current_period_end` → `cancel_at` → `trial_end` → `ended_at`）を誤るとユーザーに見せる契約終了日がずれるため、境界値（Unixエポック`0`）を含めて検証している。
 
-同じロジックを2箇所でテストすると、テストは「両方ともgreen」でも、実装そのものが将来ズレた場合に気づけない。1箇所に集約してから1回だけテストすることで、「ロジックが1つしか存在しない」こと自体が正しさの担保になる。
+同じロジックを2箇所に置いたまま個別にテストすると、片方だけ修正した場合、修正していない側のテストは古い実装に対して通り続けるため、両方とも green のまま、2つの実装がズレたこと自体を検知する仕組みがない。1箇所に集約してから1回だけテストすることで、「ロジックが1つしか存在しない」こと自体が正しさの担保になる。
 
 ### `stripe-webhook`（6パターン）
 
