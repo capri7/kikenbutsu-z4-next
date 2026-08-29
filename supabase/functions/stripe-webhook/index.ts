@@ -8,6 +8,12 @@ import {
   upsertSubscriptions,
 } from "../_shared/stripeSync.ts";
 
+import {
+  resolveCurrentPeriodEnd,
+  decideWebhookResponse,
+  shouldPhysicallyDeleteUser,
+} from "./decision.ts";
+
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
 const STRIPE_WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET")!;
 
@@ -99,14 +105,7 @@ async function syncFromSubscription(
   const email = await getEmailForSubscription(sub);
   const status = (sub.status ?? "none").toLowerCase();
 
-  const periodEndSec =
-    (sub as any).items?.data?.[0]?.current_period_end ??
-    (sub as any).current_period_end ??
-    (sub as any).cancel_at ??
-    (sub as any).trial_end ??
-    (sub as any).ended_at ??
-    null;
-
+   const periodEndSec = resolveCurrentPeriodEnd(sub as any);
   const currentPeriodEnd = toIsoOrNull(periodEndSec);
 
   await upsertUserProfiles({
@@ -174,6 +173,7 @@ async function processEvent(event: Stripe.Event, livemode: boolean) {
         const sub = event.data.object as Stripe.Subscription;
         const user_id = await syncFromSubscription(sub, livemode);
 
+
         if (event.type === "customer.subscription.deleted") {
           if (!user_id) {
             console.warn(
@@ -187,7 +187,7 @@ async function processEvent(event: Stripe.Event, livemode: boolean) {
               .eq("stripe_subscription_id", sub.id)
               .maybeSingle();
 
-            if (subRow?.deletion_requested) {
+            if (shouldPhysicallyDeleteUser(user_id, subRow?.deletion_requested)) {
               const { error: delError } =
                 await admin.auth.admin.deleteUser(user_id);
               if (delError) {
@@ -253,9 +253,11 @@ Deno.serve(async (req) => {
       .eq("id", event.id)
       .maybeSingle();
 
-    if (existingEvent) {
+    const responseDecision = decideWebhookResponse(!!existingEvent);
+
+    if (!responseDecision.shouldProcess) {
       console.log("[webhook] duplicate event, skipping:", event.id);
-      return new Response("ok (duplicate)", { status: 200 });
+      return new Response(responseDecision.body, { status: responseDecision.status });
     }
 
     const { error: logError } = await admin.from("stripe_events").insert({
@@ -268,11 +270,9 @@ Deno.serve(async (req) => {
       console.error("[webhook] failed to log stripe event:", logError);
     }
 
-    // 署名検証・冪等性チェック・イベント記録までは同期で終わらせ、
-    // Stripe APIへの追加呼び出しを伴う実処理はバックグラウンドに回して即座に200を返す
     EdgeRuntime.waitUntil(processEvent(event, livemode));
 
-    return new Response("ok", { status: 200 });
+    return new Response(responseDecision.body, { status: responseDecision.status });
   } catch (e) {
     console.error("handler error:", e);
     return new Response(`handler error: ${String(e)}`, { status: 400 });
