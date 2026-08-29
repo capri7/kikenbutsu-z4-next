@@ -401,9 +401,12 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 |---|---|
 | `request-account-deletion` | ✅ 7パターン |
 | `cancel-account-deletion` | ✅ 4パターン |
-| `stripe-webhook` | ✅ 6パターン |
 | `_shared/periodEnd.ts`（`stripe-webhook`・`check-guest-subscription`共通） | ✅ 7パターン |
-| `create-checkout-session`・`checkout-session-info`・`check-guest-subscription`・`billing-portal` | 未着手 |
+| `stripe-webhook` | ✅ 6パターン |
+| `check-guest-subscription` | ✅ 6パターン |
+| `create-checkout-session` | 未着手 |
+| `checkout-session-info` | 未着手 |
+| `billing-portal` | 未着手 |
 | Next.js側（Vitest） | 未着手 |
 | E2E（Playwright） | 未着手 |
 
@@ -431,6 +434,14 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 - **アカウント物理削除の実行条件**：`deletion_requested`フラグと`user_id`解決の両方が揃った場合のみ`auth.users`を削除する。片方だけでは削除しないことを個別に検証し、退会予約と無関係なユーザーが誤って削除されることを防ぐ
 
 いずれの関数も実装ロジック自体は変更せず、既存の分岐を関数として切り出した上でテストを追加した。
+
+### `check-guest-subscription`（6パターン）
+
+未ログイン状態で決済したゲストユーザーが、後からログインした際にメールアドレス突合でStripeの契約を紐付ける機能。複数のStripe顧客の契約一覧から、`active`/`trialing`状態の契約を探す選択ロジックを検証している。
+
+判定対象を1顧客分のサブスクリプション配列に絞ることで、複数顧客をループする実際のAPI呼び出しから選択ロジックだけを独立してテストできる形にした。ジェネリクス（`<T extends { status: string }>`）を使い、渡した配列の要素の型をそのまま返す設計にしたことで、呼び出し側で契約IDによる再検索が発生しない。
+
+このテストを書く過程で、契約終了日の解決ロジックが`stripe-webhook`と重複していることに気づき、`_shared/periodEnd.ts`への共通化につながった（詳細は前項）。
 
 
 ## 7. 今後の課題
