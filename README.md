@@ -389,7 +389,7 @@ Edge Functions（Deno）とNext.js（Node/Vite）でランタイムが異なる�
 
 | 層 | 対象 | ツール |
 |---|---|---|
-| Edge Functions | 分岐ロジック（判定関数として切り出したもの） | `Deno.test` |
+| Edge Functions | 分岐ロジック（判定関数として切り出したもの） | `Deno.test` |y
 | Next.js単体テスト | ユーティリティ関数・同期Client Components | Vitest + React Testing Library |
 | E2Eテスト | サインアップ〜決済〜マイページ等のフロー、非同期Server Components | Playwright（未着手） |
 
@@ -456,8 +456,25 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 **セットアップ**：Next.js公式ドキュメントに沿って、Vitest・React Testing Library・jsdomを導入した。`vitest.config.mts`で`supabase/**`を検索対象から除外している（Edge Functions側は`Deno.test`という別のテストランナーを使っており、混在させるとVitestが誤って実行しようとしてエラーになるため）。
 
-
-
 ## 7. 今後の課題
+
+### テスト関連
+
+- **E2Eテスト（Playwright）**：`playwright.config.ts`・依存パッケージの導入は完了しているが、ブラウザバイナリ（Chromium）のダウンロードが、開発環境のネットワーク環境（Playwright公式CDNへの接続が不安定）により未完了。コード側の問題ではなく実行環境側の制約のため、安定した回線で改めて`npx playwright install`を実行すれば解消する見込み。優先して書く価値がある項目は、`useSearchParams`とSuspense境界のケーススタディ（本番ビルドでのみ顕在化する不具合のため、ユニットテストでは検出できない）と、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E待ちとした2関数）
+- **Next.js側の他のユーティリティ関数**：`src/lib/feedback.ts`のみ着手済み。特に`src/lib/subscription.ts`の`isSubscribed()`は、契約ステータスに加えて「契約終了日時から60秒の猶予期間」を設けた判定ロジックを持っており、境界値のテスト価値が高い。他（`account.ts`・`mistakes.ts`・`review.ts`・`progress.ts`）は主にSupabase呼び出しのラッパーで、判定ロジックの比率が低いため優先度は下がる
+
+### 型安全性
+
+**対応済み**：`check-guest-subscription`・`stripe-webhook`にあった3箇所の`as any`を解消した。契約終了日の解決部分（2箇所）は、範囲を`PeriodEndSource`型に限定したアサーション（`as unknown as PeriodEndSource`）に変更。顧客のメールアドレス取得部分（`stripe-webhook`）は、`"deleted" in cust`による型の絞り込みに変更し、キャスト自体を排除した。
+
+原因はStripeが2025-03-31のBasil APIバージョンで`Subscription`直下の`current_period_end`を廃止し`items.data[].current_period_end`に移行したこと。当プロジェクトはBasil以前のAPIバージョン（2024-06-20）を使っており実行時には直下のフィールドが存在するが、`esm.sh`経由で読み込む型定義はBasil以降の形を反映しているため、型とランタイムの実態がズレる。
+
+**この対応は完全ではない**。`as unknown as PeriodEndSource`は依然として型アサーション（コンパイラに「この形だと信じてよい」と伝えるだけの記述）であり、実行時にStripeから返る値が本当にこの形をしている保証はコンパイラの外にある。抜本的な解決には、Basil以降のAPIバージョンへの全面移行（`items.data[].current_period_end`だけを正とする設計への作り替え）か、`zod`等によるスキーマ検証を実行時に挟む対応が必要になるが、どちらも決済まわり全体への影響が大きいため今回のスコープ外とした。
+
+### 運用タスク
+
+- `stripe-webhook`の`current_period_end`自動更新が、実際のサブスクリプション更新（2026-08-31予定）で正しく機能するかの実地確認が未実施
+- 旧バニラJS版（`dangerous-materials-fe4`）のVercelプロジェクト削除（2026-09-01予定、Next.js版への完全移行が確認できてから実施）
+- `supabase/functions/`を独立したリポジトリへ切り出す作業（優先度は低く、緊急のバグ修正を優先してきたため未着手のまま）
 
 
