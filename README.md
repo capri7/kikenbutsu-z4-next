@@ -405,8 +405,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `stripe-webhook` | ✅ 6パターン |
 | `check-guest-subscription` | ✅ 6パターン |
 | `create-checkout-session` | ✅ 7パターン |
-| `checkout-session-info` | 未着手 |
-| `billing-portal` | 未着手 |
+| `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いためE2Eでカバー） |
 | Next.js側（Vitest） | 未着手 |
 | E2E（Playwright） | 未着手 |
 
