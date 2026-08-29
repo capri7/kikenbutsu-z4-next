@@ -401,7 +401,8 @@ Edge Functions（Deno）とNext.js（Node/Vite）でランタイムが異なる�
 |---|---|
 | `request-account-deletion` | ✅ `decision.ts`切り出し済み、7パターンをユニットテスト |
 | `cancel-account-deletion` | ✅ `decision.ts`切り出し済み、4パターンをユニットテスト |
-| `create-checkout-session`・`checkout-session-info`・`check-guest-subscription`・`billing-portal`・`stripe-webhook` | 未着手 |
+| `stripe-webhook` | ✅ `decision.ts`切り出し済み、13パターンをユニットテスト |
+| `create-checkout-session`・`checkout-session-info`・`check-guest-subscription`・`billing-portal` | 未着手 |
 | Next.js側（Vitest） | 未着手 |
 | E2E（Playwright） | 未着手 |
 
