@@ -404,7 +404,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `_shared/periodEnd.ts`（`stripe-webhook`・`check-guest-subscription`共通） | ✅ 7パターン |
 | `stripe-webhook` | ✅ 6パターン |
 | `check-guest-subscription` | ✅ 6パターン |
-| `create-checkout-session` | 未着手 |
+| `create-checkout-session` | ✅ 7パターン |
 | `checkout-session-info` | 未着手 |
 | `billing-portal` | 未着手 |
 | Next.js側（Vitest） | 未着手 |
@@ -443,6 +443,11 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 
 このテストを書く過程で、契約終了日の解決ロジックが`stripe-webhook`と重複していることに気づき、`_shared/periodEnd.ts`への共通化につながった（詳細は前項）。
 
+### `create-checkout-session`（7パターン）
+
+Stripe Checkoutセッション作成前のリクエストバリデーション（`priceId`必須、`success_url`/`cancel_url`必須、環境変数`PRICE_IDS`による価格許可リスト）を検証している。
+
+チェック順序（`priceId`→リダイレクトURL→許可リスト）を意図的にテストで固定した。優先度の低いチェックが先に実行されて誤ったエラーコードを返す、という将来の実装変更によるリグレッションを防ぐため。`checkout-session-info`・`billing-portal`は判定ロジックがほぼ無いので、ユニットテストではなく後述のE2Eでカバーする方針とした。
 
 ## 7. 今後の課題
 
