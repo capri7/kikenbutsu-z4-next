@@ -393,38 +393,45 @@ Edge Functions（Deno）とNext.js（Node/Vite）でランタイムが異なる�
 | Next.js単体テスト | ユーティリティ関数・同期Client Components | Vitest + React Testing Library（未着手） |
 | E2Eテスト | サインアップ〜決済〜マイページ等のフロー、非同期Server Components | Playwright（未着手） |
 
-**設計判断**：Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密結合していたため、そのままではテストできなかった。分岐ロジックだけを`decision.ts`として切り出し、DB/Stripeへの接続を挟まずに全パターンを検証できる形にした。
+Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密結合しており、そのままではDB・外部APIに接続しないとテストできない。そこで各関数の分岐ロジックだけを`decision.ts`として切り出し、実際の接続を挟まず全パターンを検証できる形にした。全関数を同じ密度でテストするのではなく、金銭・個人情報の削除が絡み誤りの影響が大きい関数（`request-account-deletion`・`cancel-account-deletion`・`stripe-webhook`）から優先的に着手している。
 
 ### 現在のテストカバレッジ
 
 | 対象 | 状態 |
 |---|---|
-| `request-account-deletion` | ✅ `decision.ts`切り出し済み、7パターンをユニットテスト |
-| `cancel-account-deletion` | ✅ `decision.ts`切り出し済み、4パターンをユニットテスト |
-| `stripe-webhook` | ✅ `decision.ts`切り出し済み、6パターンをユニットテスト |
-| `_shared/periodEnd.ts`（`stripe-webhook`・`check-guest-subscription`共通） | ✅ 7パターンをユニットテスト |
+| `request-account-deletion` | ✅ 7パターン |
+| `cancel-account-deletion` | ✅ 4パターン |
+| `stripe-webhook` | ✅ 6パターン |
+| `_shared/periodEnd.ts`（`stripe-webhook`・`check-guest-subscription`共通） | ✅ 7パターン |
 | `create-checkout-session`・`checkout-session-info`・`check-guest-subscription`・`billing-portal` | 未着手 |
 | Next.js側（Vitest） | 未着手 |
 | E2E（Playwright） | 未着手 |
 
-### 共通ロジックの抽出とテストの重複排除（`_shared/periodEnd.ts`）
+### `request-account-deletion`（7パターン）
+
+有料会員（`active`/`trialing`/`past_due`）と無料会員の分岐、Stripe側で解約手続きが完了していない場合の拒否（`SUBSCRIPTION_NOT_CANCELLED`）、サブスクリプション未登録ユーザーの扱い、`status`の大文字小文字を検証している。退会は個人情報の削除に直結するため、判定を誤ると「削除すべきでないユーザーを消す」「削除すべきユーザーを消し損なう」のどちらの事故も起こり得る。
+
+### `cancel-account-deletion`（4パターン）
+
+退会予約が存在しない場合の拒否（`NO_SUBSCRIPTION`）、既に取り消し済みの場合の冪等な扱い（`already: true`）、実際の取り消し処理を検証している。
+
+### 共通ロジックの抽出とテストの重複排除（`_shared/periodEnd.ts`、7パターン）
 
 `stripe-webhook`のテストを書く過程で、`check-guest-subscription`にも同一の契約終了日解決ロジックが存在していることに気づいた。当時は「stripe-webhookと同じ取得順に統一」というコメントを残すことで整合性を保とうとしていたが、コメントによる手動同期は、片方を修正してもう片方を直し忘れた場合にそれを検知する仕組みを何も提供しない、壊れやすいパターンである。テストを書く過程でこの重複に気づいたこと自体が、テストを書く価値を示している。
 
-対応として、ロジックを`supabase/functions/_shared/periodEnd.ts`に切り出し、`stripe-webhook`・`check-guest-subscription`の両方が同じ関数を参照する形にした（7パターンをユニットテスト）。
+ロジックを`supabase/functions/_shared/periodEnd.ts`に切り出し、`stripe-webhook`・`check-guest-subscription`の両方が同じ関数を参照する形にした。優先順位（`items.data[0].current_period_end` → `current_period_end` → `cancel_at` → `trial_end` → `ended_at`）を誤るとユーザーに見せる契約終了日がずれるため、境界値（Unixエポック`0`）を含めて検証している。
 
-**この対応の価値**：同じロジックを2箇所でテストすると、テストは「両方とも green」でも、実装そのものが将来ズレた場合に気づけない（テストが実装のコピーをなぞっているだけで、実装の一致は保証しない）。1箇所に集約してから1回だけテストすることで、「ロジックが1つしか存在しない」こと自体が正しさの担保になる。
+同じロジックを2箇所でテストすると、テストは「両方ともgreen」でも、実装そのものが将来ズレた場合に気づけない。1箇所に集約してから1回だけテストすることで、「ロジックが1つしか存在しない」こと自体が正しさの担保になる。
 
-### `stripe-webhook`のユニットテスト（6パターン）
+### `stripe-webhook`（6パターン）
 
-_shared/periodEnd.tsを作成し、重複を排除したことで、分岐ロジックだけを`decision.ts`として切り出すことができた。実際の接続を挟まず`Deno.test`で全パターンを検証できる形に修正。全関数を同じ密度でテストするのではなく、金銭・個人情報の削除が絡み誤りの影響が大きい`stripe-webhook`を最優先で着手した。
+契約終了日の解決ロジックは上記の`_shared/periodEnd.ts`に集約したため、`stripe-webhook`固有では残り2つの判定を検証している。
 
-契約終了日の解決ロジックは上記の通り`_shared/periodEnd.ts`に切り出したため、`stripe-webhook`固有では残り2つの判定ロジックを検証している。
+- **冪等性チェックの応答決定**：Stripeは同一イベントを複数回配信することがあり、重複を後続処理に進めてしまうと二重同期・二重課金処理につながる
+- **アカウント物理削除の実行条件**：`deletion_requested`フラグと`user_id`解決の両方が揃った場合のみ`auth.users`を削除する。片方だけでは削除しないことを個別に検証し、退会予約と無関係なユーザーが誤って削除されることを防ぐ
 
-- **冪等性チェックの応答決定**（Stripeは同一イベントを複数回配信することがあり、重複を後続処理に進めてしまうと二重同期・二重課金処理につながる）
-- **アカウント物理削除の実行条件**（`deletion_requested`フラグと`user_id`解決の両方が揃った場合のみ`auth.users`を削除する。片方だけでは削除しないことを個別に検証し、退会予約と無関係なユーザーが誤って削除されることを防ぐ）
+いずれの関数も実装ロジック自体は変更せず、既存の分岐を関数として切り出した上でテストを追加した。
 
-実装ロジック自体は変更せず、既存の分岐を関数として切り出した上でテストを追加した。
 
 ## 7. 今後の課題
 
