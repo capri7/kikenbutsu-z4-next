@@ -369,12 +369,41 @@ Edge Functionのログを確認し、Stripe側からのリクエスト自体は�
 
 **Cookieベースのセッションリフレッシュ設計（`src/proxy.ts`）**：Next.js 16で`middleware.ts`は`proxy.ts`に名称変更されており（旧名のままだとビルドが警告なしに失敗する）、本プロジェクトは初期実装の段階からこれに対応済みである。セッション検証には`getSession()`ではなく`getUser()`を使用している。`getSession()`はローカルのCookieに保存された値をそのまま信頼するため、Cookieの偽装に対して脆弱であるのに対し、`getUser()`はSupabase Authサーバーに問い合わせてJWTを再検証するため、なりすましを防げる。また、Cookieの更新を`request.cookies`と`response.cookies`の両方に対して行っているのは、`request`側を更新しないと同一リクエスト内で後続実行されるServer Componentsが既にリフレッシュ済みのトークンを知らずに二重にリフレッシュを試み、`response`側を更新しないとブラウザに新しいトークンが渡らず、次回リクエストで古いトークンを送り続けた末に強制的にログアウトされるため。この2段階の伝播はSupabase公式が明示的に要求している実装パターンである。
 
-
-
-
-
-
 ## 6. テスト・品質保証 （今回のSuspenseケーススタディを含む）
+
+### ケーススタディ：`useSearchParams`とSuspense境界（本番ビルドでのみ発生する不具合）
+
+`/contents/[id]`ページで、URLのクエリパラメータを読む`useSearchParams()`をClient Component（`QuestionClient`）内で使用していたが、`<Suspense>`で囲んでいなかった。
+
+**症状**：`npm run dev`（開発サーバー）では一切エラーが出ないが、`next build`（本番ビルド）でのみビルドが失敗する。
+
+**原因**：`useSearchParams()`が返すクエリパラメータは、URLへのリクエストが来て初めて確定するリクエスト時点のデータであり、ビルド時に静的プリレンダリングを行う際には値が存在しない。Next.jsは、この「静的にプリレンダリングできる部分」と「リクエストが来るまで確定しないクライアント側の部分」を`<Suspense>`境界で切り分けることを要求しており、境界が無いとどこで区切ればいいか判断できずビルドを失敗させる。開発サーバーはページをオンデマンドでレンダリングするため、この問題が起きない。
+
+**対応**：`useSearchParams()`を使う`QuestionClient`を`<Suspense fallback={null}>`で囲み、静的にレンダリングできる殻（Suspense外側）と、クライアント側で解決するクエリパラメータ依存部分（Suspense内側）を分離した。
+
+**教訓**：`npm run dev`で問題が無くても、本番ビルド（`next build`）でしか顕在化しない不具合がある。デプロイパイプライン（GitHub Actions・Vercel）でビルド自体を実行させ、ローカルの目視確認に頼らないことが、この種の不具合を検知する唯一の方法である。
+
+### テスト戦略
+
+Edge Functions（Deno）とNext.js（Node/Vite）でランタイムが異なるため、3層に分けている。
+
+| 層 | 対象 | ツール |
+|---|---|---|
+| Edge Functions | 分岐ロジック（判定関数として切り出したもの） | `Deno.test` |
+| Next.js単体テスト | ユーティリティ関数・同期Client Components | Vitest + React Testing Library（未着手） |
+| E2Eテスト | サインアップ〜決済〜マイページ等のフロー、非同期Server Components | Playwright（未着手） |
+
+**設計判断**：Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密結合していたため、そのままではテストできなかった。分岐ロジックだけを`decision.ts`として切り出し、DB/Stripeへの接続を挟まずに全パターンを検証できる形にした。
+
+### 現在のテストカバレッジ
+
+| 関数 | 状態 |
+|---|---|
+| `request-account-deletion` | ✅ `decision.ts`切り出し済み、7パターンをユニットテスト |
+| `cancel-account-deletion` | ✅ `decision.ts`切り出し済み、4パターンをユニットテスト |
+| `create-checkout-session`・`checkout-session-info`・`check-guest-subscription`・`billing-portal`・`stripe-webhook` | 未着手 |
+| Next.js側（Vitest） | 未着手 |
+| E2E（Playwright） | 未着手 |
 
 ## 7. 今後の課題
 
