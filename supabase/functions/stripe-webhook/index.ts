@@ -9,10 +9,10 @@ import {
 } from "../_shared/stripeSync.ts";
 
 import {
-  resolveCurrentPeriodEnd,
   decideWebhookResponse,
   shouldPhysicallyDeleteUser,
 } from "./decision.ts";
+import { resolveCurrentPeriodEnd } from "../_shared/periodEnd.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
 const STRIPE_WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET")!;
