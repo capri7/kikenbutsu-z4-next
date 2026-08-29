@@ -3,8 +3,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { admin } from "../_shared/stripeSync.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getAuthenticatedUser } from "../_shared/auth.ts";
-
-const ACTIVE_STATUSES = ["active", "trialing", "past_due"];
+import { decideAccountDeletion } from "./decision.ts";
 
 const j = (body, status, headers) =>
   new Response(JSON.stringify(body), { status, headers });
@@ -31,23 +30,21 @@ Deno.serve(async (req) => {
 
   if (subErr) return j({ error: "DB_ERROR", message: subErr.message }, 500, headers);
 
-  const status = (subRow?.status ?? "").toLowerCase();
-  const isPaid = ACTIVE_STATUSES.includes(status);
+  const decision = decideAccountDeletion(subRow);
 
-  if (isPaid) {
-    // Stripe側でまだ解約されていない場合は拒否する（フロントのボタン制御をバイパスされても防ぐ保険）
-    if (!subRow?.cancel_at_period_end) {
-      return j({ error: "SUBSCRIPTION_NOT_CANCELLED" }, 400, headers);
-    }
+  if (decision.action === "reject") {
+    return j({ error: decision.error }, 400, headers);
+  }
 
+  if (decision.action === "schedule") {
     const { error: updateErr } = await admin
       .from("subscriptions")
       .update({ deletion_requested: true, updated_at: new Date().toISOString() })
-      .eq("id", subRow.id);
+      .eq("id", decision.subscriptionId);
 
     if (updateErr) return j({ error: "DB_ERROR", message: updateErr.message }, 500, headers);
 
-    return j({ scheduled: true, effective_date: subRow.current_period_end }, 200, headers);
+    return j({ scheduled: true, effective_date: decision.effectiveDate }, 200, headers);
   }
 
   const { error: delError } = await admin.auth.admin.deleteUser(user_id);
