@@ -407,7 +407,8 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `create-checkout-session` | ✅ 7パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いためE2Eでカバー） |
 | Next.js側（Vitest） | ✅ 9パターン（`getFeedbackMessage`5・`formatChoiceText`4） |
-| E2E（Playwright） | 未着手 |
+| E2E（Playwright） | コアフロー3件 ✅・有料転換フロー 未実装・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
+
 
 ### `request-account-deletion`（7パターン）
 
