@@ -391,7 +391,7 @@ Edge Functions（Deno）とNext.js（Node/Vite）でランタイムが異なる�
 |---|---|---|
 | Edge Functions | 分岐ロジック（判定関数として切り出したもの） | `Deno.test` |
 | Next.js単体テスト | ユーティリティ関数・同期Client Components | Vitest + React Testing Library |
-| E2Eテスト | サインアップ〜決済〜マイページ等のフロー、非同期Server Components | Playwright（未着手） |
+| E2Eテスト | 無料登録〜マイページ〜練習問題〜誤答リストの一連の動作（コアフロー）、ゲスト決済〜Webhook〜マイページ解放（有料転換フロー）、非同期Server Components | Playwright |
 
 Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密結合しており、そのままではDB・外部APIに接続しないとテストできない。そこで各関数の分岐ロジックだけを`decision.ts`として切り出し、実際の接続を挟まず全パターンを検証できる形にした。全関数を同じ密度でテストするのではなく、金銭・個人情報の削除が絡み誤りの影響が大きい関数（`request-account-deletion`・`cancel-account-deletion`・`stripe-webhook`）から優先的に着手している。
 
@@ -460,7 +460,7 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 ### テスト関連
 
-- **E2Eテスト（Playwright）**：`playwright.config.ts`・依存パッケージの導入は完了しているが、ブラウザバイナリ（Chromium）のダウンロードが、開発環境のネットワーク環境（Playwright公式CDNへの接続が不安定）により未完了。コード側の問題ではなく実行環境側の制約のため、安定した回線で改めて`npx playwright install`を実行すれば解消する見込み。優先して書く価値がある項目は、`useSearchParams`とSuspense境界のケーススタディ（本番ビルドでのみ顕在化する不具合のため、ユニットテストでは検出できない）と、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E待ちとした2関数）
+- **E2Eテスト（Playwright）**：ブラウザバイナリ（Chromium）のダウンロードが、開発環境のセキュリティソフト（McAfeeのVPN・コンテンツフィルタ機能）によりnode経由の通信のみ妨害され、当初未完了だった。原因を切り分けの上で該当機能を無効化し、導入完了。優先して書く価値がある項目は、`useSearchParams`とSuspense境界のケーススタディ（本番ビルドでのみ顕在化する不具合のため、ユニットテストでは検出できない）と、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E対象とした2関数）。決済フローはStripeのテストモード・Webhookイベント再送信で代替し、実際のカード決済は発生させない設計とした
 - **Next.js側の他のユーティリティ関数**：`src/lib/feedback.ts`のみ着手済み。特に`src/lib/subscription.ts`の`isSubscribed()`は、契約ステータスに加えて「契約終了日時から60秒の猶予期間」を設けた判定ロジックを持っており、境界値のテスト価値が高い。他（`account.ts`・`mistakes.ts`・`review.ts`・`progress.ts`）は主にSupabase呼び出しのラッパーで、判定ロジックの比率が低いため優先度は下がる
 
 ### 型安全性
