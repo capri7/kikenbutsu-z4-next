@@ -69,6 +69,7 @@ const LEGACY_URL_REDIRECTS: { source: string; destination: string; permanent: bo
   { source: '/basics/law/indoor_tank_storage_standards/Otsux_Law_Indoor_Tank_Storage_Standards_001.html', destination: '/basics/law/indoor_tank_storage_standards', permanent: true },
   { source: '/basics/law/handler_certification/Otsux_Law_Handler_Certification_001.html', destination: '/basics/law/handler_certification', permanent: true },
   { source: '/basics/law/chapter1_summary/Otsux_Law_Chapter_Summary_001.html', destination: '/basics/law/chapter1_summary', permanent: true },
+  { source: '/index.html', destination: '/', permanent: true },
 ];
 
 const nextConfig: NextConfig = {
