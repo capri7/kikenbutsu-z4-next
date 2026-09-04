@@ -4,10 +4,18 @@ import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import "./globals.css";
 
-
 export const metadata: Metadata = {
   title: "乙種4類危険物取扱者試験対策",
   description: "乙種4類危険物取扱者試験の対策教材サイトです。",
+  icons: {
+    icon: [
+      { url: "/images/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/images/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/images/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export default function RootLayout({
