@@ -22,6 +22,25 @@
   margin-bottom: 0.8rem;
 }
 
+.section h3 {
+  font-size: clamp(18px, 2.4vw, 21px);
+  line-height: 1.4;
+  font-weight: 700;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+
+/* h3の直後に続く場合だけ、箱側の自前margin-topを打ち消す。
+   これでh3のmargin-bottom（0.75rem）だけが効き、
+   bandCard・callout・examNotesのどれが続いても間隔が揃う。
+   calloutやexamNotesが見出し以外の後に続くケースには影響しない。 */
+.section h3 + .bandCard,
+.section h3 + .callout,
+.section h3 + .examNotes,
+.section h3 + .examPoints {
+  margin-top: 0;
+}
+
 /* ================== band-card（結論ボックス。色は --chapter-accent で章別に上書き） ================== */
 .bandCard {
   position: relative;

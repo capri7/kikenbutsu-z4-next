@@ -48,7 +48,7 @@ export default function StaticElectricityPage() {
         <section className={shared.section}>
           <h2>静電気の発生</h2>
 
-          <div className={shared.bandCard}>
+          <div className={shared.bandCard} >
             <p>
               静電気とは、電荷が流れずに物体の表面や内部にとどまっている状態の電気をいいます。
               物体の電気的な極性が正または負に片寄った状態を<strong>帯電</strong>と呼びます。
@@ -156,7 +156,7 @@ export default function StaticElectricityPage() {
           </div>
 
           <h3>箔検（はくけん）電器</h3>
-          <div className={shared.callout}>
+          <div className={shared.callout} >
             <p>
               帯電の有無を調べる代表的な器具です。金属の<strong>集電板</strong>と導体棒の先に、軽い
               <strong>金属箔（2枚）</strong>が吊られています（容器はガラスなどの絶縁体）。
@@ -221,6 +221,203 @@ export default function StaticElectricityPage() {
               </li>
             </ul>
           </div>
+
+          <h3>帯電の発生機構</h3>
+          <div className={shared.bandCard}>
+            <p>
+              静電気は、2つの物質が<strong>接触・摩擦・剥離</strong>したり、液体や粉体が
+              <strong>流動・噴出・混合</strong>したりする際に電荷が移動することで発生します。
+              どのような動作によって帯電するかにより、次のように分類されます。
+            </p>
+
+            <dl className={shared.summaryGrid}>
+              <div className={shared.summaryGridRow}>
+                <dt><strong>摩擦帯電</strong></dt>
+                <dd>2つの物質を擦り合わせてから引き離すときに発生する帯電。</dd>
+              </div>
+              <div className={shared.summaryGridRow}>
+                <dt><strong>接触帯電</strong></dt>
+                <dd>2つの物質を接触させてから引き離すときに発生する帯電。</dd>
+              </div>
+              <div className={shared.summaryGridRow}>
+                <dt><strong>剥離帯電</strong></dt>
+                <dd>密着している2つの物質を引き剥がすときに発生する帯電。</dd>
+              </div>
+              <div className={shared.summaryGridRow}>
+                <dt><strong>流動帯電</strong></dt>
+                <dd>配管や容器の中を液体が流動するときに発生する帯電。</dd>
+              </div>
+              <div className={shared.summaryGridRow}>
+                <dt><strong>噴出帯電</strong></dt>
+                <dd>液体がノズルなどから高速で噴出するときに発生する帯電。</dd>
+              </div>
+              <div className={shared.summaryGridRow}>
+                <dt><strong>破砕帯電</strong></dt>
+                <dd>固体を破砕（粉砕）するときに発生する帯電。</dd>
+              </div>
+              <div className={shared.summaryGridRow}>
+                <dt><strong>混合・かくはん帯電</strong></dt>
+                <dd>液体または粉体を混合・かくはんするときに発生する帯電。</dd>
+              </div>
+              <div className={shared.summaryGridRow}>
+                <dt><strong>その他の帯電</strong></dt>
+                <dd>滴下帯電、衝突帯電、飛沫帯電など、上記以外の動作でも帯電が生じる。</dd>
+              </div>
+            </dl>
+          </div>
+
+          <h3>流動帯電の仕組み</h3>
+          <div className={shared.bandCard}>
+            <p>
+              液体が配管の中を流れるとき、液体と管壁が接触する境界面では<strong>電荷の移動（電荷分離）</strong>が起こり、
+              液体側に<strong>正イオン</strong>、管壁側に<strong>負イオン</strong>が発生します。
+            </p>
+            <ul className={shared.compact}>
+              <li><strong>① 電荷分離：</strong> 液体と管壁の境界で電荷が移動し、正イオンと負イオンが生じます。</li>
+              <li><strong>② 二重層の形成：</strong> 負イオンは管壁に吸着されやすいため、管壁付近に集まります。これにより、管壁側に負の層、その内側に正の層が向かい合う構造ができます。これを<strong>イオン電気二重層</strong>といいます。</li>
+              <li><strong>③ 正イオンが流れに運ばれる：</strong> 配管の中心付近まで拡散した正イオンは、液体の流れとともにそのまま運ばれていきます。</li>
+            </ul>
+            <p>
+              この結果、<strong>管壁側は負に帯電</strong>し、<strong>流れ出ていく液体側は正に帯電</strong>します。
+            </p>
+          </div>
+
+          <figure className={shared.formulaCard}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/basics/physical_chemistry/flow_electrification_mechanism.svg"
+              alt="配管内で負イオンが管壁に吸着してイオン電気二重層が形成され、液体の流れによって正イオンが下流へ運ばれることで、管壁がマイナス、流出する液体がプラスに帯電する仕組みを示す図"
+              className={shared.circuitSvg}
+              loading="lazy"
+              decoding="async"
+              width={1560}
+              height={760}
+            />
+            <figcaption className={shared.figureCaption}>
+              <strong>流動帯電の仕組み</strong> — ①管壁への吸着でイオン電気二重層が形成され、②流動にともなって正イオンが運ばれることで、管壁と液体の電荷が分離します。
+            </figcaption>
+          </figure>
+          <div className={shared.callout}>
+            <p>
+              石油系の液体は一般に<strong>導電率が非常に小さい</strong>ため、流動帯電が特に発生しやすい性質があります。
+            </p>
+            <p>
+              液体をフィルターでろ過するときに生じる帯電も、流動帯電の一種です。特に<strong>孔径の小さいフィルター</strong>を通過させる場合、
+              液体とろ材が接触する<strong>面積</strong>と通過する際の<strong>速度</strong>がともに大きくなるため、帯電量が増大します。
+            </p>
+          </div>
+
+          <h3>静電気力（クーロンの法則）</h3>
+          <div className={shared.bandCard}>
+            <p>
+              2つの帯電体が及ぼしあう静電気力の大きさは、帯電体の<strong>電気量の大きさ</strong>と、
+              帯電体間の<strong>距離</strong>によって変化します。
+            </p>
+            <p>
+              帯電体の間の距離に比べて帯電体の大きさが無視できるほど小さいとき、このような帯電体を
+              <strong>点電荷</strong>といいます。静電気力 <em>F</em> は、2つの点電荷の電気量
+              <em>q₁</em>・<em>q₂</em> の<strong>積に比例</strong>し、距離 <em>r</em> の
+              <strong>2乗に反比例</strong>します。これを<strong>クーロンの法則</strong>といいます。
+            </p>
+            <p>
+              <code>F = k・q₁q₂ / r²</code>（<em>k</em>：比例定数）
+            </p>
+          </div>
+
+          <div className={shared.callout}>
+            <h3>確認ポイント</h3>
+            <ul className={shared.compact}>
+              <li>電気量の符号が<strong>同じ</strong>（＋と＋、－と－）なら<strong>斥力</strong>（反発）。</li>
+              <li>電気量の符号が<strong>異なる</strong>（＋と－）なら<strong>引力</strong>。</li>
+              <li>力は2つの帯電体を結ぶ直線上にはたらく。</li>
+            </ul>
+          </div>
+
+          <figure className={shared.formulaCard}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/basics/physical_chemistry/coulombs_law.svg"
+              alt="クーロンの法則を示す図。同符号の点電荷どうしは反発する斥力がはたらき、異符号の点電荷どうしは引き合う引力がはたらく。力Fは電気量q1・q2の積に比例し、距離rの2乗に反比例する（F＝k・q1q2／r²）。"
+              className={shared.circuitSvg}
+              loading="lazy"
+              decoding="async"
+              width={1560}
+              height={760}
+            />
+            <figcaption className={shared.figureCaption}>
+              <strong>クーロンの法則</strong> — 同符号どうしは斥力、異符号どうしは引力。力の大きさは電気量の積に比例し、距離の2乗に反比例します。
+            </figcaption>
+          </figure>
+
+          <h3>静電誘導</h3>
+          <div className={shared.bandCard}>
+            <p>
+              帯電体の近くに帯電していない導体を近づけると、帯電体に近い方の端に帯電体の電荷と
+              <strong>異種の電荷</strong>が、反対側の端に<strong>同種の電荷</strong>が現れます。この現象を
+              <strong>静電誘導</strong>といいます。
+            </p>
+            <p>
+              静電誘導は、導体中の<strong>自由電子</strong>が帯電体の（＋）電荷に引き寄せられて近い側の端に集まり、
+              その端が（－）に帯電することで起こります。同時に、反対側の端は電子が不足するため（＋）に帯電します。
+            </p>
+          </div>
+
+          <figure className={shared.formulaCard}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/basics/physical_chemistry/electrostatic_induction.svg"
+              alt="正に帯電した帯電体を、帯電していない金属の導体に近づけると、導体中の自由電子が帯電体側に引き寄せられ、帯電体に近い端が負に、遠い端が正に帯電する静電誘導のしくみを示す図"
+              className={shared.circuitSvg}
+              loading="lazy"
+              decoding="async"
+              width={1560}
+              height={740}
+            />
+            <figcaption className={shared.figureCaption}>
+              <strong>静電誘導</strong> — 自由電子が帯電体（＋）側に引き寄せられ、近い端は負（異種の電荷）、遠い端は正（同種の電荷）になります。
+            </figcaption>
+          </figure>
+
+          <div className={shared.examNotes}>
+            <h4>ひっかけ注意</h4>
+            <ul className={shared.compact}>
+              <li>距離に<strong>反比例</strong>ではなく、距離の<strong>2乗に反比例</strong>。距離が2倍になると力は<strong>4分の1</strong>になる。</li>
+              <li>電気量は<strong>和</strong>ではなく<strong>積</strong>に比例する。</li>
+            </ul>
+          </div>
+
+          <h3>誘電分極</h3>
+          <div className={shared.bandCard}>
+            <p>
+              帯電体の近くに絶縁体を近づけても、絶縁体はほとんど<strong>自由電子</strong>（原子に束縛されず自由に動き回れる電子）を
+              持たないため、電界が作用しても物質内部の電子はほとんど移動しません。
+            </p>
+            <p>
+              しかし、静電気力によって、物質を構成する分子や原子の内部で<strong>分極</strong>が起こり、（－）と（＋）が対になって
+              整列します。その結果、絶縁体内部では（＋）と（－）の働きが互いに打ち消し合いますが、
+              <strong>両端だけには電荷が現れます</strong>。
+            </p>
+            <p>
+              このような現象を<strong>誘電分極</strong>といい、誘電分極を起こす絶縁体のことを<strong>誘電体</strong>と呼びます。
+            </p>
+          </div>
+
+          <figure className={shared.formulaCard}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/basics/physical_chemistry/dielectric_polarization.svg"
+              alt="正に帯電した帯電体を絶縁体（誘電体）に近づけると、絶縁体内部の分子が対になって整列し、隣り合う分子の＋とーは打ち消し合うが、両端の表面だけに電荷（帯電体に近い側はー、遠い側は＋）が現れる誘電分極のしくみを示す図"
+              className={shared.circuitSvg}
+              loading="lazy"
+              decoding="async"
+              width={1560}
+              height={760}
+            />
+            <figcaption className={shared.figureCaption}>
+              <strong>誘電分極</strong> — 絶縁体内部では分子が対になって整列し、隣り合う＋とーは打ち消し合いますが、両端の表面だけに電荷が現れます。
+            </figcaption>
+          </figure>
+
         </section>
 
         {/* 2. クイズ */}
