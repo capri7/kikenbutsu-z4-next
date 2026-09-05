@@ -5,6 +5,7 @@ import FoilElectroscopeDiagram from './FoilElectroscopeDiagram'
 import StaticElectricityQuiz from './StaticElectricityQuiz'
 import shared from '@/app/basics/BasicsShared.module.css'
 import theme from '@/app/basics/physical_chemistry/theme.module.css'
+import styles from './page.module.css'
 
 export const metadata: Metadata = {
   title: '基礎知識 | 第2章 10節：静電気',
@@ -417,6 +418,122 @@ export default function StaticElectricityPage() {
               <strong>誘電分極</strong> — 絶縁体内部では分子が対になって整列し、隣り合う＋とーは打ち消し合いますが、両端の表面だけに電荷が現れます。
             </figcaption>
           </figure>
+
+          <h3>静電気のエネルギー</h3>
+          <div className={shared.bandCard}>
+            <p>
+              静電気のエネルギーは、帯電している<strong>電気量が大きくなるほど</strong>、また<strong>電圧が高くなるほど</strong>大きくなります。
+            </p>
+            <p>
+              静電気の帯電量（<em>Q</em>）と電圧（<em>V</em>）、静電容量（<em>C</em>）の間には、次の関係があります。
+            </p>
+            <p>
+              <code>Q ＝ C・V</code>
+            </p>
+            <p>
+              帯電量が一定の場合、静電容量が<strong>小さくなるほど</strong>、静電気に生じる電圧は<strong>高くなります</strong>。
+              このため、容易に<strong>数万ボルト</strong>の放電電圧が発生します。
+            </p>
+            <p>
+              帯電体が放電するときのエネルギー（<em>E</em>）は、次の式から求めることができます。
+            </p>
+            <p>
+              <code>E ＝ 1/2・Q・V</code>
+            </p>
+          </div>
+
+          <figure className={shared.formulaCard}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/basics/physical_chemistry/qcv_relationship.svg"
+              alt="同じ帯電量Qのとき、静電容量Cが小さいほど電圧Vが高くなり数万ボルトの放電が起こりやすく、静電容量Cが大きいほど電圧Vは低く放電の危険が小さいことを示す図。Q＝C・Vの関係を表す。"
+              className={shared.circuitSvg}
+              loading="lazy"
+              decoding="async"
+              width={1560}
+              height={800}
+            />
+            <figcaption className={shared.figureCaption}>
+              <strong>Q＝C・V</strong> — 帯電量Qが同じでも、静電容量Cが小さいほど電圧Vは高くなり、危険な放電が起こりやすくなります。
+            </figcaption>
+          </figure>
+
+          <div className={shared.examNotes}>
+            <h4>ひっかけ注意</h4>
+            <ul className={shared.compact}>
+              <li>
+                エネルギーの公式は<strong>E＝1/2・Q・V</strong>。<strong>1/2を忘れてE＝QVとする</strong>誤りに注意。
+              </li>
+              <li>
+                「静電容量が<strong>大きい</strong>ほど危険」ではなく、静電容量が<strong>小さい</strong>ほど電圧が高くなり危険。大小関係を逆に覚えないよう注意。
+              </li>
+              <li>
+                帯電量Qが同じでも、物体の形状・大きさ（＝静電容量C）によって<strong>発生する電圧は変わる</strong>。
+              </li>
+            </ul>
+          </div>
+
+          <h3>静電気の特性</h3>
+          <div className={shared.bandCard}>
+            <p>
+              静電気が発生し、それが放電されずに帯電量が増え続けると、静電気のエネルギーは増加します。
+              この状態で何らかの原因により、静電気が空気中に火花を伴って放電すると、それが
+              <strong>火災や爆発の点火源</strong>となります。
+            </p>
+            <p>
+              静電気によるこうした災害を防ぐには、<strong>静電気の発生を抑える</strong>ことと、
+              <strong>帯電した静電気を意図的に放電させる</strong>ことの、2つの対策が必要です。
+              これらを静電気の特性からまとめると、次のとおりです。
+            </p>
+          </div>
+
+          <h4>静電気の発生を抑える</h4>
+          <div className={shared.callout}>
+            <ul className={styles.numberedList}>
+              <li><strong>① 絶縁物の摩擦・接触を減らす：</strong> 絶縁物どうしの摩擦や接触の機会を少なくします。</li>
+              <li><strong>② 流速をゆるやかにする：</strong> 絶縁性液体が流動したり、ノズルから噴出したりする際の速度を遅くします。流速を変える場合も、急激にではなく徐々に変化させます。</li>
+              <li><strong>③ 接触面積・圧力・回数を減らす：</strong> 接触面積や接触圧力を小さくし、接触回数も減らします。</li>
+              <li><strong>④ 分離速度を小さくする：</strong> 接触状態のものを分離するときは、分離速度を小さくします（急激に剥がさない、など）。</li>
+              <li><strong>⑤ 静電気の発生しにくい材料を使う：</strong> 帯電しにくい材質を選びます。</li>
+              <li><strong>⑥ 不純物・異物の混入を避ける。</strong></li>
+              <li><strong>⑦ イオン化空気で中和する：</strong> 静電気除去装置で生成したイオン化空気により、静電気を電気的に中和させます。</li>
+              <li><strong>⑧ 除電剤を使用する：</strong> 導電性塗料の塗布や、添加剤の使用などがあります。</li>
+            </ul>
+          </div>
+
+          <div className={shared.examNotes}>
+            <h4>ひっかけ注意</h4>
+            <ul className={shared.compact}>
+              <li>
+                接触分離による静電気の発生は、境界面が<strong>固体と固体、固体と液体、液体と液体、液体と気体</strong>
+                のいずれであっても起こります（固体・粉体の摩擦・剥離・衝突、液体の流動・かくはんなど）。
+                「固体どうしでしか起きない」と誤解しないよう注意。
+              </li>
+            </ul>
+          </div>
+
+          <h4>静電気を意図的に放電させる</h4>
+          <div className={shared.callout}>
+            <ul className={styles.numberedList}>
+              <li><strong>① あらかじめ接地しておく：</strong> 静電気が蓄積されやすいものは、あらかじめアース（接地）します。給油ホースには内側に導線を巻き込んだものを使用し、導電性の靴や服を使用します。</li>
+              <li><strong>② 蓄積後に接地して放電させる：</strong> 静電気が蓄積されている可能性があるものは、あらかじめアース（接地）して放電させます。</li>
+              <li><strong>③ 湿度を高める：</strong> 床面に水を撒くなどして湿度を高めます。帯電した静電気は水蒸気を通して放電します。</li>
+              <li><strong>④ 空気をイオン化する：</strong> 高圧・放射線・静電誘導などの方法で空気をイオン化し、静電気を除去します。</li>
+              <li><strong>⑤ 電気抵抗率の違いに注意する：</strong> 非水溶性のガソリンなどは、水溶性のアルコール類より電気抵抗率が高いため、取り扱いに注意します。</li>
+              <li><strong>⑥ 作業後は静置時間をおく：</strong> タンクへの油の注入・循環・かくはんなどの作業後は、静置時間をおいてから除電します。作業直後のサンプリング作業や検尺作業は避けます。</li>
+            </ul>
+          </div>
+
+          <div className={shared.callout}>
+            <h3>確認ポイント</h3>
+            <ul className={shared.compact}>
+              <li>
+                <strong>検尺作業</strong>とは、検尺棒（1/100以上の精度の目盛りが刻まれた棒）をタンク上部の検尺口などから
+                底板に当たるまで静かに挿入し、速やかに引き上げて油の付着位置を読み取り、在庫量を測定する作業です。
+                危険物の漏れの確認にも使われます。
+              </li>
+            </ul>
+          </div>
 
         </section>
 

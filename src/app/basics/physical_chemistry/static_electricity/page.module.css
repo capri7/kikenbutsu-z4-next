@@ -1,2 +1,12 @@
 /* src/app/basics/physical_chemistry/static_electricity/page.module.css */
-/* このノードにはノード固有のcolgroup等が不要のため空 */
+/* 番号（①②③…）が本文内に含まれているリスト用。連番の先頭に「・」を重複させない。 */
+.numberedList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.numberedList li {
+  margin: 0.2em 0;
+  line-height: 1.7;
+}

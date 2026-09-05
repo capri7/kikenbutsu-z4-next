@@ -41,6 +41,21 @@
   margin-top: 0;
 }
 
+.section h4 {
+  font-size: clamp(17px, 2.1vw, 19px);
+  line-height: 1.4;
+  font-weight: 700;
+  margin-top: 1.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.section h4 + .bandCard,
+.section h4 + .callout,
+.section h4 + .examNotes,
+.section h4 + .examPoints {
+  margin-top: 0;
+}
+
 /* ================== band-card（結論ボックス。色は --chapter-accent で章別に上書き） ================== */
 .bandCard {
   position: relative;
