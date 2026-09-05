@@ -223,7 +223,7 @@ export default function StaticElectricityPage() {
             </ul>
           </div>
 
-          <h3>帯電の発生機構</h3>
+          <h2>帯電の発生機構</h2>
           <div className={shared.bandCard}>
             <p>
               静電気は、2つの物質が<strong>接触・摩擦・剥離</strong>したり、液体や粉体が
@@ -267,7 +267,7 @@ export default function StaticElectricityPage() {
             </dl>
           </div>
 
-          <h3>流動帯電の仕組み</h3>
+          <h2>流動帯電の仕組み</h2>
           <div className={shared.bandCard}>
             <p>
               液体が配管の中を流れるとき、液体と管壁が接触する境界面では<strong>電荷の移動（電荷分離）</strong>が起こり、
@@ -308,7 +308,7 @@ export default function StaticElectricityPage() {
             </p>
           </div>
 
-          <h3>静電気力（クーロンの法則）</h3>
+          <h2>静電気力（クーロンの法則）</h2>
           <div className={shared.bandCard}>
             <p>
               2つの帯電体が及ぼしあう静電気力の大きさは、帯電体の<strong>電気量の大きさ</strong>と、
@@ -350,7 +350,7 @@ export default function StaticElectricityPage() {
             </figcaption>
           </figure>
 
-          <h3>静電誘導</h3>
+          <h2>静電誘導</h2>
           <div className={shared.bandCard}>
             <p>
               帯電体の近くに帯電していない導体を近づけると、帯電体に近い方の端に帯電体の電荷と
@@ -387,7 +387,7 @@ export default function StaticElectricityPage() {
             </ul>
           </div>
 
-          <h3>誘電分極</h3>
+          <h2>誘電分極</h2>
           <div className={shared.bandCard}>
             <p>
               帯電体の近くに絶縁体を近づけても、絶縁体はほとんど<strong>自由電子</strong>（原子に束縛されず自由に動き回れる電子）を
@@ -419,7 +419,7 @@ export default function StaticElectricityPage() {
             </figcaption>
           </figure>
 
-          <h3>静電気のエネルギー</h3>
+          <h2>静電気のエネルギー</h2>
           <div className={shared.bandCard}>
             <p>
               静電気のエネルギーは、帯電している<strong>電気量が大きくなるほど</strong>、また<strong>電圧が高くなるほど</strong>大きくなります。
@@ -473,7 +473,7 @@ export default function StaticElectricityPage() {
             </ul>
           </div>
 
-          <h3>静電気の特性</h3>
+          <h2>静電気の特性</h2>
           <div className={shared.bandCard}>
             <p>
               静電気が発生し、それが放電されずに帯電量が増え続けると、静電気のエネルギーは増加します。
