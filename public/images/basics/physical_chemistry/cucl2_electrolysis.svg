@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_レイヤー_1" data-name="レイヤー_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:c2pa="http://c2pa.org/manifest" version="1.1" viewBox="0 0 1560 900">
+  <!-- Generator: Adobe Illustrator 30.8.1, SVG Export Plug-In . SVG Version: 2.1.4 Build 1)  -->
+  <defs>
+    <style>
+      .st0, .st1, .st2, .st3 {
+        fill: #111;
+      }
+
+      .st0, .st4, .st5, .st6, .st7, .st8, .st9, .st10, .st11, .st12, .st13, .st14, .st2, .st15, .st3, .st16, .st17, .st18, .st19 {
+        isolation: isolate;
+      }
+
+      .st0, .st4, .st5, .st6, .st7, .st8, .st9, .st10, .st11, .st12, .st13, .st2, .st15, .st3, .st16, .st17, .st18, .st19 {
+        font-family: HiraKakuStd-W8-83pv-RKSJ-H, 'Hiragino Kaku Gothic Std';
+      }
+
+      .st0, .st5, .st6, .st7 {
+        font-size: 26px;
+      }
+
+      .st4 {
+        fill: #333;
+      }
+
+      .st4, .st3 {
+        font-size: 25px;
+      }
+
+      .st5, .st6 {
+        stroke: #fff;
+      }
+
+      .st5, .st6, .st20, .st21 {
+        stroke-miterlimit: 10;
+      }
+
+      .st5, .st22 {
+        fill: #6b7378;
+      }
+
+      .st23, .st24, .st25, .st26 {
+        fill: none;
+      }
+
+      .st23, .st27 {
+        stroke: #7a3d0f;
+      }
+
+      .st23, .st26 {
+        stroke-width: 8px;
+      }
+
+      .st6, .st28 {
+        fill: #7a3d0f;
+      }
+
+      .st24 {
+        stroke: #111;
+        stroke-width: 5px;
+      }
+
+      .st7, .st10, .st20, .st29, .st21, .st12 {
+        fill: #fff;
+      }
+
+      .st27 {
+        fill: #c0691f;
+      }
+
+      .st27, .st20, .st21, .st30 {
+        stroke-width: 3px;
+      }
+
+      .st8, .st13, .st16, .st17 {
+        fill: red;
+      }
+
+      .st8, .st15 {
+        font-size: 17px;
+      }
+
+      .st9, .st11, .st15, .st19 {
+        fill: #5598ff;
+      }
+
+      .st9, .st16 {
+        font-size: 32px;
+      }
+
+      .st10 {
+        font-size: 28px;
+      }
+
+      .st25 {
+        stroke: #4a4a4a;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .st25, .st29 {
+        stroke-width: 10px;
+      }
+
+      .st20 {
+        stroke: #5598ff;
+      }
+
+      .st31 {
+        fill: #c8dbc3;
+      }
+
+      .st29 {
+        stroke: #12750f;
+      }
+
+      .st26, .st30 {
+        stroke: #6b7378;
+      }
+
+      .st21 {
+        stroke: red;
+      }
+
+      .st11, .st2, .st17 {
+        font-size: 30px;
+      }
+
+      .st32 {
+        fill: #4a4a4a;
+      }
+
+      .st12 {
+        font-size: 24px;
+      }
+
+      .st13, .st19 {
+        font-size: 23px;
+      }
+
+      .st14 {
+        fill: #7fd4e8;
+        opacity: .5;
+      }
+
+      .st30 {
+        fill: #c9ced2;
+      }
+
+      .st18 {
+        fill: #12750f;
+        font-size: 42px;
+      }
+    </style>
+    <path id="path" d="M260,365v435c0,20,10,30,30,30h980c20,0,30-10,30-30v-435"/>
+  </defs>
+  <rect class="st31" y="0" width="1560" height="900" rx="18" ry="18"/>
+  <text class="st18" transform="translate(486 60)"><tspan x="0" y="0">塩化銅（Ⅱ）水溶液の電気分解</tspan></text>
+  <text class="st2" transform="translate(60 115)"><tspan x="0" y="0">Cu2+：赤　／　Cl-：青</tspan></text>
+  <text class="st9" transform="translate(615 173.5)"><tspan x="0" y="0">－</tspan></text>
+  <text class="st16" transform="translate(915 173.5)"><tspan x="0" y="0">＋</tspan></text>
+  <path class="st25" d="M660,187.5h-190v142.5"/>
+  <path class="st25" d="M900,187.5h188.9v154.6"/>
+  <rect class="st29" x="660" y="150" width="240" height="75" rx="10" ry="10"/>
+  <text class="st0" transform="translate(461 157.4)"><tspan x="0" y="0">e-</tspan></text>
+  <text class="st0" transform="translate(1024.2302 145.3398)"><tspan x="0" y="0">e-</tspan></text>
+  <text class="st11" transform="translate(300 285)"><tspan x="0" y="0">陰極（－）</tspan></text>
+  <text class="st17" transform="translate(1110 285)"><tspan x="0" y="0">陽極（＋）</tspan></text>
+  <text></text>
+  <path class="st14" d="M263,400v400c0,18,9.3,27,27.9,27h1014.1c18.6,0,27.9-9,27.9-27v-400H263Z"/>
+  <rect class="st32" x="424.1" y="330" width="91.7" height="450"/>
+  <rect class="st32" x="1057.3" y="334.2" width="93.3" height="450"/>
+  <circle class="st21" cx="619" cy="535" r="30"/>
+  <text class="st13" transform="translate(594.7 548.2)"><tspan x="0" y="0">Cu</tspan></text>
+  <text class="st8" transform="translate(618.2 528.2)"><tspan x="0" y="0">2+</tspan></text>
+  <path class="st24" d="M594.7,515.6c-13.9-9-27.9-12-41.9-9"/>
+  <polygon class="st1" points="544.4 507.8 556.1 495.3 561.2 511 544.4 507.8"/>
+  <text class="st7" transform="translate(439.2 445.5)"><tspan x="0" y="0">2e-</tspan></text>
+  <path class="st23" d="M416.8,543.6c-16.8,13.9-35.1,18-54.9,12.4"/>
+  <polygon class="st28" points="353.9 547.1 371.9 550.1 361 563.9 353.9 547.1"/>
+  <circle class="st27" cx="318.9" cy="521.2" r="44"/>
+  <text class="st10" transform="translate(296.8 523.2)"><tspan x="0" y="0">Cu</tspan></text>
+  <text class="st6" transform="translate(236 609)"><tspan x="0" y="0">銅（固体）が析出</tspan></text>
+  <circle class="st20" cx="915" cy="462" r="30"/>
+  <text class="st19" transform="translate(895.3 472)"><tspan x="0" y="0">Cl</tspan></text>
+  <text class="st15" transform="translate(922.6 452)"><tspan x="0" y="0">-</tspan></text>
+  <circle class="st20" cx="915" cy="578" r="30"/>
+  <text class="st19" transform="translate(900.7 588)"><tspan x="0" y="0">Cl</tspan></text>
+  <text class="st15" transform="translate(928 568)"><tspan x="0" y="0">-</tspan></text>
+  <path class="st24" d="M949,458c40.1-4.3,71.3,4.6,93.8,26.8"/>
+  <polygon class="st1" points="1052 494 1037.7 489.9 1047.8 479.8 1052 494"/>
+  <path class="st24" d="M949,582c40.1,4.3,71.3-4.6,93.8-26.8"/>
+  <polygon class="st1" points="1052 546 1047.8 560.2 1037.7 550.1 1052 546"/>
+  <text class="st12" transform="translate(1078.3019 474.7598)"><tspan x="0" y="0">2e-</tspan></text>
+  <path class="st26" d="M1156.5,512.7c11.9,13.4,25.2,17.4,40,12"/>
+  <polygon class="st22" points="1205.5 515.7 1198.5 535 1187.5 519.4 1205.5 515.7"/>
+  <circle class="st30" cx="1256" cy="515.2" r="44"/>
+  <text class="st4" transform="translate(1230.0268 520)"><tspan x="0" y="0">Cl2</tspan></text>
+  <text class="st5" transform="translate(1129.0397 599.1201)"><tspan x="0" y="0">塩素（気体）が発生</tspan></text>
+  <text class="st3" transform="translate(705 195.5)"><tspan x="0" y="0">電源（直流）</tspan></text>
+  <text/>
+  <path class="st24" d="M466.4,338.1c-11.6,48.7-4.5,73.5,21.5,74.4"/>
+  <path class="st24" d="M1063.2,453.7c31.1-33.7,41.4-67.4,31-101.3"/>
+  <polygon class="st1" points="479.5 417.1 491.2 404.6 496.3 420.3 479.5 417.1"/>
+  <polygon class="st1" points="1102.1 358.7 1087.3 358.6 1094.2 346.1 1102.1 358.7"/>
+  <path class="st24" d="M1115.8,178.3c20.7-6.4.2-12.8-61.6-19.2"/>
+  <polygon class="st1" points="1043.6 163.1 1055.3 150.6 1060.4 166.3 1043.6 163.1"/>
+  <path class="st24" d="M444.5,232.7c-8.6-69.3-5.7-93.6,8.6-72.7"/>
+  <polygon class="st1" points="452.5 223.9 432.8 233.9 452.9 243.1 452.5 223.9"/>
+</svg>

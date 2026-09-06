@@ -72,7 +72,7 @@ export default function ElectricityAndBatteriesPage() {
             </figcaption>
           </figure>
 
-          <div className={shared.callout}>
+          <div className={`${shared.callout} ${shared.calloutList}`}>
             <h3>覚えよう！</h3>
             <ul className={shared.compact}>
               <li><strong>ρ は物質固有値</strong>（材質で決まる）。</li>
@@ -133,7 +133,7 @@ export default function ElectricityAndBatteriesPage() {
             </figcaption>
           </figure>
 
-          <div className={shared.callout}>
+          <div className={`${shared.callout} ${shared.calloutList}`}>
             <h3>覚えよう！</h3>
             <ul className={shared.compact}>
               <li><strong>定義：</strong>導電率は<strong>通しやすさ</strong>、抵抗率は<strong>通しにくさ</strong>。</li>
@@ -234,8 +234,8 @@ export default function ElectricityAndBatteriesPage() {
               三角図の使い方：<strong>隠した記号＝残り2つの関係</strong>（例：Vを隠すと<code>V = I・R</code>）。
             </figcaption>
           </figure>
-
-          <div className={shared.callout}>
+          
+          <div className={`${shared.callout} ${shared.calloutList}`}>
             <h3>覚えよう！</h3>
             <ul className={shared.compact}>
               <li><strong>基本式：</strong><code>V = I・R</code>（3量の関係はこれで固定）。</li>
@@ -342,7 +342,7 @@ export default function ElectricityAndBatteriesPage() {
             </figcaption>
           </figure>
 
-          <div className={shared.callout}>
+          <div className={`${shared.callout} ${shared.calloutList}`}>
             <h3>覚えよう！</h3>
             <ul className={shared.compact}>
               <li><strong>直列：</strong>電流はどこでも同じ（電流一定）。合成抵抗は<strong>足し算</strong>。</li>
@@ -403,7 +403,7 @@ export default function ElectricityAndBatteriesPage() {
             </p>
           </div>
 
-          <div className={shared.callout}>
+          <div className={`${shared.callout} ${shared.calloutList}`}>
             <h3>覚えよう！</h3>
             <ul className={shared.compact}>
               <li><strong>対応：</strong>電池（発電）は「<strong>負＝アノード（酸化）</strong>」「<strong>正＝カソード（還元）</strong>」</li>
@@ -446,7 +446,7 @@ export default function ElectricityAndBatteriesPage() {
             </p>
           </div>
 
-          <div className={shared.callout}>
+          <div className={`${shared.callout} ${shared.calloutList}`}>
             <h3>覚えよう！</h3>
             <ul className={shared.compact}>
               <li><strong>正極＝還元</strong>、<strong>負極＝酸化</strong>。</li>

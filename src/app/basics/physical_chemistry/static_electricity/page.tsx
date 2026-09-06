@@ -122,8 +122,8 @@ export default function StaticElectricityPage() {
             </ul>
           </div>
 
-          <div className={shared.callout}>
-            <h3>確認ポイント</h3>
+          <div className={`${shared.callout} ${shared.calloutList}`}>
+            <h3>覚えよう！</h3>
             <ul className={shared.compact}>
               <li><strong>電荷</strong>には正と負があり、電子は<strong>負電荷</strong>、陽子は<strong>正電荷</strong>をもつ。</li>
               <li><strong>同極は反発、異極は引力</strong>で作用する。これを<strong>静電力（クーロン力）</strong>という。</li>
@@ -210,8 +210,8 @@ export default function StaticElectricityPage() {
             <figcaption className={shared.figureCaption}>帯電列</figcaption>
           </figure>
 
-          <div className={shared.callout}>
-            <h3>確認ポイント</h3>
+          <div className={`${shared.callout} ${shared.calloutList}`}>
+            <h3>覚えよう！</h3>
             <ul className={shared.compact}>
               <li>ガラス棒とナイロンを摩擦→ガラス棒は（＋）、ナイロンは（−）に帯電。</li>
               <li>アクリル棒とナイロンを摩擦→ナイロンは（＋）、アクリル棒は（−）に帯電。</li>
@@ -325,8 +325,8 @@ export default function StaticElectricityPage() {
             </p>
           </div>
 
-          <div className={shared.callout}>
-            <h3>確認ポイント</h3>
+          <div className={`${shared.callout} ${shared.calloutList}`}>
+            <h3>覚えよう！</h3>
             <ul className={shared.compact}>
               <li>電気量の符号が<strong>同じ</strong>（＋と＋、－と－）なら<strong>斥力</strong>（反発）。</li>
               <li>電気量の符号が<strong>異なる</strong>（＋と－）なら<strong>引力</strong>。</li>
@@ -524,8 +524,8 @@ export default function StaticElectricityPage() {
             </ul>
           </div>
 
-          <div className={shared.callout}>
-            <h3>確認ポイント</h3>
+          <div className={`${shared.callout} ${shared.calloutList}`}>
+            <h3>覚えよう！</h3>
             <ul className={shared.compact}>
               <li>
                 <strong>検尺作業</strong>とは、検尺棒（1/100以上の精度の目盛りが刻まれた棒）をタンク上部の検尺口などから
