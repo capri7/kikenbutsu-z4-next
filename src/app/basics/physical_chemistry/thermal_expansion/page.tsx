@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import shared from '@/app/basics/BasicsShared.module.css'
 import theme from '@/app/basics/physical_chemistry/theme.module.css'
-import ThermalExpansionQuiz from './ThermalExpansionquiz'
+import ThermalExpansionQuiz from './ThermalExpansionQuiz'
 
 export const metadata: Metadata = {
   title: '基礎知識 | 第2章 18節：熱膨張',
