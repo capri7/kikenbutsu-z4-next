@@ -73,6 +73,7 @@ const LEGACY_URL_REDIRECTS: { source: string; destination: string; permanent: bo
   { source: '/basics/law/defined_substances/Otsux_Law_Defined_Substances_001.html', destination: '/basics/law/defined_substances', permanent: true },
   { source: '/basics/properties_prevention/class4_storage_handling/Otsux_Prop_Class4_Storage_Handling_001.html', destination: '/basics/properties_prevention/class4_storage_handling', permanent: true },
   { source: '/basics/law/class4_substances/Otsux_Law_Class4_Substances_001.html', destination: '/basics/law/class4_substances', permanent: true },
+  { source: '/checkout.html', destination: '/checkout', permanent: true },
 ];
 
 const nextConfig: NextConfig = {
