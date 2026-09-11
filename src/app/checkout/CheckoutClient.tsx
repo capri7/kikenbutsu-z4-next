@@ -5,18 +5,27 @@ import { createClient } from '@/lib/supabase/client'
 
 const PRICE_ID = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID!
 
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void
+  }
+}
+
+function trackEvent(name: string, params?: Record<string, unknown>) {
+  if (typeof window !== 'undefined' && typeof window.gtag === 'function') {
+    window.gtag('event', name, params)
+  }
+}
+
 export default function CheckoutClient() {
   const [agreed, setAgreed] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [consentError, setConsentError] = useState(false)
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
 
   async function handleStartCheckout() {
-    if (!agreed) {
-      setConsentError(true)
-      return
-    }
-    setConsentError(false)
+    // ボタンは未同意の間disabledのため、この関数が呼ばれる時点でagreedは常にtrueである
+    trackEvent('checkout_cta_click')
+
     setCheckoutError(null)
     setSubmitting(true)
 
@@ -39,8 +48,12 @@ export default function CheckoutClient() {
       if (error) throw error
       if (!data?.url) throw new Error('Checkoutの開始に失敗しました')
 
+      // Stripeの決済画面へ実際に遷移する直前を記録する
+      trackEvent('checkout_redirect_to_stripe')
       window.location.href = data.url
     } catch (e) {
+      // Supabase/Stripe側で技術的に失敗したケースを記録する（原因調査に重要）
+      trackEvent('checkout_session_error', { message: String(e) })
       setCheckoutError(`エラー: ${String(e)}`)
       setSubmitting(false)
     }
@@ -68,8 +81,12 @@ export default function CheckoutClient() {
               type="checkbox"
               checked={agreed}
               onChange={(e) => {
-                setAgreed(e.target.checked)
-                setConsentError(false)
+                const checked = e.target.checked
+                setAgreed(checked)
+                if (checked) {
+                  // 最初に同意チェックが入った時点を記録する（フォーム操作の開始に相当）
+                  trackEvent('checkout_consent_checked')
+                }
               }}
             />
             <span>
@@ -86,12 +103,6 @@ export default function CheckoutClient() {
         </div>
 
         <p className="consent-hint">チェックを入れると「お申し込みへ進む」ボタンが有効になります。</p>
-
-        {consentError && (
-          <p className="consent-error" role="alert" aria-live="polite">
-            同意が必要です。
-          </p>
-        )}
 
         <button
           type="button"
