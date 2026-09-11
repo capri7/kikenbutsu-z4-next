@@ -58,7 +58,7 @@ const sections: Section[] = [
   { slug: 'thermal_expansion', title: '18. 熱膨張', href: '/basics/physical_chemistry/thermal_expansion' },
   { slug: 'physical_and_chemical_changes', title: '19. 物理変化と化学変化', href: '/basics/physical_chemistry/physical_and_chemical_changes' },
   { slug: 'elements_compounds_mixtures', title: '20. 単体・化合物・混合物', href: '/basics/physical_chemistry/elements_compounds_mixtures' },
-  { slug: 'basics_of_chemistry', title: '21. 科学の基礎', href: '/basics/physical_chemistry/basics_of_chemistry' },
+  { slug: 'basics_of_chemistry', title: '21. 化学の基礎', href: '/basics/physical_chemistry/basics_of_chemistry' },
   { slug: 'reaction_rate_and_equilibrium', title: '22. 反応速度と化学平衡', href: '/basics/physical_chemistry/reaction_rate_and_equilibrium' },
   { slug: 'acids_and_bases', title: '23. 酸と塩基（アルカリ）', href: '/basics/physical_chemistry/acids_and_bases' },
   { slug: 'oxidation_and_reduction', title: '24. 酸化と還元', href: '/basics/physical_chemistry/oxidation_and_reduction' },
