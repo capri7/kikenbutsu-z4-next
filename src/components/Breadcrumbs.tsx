@@ -7,21 +7,25 @@ export type BreadcrumbItem = {
 }
 
 export default function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
+  const currentPage = items[items.length - 1]
   return (
-    <nav className="breadcrumbs" aria-label="パンくずリスト">
-      {items.map((item, i) => {
-        const isLast = i === items.length - 1
-        return (
-          <Fragment key={i}>
-            {item.href && !isLast ? (
-              <Link href={item.href}>{item.label}</Link>
-            ) : (
-              <span>{item.label}</span>
-            )}
-            {!isLast && ' > '}
-          </Fragment>
-        )
-      })}
-    </nav>
+    <>
+      <nav className="breadcrumbs" aria-label="パンくずリスト">
+        {items.map((item, i) => {
+          const isLast = i === items.length - 1
+          return (
+            <Fragment key={i}>
+              {item.href && !isLast ? (
+                <Link href={item.href}>{item.label}</Link>
+              ) : (
+                <span>{item.label}</span>
+              )}
+              {!isLast && ' > '}
+            </Fragment>
+          )
+        })}
+      </nav>
+      {currentPage && <h1 className="page-title">{currentPage.label}</h1>}
+    </>
   )
 }

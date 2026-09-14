@@ -293,6 +293,14 @@ a:hover {
   display: inline-block;
 }
 
+.page-title {
+  padding: 4px 24px 16px;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text, #111);
+}
+
 /* 5. メインコンテンツ */
 .site-main {
   display: block !important;

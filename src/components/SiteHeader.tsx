@@ -182,7 +182,7 @@ export default function SiteHeader() {
         <Link href="/">
           <img src="/images/logo.svg" alt="危険物乙4試験対策サイト" className="logo" />
         </Link>
-        <h1 className="site-title">乙種4類危険物取扱者試験対策</h1>
+        <p className="site-title">乙種4類危険物取扱者試験対策</p>
         <button
           ref={hamburgerRef}
           className="hamburger"
