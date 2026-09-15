@@ -42,8 +42,18 @@ export default function AcidsAndBasesPage() {
           { label: '23節：酸と塩基（アルカリ）' },
         ]}
       />
+
       <div className={`site-main ${theme.theme}`}>
-        <section className={shared.section}>
+      <section className={shared.section}>
+        <div className={shared.bandCard}>
+          <p className={shared.summaryLabel}>👉このページでわかること</p>
+          <p>
+            ここでは、酸と塩基（アルカリ）の基本的な性質、中和反応の仕組み、水素イオン濃度とpHの関係、酸性酸化物・塩基性酸化物・両性酸化物の違い、塩の分類（正塩・酸性塩・塩基性塩）、そして塩の加水分解によって水溶液の性質が決まる仕組みを解説します。
+          </p>
+        </div>
+      </section>
+
+      <section className={shared.section}>
           <h2>酸</h2>
 
           <div className={shared.bandCard}>

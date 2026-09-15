@@ -84,6 +84,15 @@
   line-height: 1.7;
 }
 
+.summaryLabel {
+  display: inline-block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--chapter-accent, #0b5cab);
+  margin: 0 0 0.4rem;
+}
+
+
 /* ================== 出る出るポイント（exam-notes） ================== */
 .examNotes {
   background: #fff8e8;
