@@ -10,36 +10,36 @@ type Option = {
 }
 
 const OPTIONS: Option[] = [
-  { value: 'opt1', label: '酸性', correct: false },
-  { value: 'opt2', label: '中性', correct: false },
-  { value: 'opt3', label: '塩基性', correct: true },
-  { value: 'opt4', label: '水に溶けない', correct: false },
+  { value: 'opt1', label: '酸化剤', correct: false },
+  { value: 'opt2', label: '還元剤', correct: true },
+  { value: 'opt3', label: '触媒', correct: false },
+  { value: 'opt4', label: '中和剤', correct: false },
 ]
 
 const FEEDBACK: Record<string, ReactNode> = {
   opt1: (
     <>
-      不正解です。「酸性塩」という分類名から連想しやすいですが、実際の水溶液は酸性ではありません。
+      不正解です。過酸化水素H<sub>2</sub>O<sub>2</sub>は一般に酸化剤としてはたらきますが、この設問の相手（過マンガン酸カリウムKMnO<sub>4</sub>）はより強い酸化剤です。
     </>
   ),
   opt2: (
     <>
-      不正解です。NaHCO<sub>3</sub>水溶液は中性ではなく、弱い塩基性を示します。
+      正解です！ 過酸化水素H<sub>2</sub>O<sub>2</sub>は一般に酸化剤としてはたらきますが、過マンガン酸カリウムKMnO<sub>4</sub>のようなより強い酸化剤に対しては、自身が電子を渡す側になるため還元剤としてはたらきます。酸化剤・還元剤の役割は物質固有の性質ではなく、相手物質との相対関係で決まります。
     </>
   ),
   opt3: (
     <>
-      正解です！ NaHCO<sub>3</sub>は組成上「酸のHが残っている」ため酸性塩に分類されますが、実際に水に溶かすと加水分解によって弱い塩基性を示します。塩の分類名（正塩・酸性塩・塩基性塩）は組成による分類であり、水溶液の実際の性質とは必ずしも一致しません。
+      不正解です。触媒は反応の前後で自身が変化せず反応速度のみを変える物質であり、電子の授受で相手を酸化・還元させる酸化剤・還元剤とは働きが異なります。
     </>
   ),
   opt4: (
     <>
-      不正解です。NaHCO<sub>3</sub>は水に溶ける塩です。
+      不正解です。中和剤は酸と塩基の反応に関わる物質であり、電子の授受による酸化・還元とは異なる反応です。
     </>
   ),
 }
 
-export default function AcidsAndBasesQuiz() {
+export default function OxidationAndReductionQuiz() {
   const [selected, setSelected] = useState<string | null>(null)
 
   const handleSelect = (value: string) => {
@@ -54,7 +54,7 @@ export default function AcidsAndBasesQuiz() {
   return (
     <div className={shared.quizForm}>
       <p id="q1-label">
-        炭酸水素ナトリウムNaHCO<sub>3</sub>は、塩の分類上「酸性塩」に分類されるが、その水溶液は何性を示すか。
+        過酸化水素H<sub>2</sub>O<sub>2</sub>は、過マンガン酸カリウムKMnO<sub>4</sub>のような強い酸化剤に対しては何としてはたらくか。
       </p>
 
       <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
