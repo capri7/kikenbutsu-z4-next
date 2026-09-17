@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description:
     '乙種4類危険物取扱者試験の基礎知識を章ごとに学べる総合案内ページです。法令、物理と化学、性質と火災予防・消火の方法の3章を一覧から確認できます。',
   alternates: {
-    canonical: 'https://kikenbutsu-z4.com/basics/',
+    canonical: 'https://kikenbutsu-z4.com/basics',
   },
   robots: 'index,follow',
   openGraph: {

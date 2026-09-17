@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description:
     '勉強しているのに受かる気がしない——弱点を自動で特定し、そこだけ集中して潰せるから、忙しくても最短で合格できます。',
   alternates: {
-    canonical: 'https://kikenbutsu-z4.com/',
+    canonical: 'https://kikenbutsu-z4.com',
   },
   robots: 'index,follow',
   openGraph: {

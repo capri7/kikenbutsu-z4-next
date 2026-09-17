@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description:
     '危険物乙4。法令・物理と化学・性質と火災予防の練習問題を掲載。過去傾向を反映した1,500問以上。進捗・誤答はマイページに自動記録。効率よく苦手分野を潰せる。',
   alternates: {
-    canonical: 'https://kikenbutsu-z4.com/contents/',
+    canonical: 'https://kikenbutsu-z4.com/contents',
   },
   robots: 'index,follow',
   openGraph: {
