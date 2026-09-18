@@ -177,33 +177,6 @@ export default function OrganicCompoundsPage() {
               環式炭化水素のうち、飽和炭化水素をシクロアルカン、二重結合を1個含む不飽和炭化水素をシクロアルケンといい、これらをまとめて脂環式炭化水素といいます。また、ベンゼン環と呼ばれる独特な炭素骨格をもつ環式炭化水素を芳香族炭化水素といいます。
             </p>
           </div>
-        </section>
-
-        <section className={shared.section}>
-          <h2>炭化水素の分類</h2>
-          <div className={shared.bandCard}>
-            <p>
-              炭素と水素でできた化合物を炭化水素といいます。炭化水素は最も基本的な有機化合物であり、鎖式炭化水素と環式炭化水素に大別されます。鎖式炭化水素は分子構造が鎖状になっている炭化水素で、エチレンやプロパンが該当します。環式炭化水素は、原子が分子内で環をつくって結合している炭化水素で、ベンゼンC<sub>6</sub>H<sub>6</sub>が該当します。
-            </p>
-          </div>
-
-          <div className={shared.bandCard}>
-            <p>
-              鎖式炭化水素のうち、炭素原子間の結合がすべて単結合（1本の腕）であるものを飽和炭化水素といい、メタンやプロパンなどが該当します。一方、炭素原子間の結合に二重結合や三重結合を含むものを不飽和炭化水素といい、エチレンやアセチレンなどが該当します。
-            </p>
-          </div>
-
-          <div className={shared.bandCard}>
-            <p>
-              また、飽和炭化水素をアルカン、二重結合を1個含む不飽和炭化水素をアルケン、三重結合を1個含む不飽和炭化水素をアルキンといいます。
-            </p>
-          </div>
-
-          <div className={shared.bandCard}>
-            <p>
-              環式炭化水素のうち、飽和炭化水素をシクロアルカン、二重結合を1個含む不飽和炭化水素をシクロアルケンといい、これらをまとめて脂環式炭化水素といいます。また、ベンゼン環と呼ばれる独特な炭素骨格をもつ環式炭化水素を芳香族炭化水素といいます。
-            </p>
-          </div>
 
           <figure className={shared.formulaCard} style={{ '--chapter-figure-max': '780px' } as React.CSSProperties}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -506,7 +479,7 @@ export default function OrganicCompoundsPage() {
             </figcaption>
           </figure>
 
-                    <h3>ケトン</h3>
+          <h3>ケトン</h3>
           <div className={shared.bandCard}>
             <p>
               ケトン基-CO-に2個の炭化水素基が結合した化合物です。一般式R<sub>1</sub>-CO-R<sub>2</sub>で表されます。
@@ -723,8 +696,6 @@ export default function OrganicCompoundsPage() {
           <a href="/signup">この範囲の問題を解く（登録無料）</a>
         </section>
 
-
-        {/* 続き：炭化水素の分類、官能基による分類を追加予定 */}
       </div>
     </>
   )
