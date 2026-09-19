@@ -54,7 +54,7 @@ export default function HomePage() {
             </div>
 
             <div className={styles.heroCtas}>
-              <Link href="/signup" className="btn btn-primary">
+              <Link href="/signup" className="btn btn-primary" prefetch={false}>
                 無料登録して100問を解く
               </Link>
             </div>
@@ -64,12 +64,12 @@ export default function HomePage() {
                 クレジットカード不要。メールアドレスだけで登録完了。
               </p>
               <p style={{ marginTop: 8, fontSize: '0.85em', textAlign: 'center' }}>
-                <Link href="/contents/free?reset=1" style={{ color: '#666' }}>
+                <Link href="/contents/free?reset=1" style={{ color: '#666' }} prefetch={false}>
                   登録なしで32問を試す
                 </Link>
               </p>
               <p className={styles.heroLoginNote}>
-                すでに登録済みの方は <Link href="/login">こちら</Link>からログイン。
+                すでに登録済みの方は <Link href="/login" prefetch={false}>こちら</Link>からログイン。
               </p>
             </div>
           </div>
@@ -232,7 +232,7 @@ export default function HomePage() {
 
           <div className={styles.heroButtons}>
             <HomeCta />
-            <Link href="/contents/free?reset=1" className="btn btn-secondary" style={{ fontSize: '0.85em', opacity: 0.75 }}>
+            <Link href="/contents/free?reset=1" className="btn btn-secondary" style={{ fontSize: '0.85em', opacity: 0.75 }} prefetch={false}>
               登録なしで32問
             </Link>
           </div>

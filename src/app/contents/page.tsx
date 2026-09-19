@@ -50,7 +50,7 @@ export default function ContentsPage() {
               「なんとなく復習」ではなく<strong>「苦手だけを狙って潰す」学習</strong>ができます。
             </p>
             <p>
-              <Link href="/signup" className="btn btn-primary">
+              <Link href="/signup" className="btn btn-primary" prefetch={false}>
                 無料で100問解いてみる
               </Link>
             </p>
@@ -138,7 +138,7 @@ export default function ContentsPage() {
               本気で合格を目指す場合は、この機能をフル活用してください。
             </p>
             <p>
-              <Link href="/signup" className="btn btn-primary">
+              <Link href="/signup" className="btn btn-primary" prefetch={false}>
                 無料100問
               </Link>
             </p>
@@ -149,7 +149,7 @@ export default function ContentsPage() {
               気軽に試してから、必要に応じて無料登録に進めます。
             </p>
             <p>
-              <Link href="/contents/free?reset=1" className="btn btn-ghost">
+              <Link href="/contents/free?reset=1" className="btn btn-ghost" prefetch={false}>
                 無料32問
               </Link>
             </p>
@@ -168,7 +168,7 @@ export default function ContentsPage() {
               <li>
                 <strong>先に基礎知識で仕組みを理解してから解く</strong> —
                 「なぜそうなるか」を先に知りたい人向け。該当する
-                <Link href="/basics">基礎知識ページ</Link>
+                <Link href="/basics" prefetch={false}>基礎知識ページ</Link>
                 を読んでから、同じテーマの練習問題に進むと理解が定着しやすくなります。
               </li>
               <li>

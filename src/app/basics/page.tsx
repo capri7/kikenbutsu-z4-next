@@ -52,7 +52,7 @@ export default function BasicsPage() {
           </h3>
 
           <nav className={styles.chapterGrid} aria-label="章の一覧">
-            <Link className={styles.chapterCard} href="/basics/law">
+            <Link className={styles.chapterCard} href="/basics/law" prefetch={false}>
               <span className={styles.chapterIcon} aria-hidden="true">
                 📘
               </span>
@@ -66,7 +66,7 @@ export default function BasicsPage() {
               </span>
             </Link>
 
-            <Link className={styles.chapterCard} href="/basics/physical_chemistry">
+            <Link className={styles.chapterCard} href="/basics/physical_chemistry" prefetch={false}>
               <span className={styles.chapterIcon} aria-hidden="true">
                 🧪
               </span>
@@ -80,7 +80,7 @@ export default function BasicsPage() {
               </span>
             </Link>
 
-            <Link className={styles.chapterCard} href="/basics/properties_prevention">
+            <Link className={styles.chapterCard} href="/basics/properties_prevention" prefetch={false}>
               <span className={styles.chapterIcon} aria-hidden="true">
                 🔥
               </span>
@@ -108,7 +108,7 @@ export default function BasicsPage() {
               </li>
             </ul>
             <p>
-              練習問題は<Link href="/mypage">マイページ</Link>がおすすめです。
+              練習問題は<Link href="/mypage" prefetch={false}>マイページ</Link>がおすすめです。
             </p>
           </div>
         </section>
@@ -153,7 +153,7 @@ export default function BasicsPage() {
               学習を続けるコツは、完璧を目指すことよりも、今の位置を確認しながら少しずつ進めることです。
               マイページを見ながら、取りこぼしのない学習につなげていきましょう。
             </p>
-            <Link href="/mypage" className={styles.dashboardButton}>
+            <Link href="/mypage" className={styles.dashboardButton} prefetch={false}>
               マイページを見る
             </Link>
           </div>

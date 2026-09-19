@@ -343,7 +343,7 @@ export default function FreeQuizClient() {
           <p className="text-sm text-gray-600 mb-3">
             メール登録すると、解いた記録がマイページに残り、続きをいつでも再開できます。無料100問＋ヒント解説も使い放題。
           </p>
-          <Link href="/signup" className="btn btn-primary inline-block">
+          <Link href="/signup" className="btn btn-primary inline-block" prefetch={false}>
             メール登録
           </Link>
         </div>
@@ -377,10 +377,10 @@ export default function FreeQuizClient() {
             <h3>無料{total}問 完了！</h3>
             <p>無料登録でマイページに同期できます。他の端末でも続きから再開できます。</p>
             <div className="cta-row flex gap-3 mt-3">
-              <Link href="/signup" className="btn-cta primary">
+              <Link href="/signup" className="btn-cta primary" prefetch={false}>
                 無料登録して同期する
               </Link>
-              <Link href="/checkout" className="btn-cta">
+              <Link href="/checkout" className="btn-cta" prefetch={false}>
                 有料版で本番演習へ
               </Link>
             </div>

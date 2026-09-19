@@ -130,7 +130,7 @@ export default function PropertiesPreventionIndexPage() {
                 {ITEMS.map((item) =>
                   item.href ? (
                     <li key={item.title}>
-                      <Link href={item.href}>{item.title}</Link>
+                      <Link href={item.href} prefetch={false}>{item.title}</Link>
                       <p className={styles.itemDescription}>{item.description}</p>
                     </li>
                   ) : (

@@ -26,14 +26,14 @@ export default function HomeCta() {
 
   if (loggedIn) {
     return (
-      <Link href="/mypage#review" className="btn btn-primary" id="btn-resume">
+      <Link href="/mypage#review" className="btn btn-primary" id="btn-resume" prefetch={false}>
         マイページに移動
       </Link>
     )
   }
 
   return (
-    <Link href="/signup" className="btn btn-primary" id="btn-resume">
+    <Link href="/signup" className="btn btn-primary" id="btn-resume" prefetch={false}>
       無料登録して100問を解く
     </Link>
   )

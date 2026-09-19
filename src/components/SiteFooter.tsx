@@ -30,7 +30,7 @@ export default function SiteFooter() {
         <div className="legal-links">
           {keys.map((key, index) => (
             <span key={key}>
-              <Link href={ALL[key].href} className="footer-link">
+              <Link href={ALL[key].href} className="footer-link" prefetch={false}>
                 {ALL[key].label}
               </Link>
               {index < keys.length - 1 && <span>／</span>}
@@ -41,4 +41,3 @@ export default function SiteFooter() {
     </footer>
   )
 }
-

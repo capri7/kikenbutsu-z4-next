@@ -179,7 +179,7 @@ export default function SiteHeader() {
   return (
     <header className={`site-header${navOpen ? ' nav-open' : ''}`}>
       <div className="header-container">
-        <Link href="/">
+        <Link href="/" prefetch={false}>
           <img src="/images/logo.svg" alt="危険物乙4試験対策サイト" className="logo" />
         </Link>
         <p className="site-title">乙種4類危険物取扱者試験対策</p>
@@ -199,26 +199,26 @@ export default function SiteHeader() {
       </div>
 
       <nav className="nav-links" id="site-nav" aria-label="メインメニュー">
-        <Link href="/" onClick={handleNavLinkClick}>
+        <Link href="/" onClick={handleNavLinkClick} prefetch={false}>
           トップ
         </Link>
-        <Link href="/basics" onClick={handleNavLinkClick}>
+        <Link href="/basics" onClick={handleNavLinkClick} prefetch={false}>
           基礎知識
         </Link>
-        <Link href="/contents" onClick={handleNavLinkClick}>
+        <Link href="/contents" onClick={handleNavLinkClick} prefetch={false}>
           学習ガイド
         </Link>
         {loggedIn ? (
-          <Link href="/mypage" onClick={handleNavLinkClick}>
+          <Link href="/mypage" onClick={handleNavLinkClick} prefetch={false}>
             マイページ
           </Link>
         ) : (
-          <Link href="/login" onClick={handleNavLinkClick}>
+          <Link href="/login" onClick={handleNavLinkClick} prefetch={false}>
             ログイン
           </Link>
         )}
         {showCheckout && (
-          <Link href="/checkout" id="link-checkout" className="nav-link" onClick={handleNavLinkClick}>
+          <Link href="/checkout" id="link-checkout" className="nav-link" onClick={handleNavLinkClick} prefetch={false}>
             購入
           </Link>
         )}

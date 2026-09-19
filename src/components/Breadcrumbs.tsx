@@ -35,7 +35,7 @@ export default function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
           return (
             <Fragment key={i}>
               {item.href && !isLast ? (
-                <Link href={item.href}>{item.label}</Link>
+                <Link href={item.href} prefetch={false}>{item.label}</Link>
               ) : (
                 <span>{item.label}</span>
               )}

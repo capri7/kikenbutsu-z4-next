@@ -104,7 +104,7 @@ export default function LawIndexPage() {
                 {sections.map((s) =>
                   s.href ? (
                     <li key={s.slug}>
-                      <Link href={s.href}>{s.title}</Link>
+                      <Link href={s.href} prefetch={false}>{s.title}</Link>
                     </li>
                   ) : (
                     <li key={s.slug} className={styles.pendingItem}>
