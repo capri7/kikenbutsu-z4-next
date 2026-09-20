@@ -3,6 +3,7 @@ import Script from "next/script";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import "./globals.css";
+import WebVitals from "@/components/WebVitals";
 
 export const metadata: Metadata = {
   title: "乙種4類危険物取扱者試験対策",
@@ -30,7 +31,7 @@ export default function RootLayout({
           src="https://www.googletagmanager.com/gtag/js?id=G-9D6XGBJWTC"
           strategy="lazyOnload"
         />
-        <Script id="gtag-init" strategy="lazyOnload">
+        <Script id="gtag-init" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -38,6 +39,7 @@ export default function RootLayout({
             gtag('config', 'G-9D6XGBJWTC');
           `}
         </Script>
+        <WebVitals />
         <SiteHeader />
         {children}
         <SiteFooter />
