@@ -19,6 +19,10 @@ export const metadata: Metadata = {
   },
 };
 
+// GA4 と Web Vitals の送信は、Vercel の本番環境だけで行う。
+// プレビュー環境・ローカル開発・CI（Lighthouse CI）のアクセスは計測に含めない。
+const isProduction = process.env.VERCEL_ENV === "production";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -27,19 +31,23 @@ export default function RootLayout({
   return (
     <html lang="ja" className="h-full antialiased" data-scroll-behavior="smooth">
       <body className="min-h-full flex flex-col">
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-9D6XGBJWTC"
-          strategy="lazyOnload"
-        />
-        <Script id="gtag-init" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-9D6XGBJWTC');
-          `}
-        </Script>
-        <WebVitals />
+        {isProduction && (
+          <>
+            <Script
+              src="https://www.googletagmanager.com/gtag/js?id=G-9D6XGBJWTC"
+              strategy="lazyOnload"
+            />
+            <Script id="gtag-init" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', 'G-9D6XGBJWTC');
+              `}
+            </Script>
+            <WebVitals />
+          </>
+        )}
         <SiteHeader />
         {children}
         <SiteFooter />
@@ -47,4 +55,3 @@ export default function RootLayout({
     </html>
   );
 }
-
