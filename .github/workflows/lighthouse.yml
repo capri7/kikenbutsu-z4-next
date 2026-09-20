@@ -27,3 +27,10 @@ jobs:
 
       - name: Run Lighthouse CI
         run: npx --yes @lhci/cli@0.15.x autorun
+
+      - name: Summarize medians
+        if: always()
+        run: |
+          echo "### Lighthouse 中央値" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          node scripts/lhci-median.mjs >> "$GITHUB_STEP_SUMMARY"
