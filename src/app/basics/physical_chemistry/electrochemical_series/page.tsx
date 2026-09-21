@@ -1,17 +1,17 @@
-// src/app/basics/physical_chemistry/ionization_tendency/page.tsx
+// src/app/basics/physical_chemistry/electrochemical_series/page.tsx
 import type { Metadata } from 'next'
 
 import Breadcrumbs from '@/components/Breadcrumbs'
 import shared from '@/app/basics/BasicsShared.module.css'
 import theme from '@/app/basics/physical_chemistry/theme.module.css'
-import IonizationTendencyQuiz from './IonizationTendencyQuiz'
+import ElectroChemicalSeriesQuiz from './ElectroChemicalSeriesQuiz'
 
 export const metadata: Metadata = {
   title: '基礎知識 | 第2章 27節：イオン化傾向',
   description:
     '危険物乙4 第2章27節。金属のイオン化列、水素との位置づけ、イオン化傾向の大小による金属の反応性の違いを整理して確認できる。',
   alternates: {
-    canonical: 'https://kikenbutsu-z4.com/basics/physical_chemistry/ionization_tendency',
+    canonical: 'https://kikenbutsu-z4.com/basics/physical_chemistry/electrochemical_series',
   },
   robots: 'index,follow',
   openGraph: {
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     description:
       '危険物乙4 第2章27節。金属のイオン化列、水素との位置づけ、イオン化傾向の大小による金属の反応性の違いを整理して確認できる。',
     type: 'article',
-    url: 'https://kikenbutsu-z4.com/basics/physical_chemistry/ionization_tendency',
+    url: 'https://kikenbutsu-z4.com/basics/physical_chemistry/electrochemical_series',
     siteName: '危険物乙4 危険物取扱者試験対策',
     images: [{ url: 'https://kikenbutsu-z4.com/images/logo.png' }],
   },
@@ -77,9 +77,8 @@ export default function IonizationTendencyPage() {
               <strong>金属のイオン化列</strong> — 元素記号と元素名を対応させて示しています。
             </figcaption>
           </figure>
-
+            <h3>覚え方</h3>
           <div className={shared.examNotes}>
-            <h4>覚え方</h4>
             <p>貸そうかな、まああてにすんなひどすぎる借金</p>
             <figure className={shared.formulaCard}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -139,7 +138,7 @@ export default function IonizationTendencyPage() {
         {/* クイズ */}
         <section className={`${shared.section} ${shared.quizSection}`}>
           <h2 id="quiz-label">クイズ</h2>
-          <IonizationTendencyQuiz />
+          <ElectroChemicalSeriesQuiz/>
         </section>
 
         {/* 次に進む */}

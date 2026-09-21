@@ -1,4 +1,4 @@
-// src/app/basics/physical_chemistry/ionization_tendency/IonizationTendencyQuiz.tsx
+// src/app/basics/physical_chemistry/electrochemical_series/ElectroChemicalSeriesQuiz.tsx
 'use client'
 
 import { useState, type ReactNode } from 'react'
@@ -41,7 +41,7 @@ const FEEDBACK: Record<string, ReactNode> = {
   ),
 }
 
-export default function IonizationTendencyQuiz() {
+export default function ElectroChemicalSeriesQuiz() {
   const [selected, setSelected] = useState<string | null>(null)
 
   const handleSelect = (value: string) => {
@@ -54,11 +54,13 @@ export default function IonizationTendencyQuiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">
         常温の乾燥空気中で酸化されない金属はどれか。
       </p>
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
+
+
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           const showResult = selected !== null
