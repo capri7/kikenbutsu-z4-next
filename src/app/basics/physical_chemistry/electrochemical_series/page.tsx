@@ -68,7 +68,7 @@ export default function IonizationTendencyPage() {
               src="/images/basics/physical_chemistry/ionization_series.svg"
               alt="金属のイオン化列を示す図。イオン化傾向の大きい順に、リチウムLi・カリウムK・カルシウムCa・ナトリウムNa・マグネシウムMg・アルミニウムAl・亜鉛Zn・鉄Fe・ニッケルNiと続き、スズSn・鉛Pb・水素H2・銅Cu・水銀Hg・銀Ag・白金Pt・金Auの順に並ぶ。"
               className={shared.circuitSvg}
-              loading="lazy"
+              fetchPriority="high"
               decoding="async"
               width={994}
               height={536}
