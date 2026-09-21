@@ -62,7 +62,7 @@ export default function CheckoutClient() {
   return (
     <main className="site-main page-checkout">
       <div className="auth-card">
-        <img src="/images/logo.svg" alt="危険物乙4対策サイトロゴ" className="auth-logo" />
+        <img src="/images/logo.svg" alt="危険物乙4対策サイトロゴ" className="auth-logo" width={56} height={56} />
 
         <h2 className="hero-title">乙4合格マスターコース</h2>
         <p className="plan-info">1280円／月（税込）</p>
