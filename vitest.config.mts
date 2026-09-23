@@ -6,6 +6,6 @@ export default defineConfig({
   plugins: [tsconfigPaths(), react()],
   test: {
     environment: 'jsdom',
-    exclude: ['node_modules', 'supabase/**'],
+    exclude: ['node_modules', 'supabase/**', 'e2e/**'],
   },
 })
