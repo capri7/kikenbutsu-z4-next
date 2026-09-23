@@ -65,7 +65,7 @@ test.describe('無料登録からマイページ・練習問題までのコア�
     await page.getByRole('button', { name: /登録/ }).click();
     await expect(page).toHaveURL(/\/mypage/, { timeout: 15000 });
 
-    await page.getByRole('button', { name: '誤答リストを開く' }).click();
+    await page.getByRole('link', { name: '誤答リストを開く' }).click();
     await expect(page).toHaveURL(/\/mistakes\?view=wrong/, { timeout: 15000 });
   });
 });
