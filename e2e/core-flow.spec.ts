@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { randomUUID } from 'node:crypto';
 
 /**
  * コアフロー：無料登録 〜 マイページ 〜 練習問題への回答 〜 誤答リストへの遷移
@@ -6,11 +7,12 @@ import { test, expect } from '@playwright/test';
  * このサービスの価値の核（無料で100問を体験し、気に入れば有料転換する導線）が
  * 一連の操作として壊れていないかを検証する。決済（Stripe）は含まない。
  *
- * 実行のたびに新規メールアドレスを生成するため、既存の会員データとは衝突しない。
+ * 実行のたびに UUID で新規メールアドレスを生成するため、既存の会員データとも、並行実行中の他のテストとも衝突しない。
  */
 
+
 function uniqueTestEmail(): string {
-  return `e2e-test+${Date.now()}@example.com`;
+  return `e2e-test+${randomUUID()}@example.com`;
 }
 
 test.describe('無料登録からマイページ・練習問題までのコアフロー', () => {
