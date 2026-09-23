@@ -7,25 +7,100 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 
 **公開サイト**: [https://kikenbutsu-z4.com](https://kikenbutsu-z4.com)（本リポジトリを2026年8月にVercelへ本番デプロイ・ドメイン移行済み）
 
+## 要点
+
+- 乙4受験者向けの有料学習サービス。誤答リスト・復習リスト・分野別正答率で「弱点を優先して潰す」学習フローを提供（本番稼働中）
+- Next.js 16（App Router）＋ Supabase（PostgreSQL・RLS・Edge Functions）＋ Stripe。要件定義・設計・実装・運用を1人で担当
+- データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（4章）
+- 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（4章「運用上の学び」）
+- テスト：分岐ロジックを関数に切り出し、Deno.test 37件・Vitest 9件・Playwright E2E 3件。E2E はローカルの Supabase に分離し、本番に触れない構成（6章）
+
+## 動かし方
+
+### 必要なもの
+
+- Node.js 22（CI と同じバージョン）
+- Docker と Supabase CLI（ローカルの Supabase を起動するため）
+- Deno 2.x（Edge Functions のテストを実行する場合のみ）
+
+### ローカルで起動する
+
+ローカルの Supabase を起動すると、`supabase/migrations/` のスキーマと、`supabase/seed.sql` の架空の問題データ（3問）が入る。本番の鍵は不要。
+
+```bash
+npm ci
+supabase start
+supabase status -o env    # API_URL と ANON_KEY を確認する
+```
+
+`.env.local` を作り、ローカルの値を設定する。
+
+```
+NEXT_PUBLIC_SUPABASE_URL=<supabase status の API_URL>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<supabase status の ANON_KEY>
+```
+
+```bash
+npm run dev                        # http://localhost:3000
+```
+
+決済（Stripe）と Edge Functions は、ローカル起動の対象外。
+
+### テスト
+
+```bash
+# Next.js の単体テスト（Vitest、9件）
+npm test -- --run
+
+# Edge Functions の判定ロジック（Deno.test、37件）
+deno test supabase/functions/
+
+# E2E（Playwright、3件）。ローカルの Supabase を起動してから実行する
+npx playwright install chromium    # 初回のみ
+supabase start
+npx playwright test
+```
+
+E2E の接続先は、`.env.local` ではなく `supabase status` から取得する。ローカルの Supabase が起動していない場合や、接続先がローカルでない場合は、テストを始める前に止まる。E2E は本番ビルド（`npm run build && npm run start`）を自動で起動してから実行する。
+
+### 本番の環境変数
+
+Next.js（Vercel）
+
+| 変数 | 用途 |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase のプロジェクト URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 公開用の anon キー（RLS でアクセスを制御する前提でクライアントに渡す） |
+| `NEXT_PUBLIC_STRIPE_PRICE_ID` | 購入ページで使う Stripe の Price ID。Edge Functions 側の `PRICE_IDS` に含まれていること |
+
+Supabase Edge Functions（`supabase secrets set` で登録）
+
+| 変数 | 用途 |
+|---|---|
+| `STRIPE_SECRET_KEY` | Stripe API の呼び出し |
+| `STRIPE_WEBHOOK_SECRET` | `stripe-webhook` の署名検証 |
+| `PRICE_IDS` | `create-checkout-session` で許可する Price ID の一覧 |
+
+`SUPABASE_URL` と `SUPABASE_SERVICE_ROLE_KEY` は Supabase が自動で設定する。
+
 ## 1. プロジェクト概要（要件定義）
 
-## 背景
+### 背景
+危険物取扱者乙種第4類（乙4）の合格率は3割台であり（出典：[一般財団法人消防試験研究センター「試験実施状況」](https://www.shoubo-shiken.or.jp/result/)）、多くの受験者が複数回受験を経験する。一方で試験範囲自体は法改正の影響を受けにくく、出題内容が長期間にわたって大きく変化しない分野である。このため、教材としての改修コストが低く、長期的に安定した需要が見込める領域として本プロジェクトを選定した。
 
-危険物取扱者乙種第4類（乙4）は年間約20万人が受験する国家資格だが、合格率は3〜4割程度と低く、多くの受験者が複数回受験を経験する。一方で試験範囲自体は法改正の影響を受けにくく、出題内容が長期間にわたって大きく変化しない分野である。このため、教材としての改修コストが低く、長期的に安定した需要が見込める領域として本プロジェクトを選定した。
-
-## 対象ユーザー（ペルソナ）
+### 対象ユーザー（ペルソナ）
 - 社会人で、就業しながら学習時間を確保する必要がある
 - 乙4受験の経験があり、過去に不合格を経験している
 - 独学で学習を進めており、自分の弱点分野を客観的に把握できていない
 - 継続学習が苦手で、モチベーションの維持に課題がある
 
-## 課題
+### 課題
 既存の教材の多くは、問題を解く機能自体は提供するが、「どの分野が弱点か」「何を優先して復習すべきか」を可視化する仕組みが弱い。受験者は同じ範囲を何度も反復しても、弱点そのものが埋まらないまま再受験を繰り返すケースが多い。
 
-## 解決アプローチ
+### 解決アプローチ
 以下の機能により、「弱点を可視化し、優先的に潰す」という学習フローを実現した。
 
-マイページでの分野別正答率のグラフ表示（弱点の可視化）
+- マイページでの分野別正答率のグラフ表示（弱点の可視化）
 - 誤答リスト（不正解時に自動追加、正解で自動解除）
 - 復習リスト（ユーザーが任意で追加）
 - 試験日カウントダウン（残り日数の明確化）
@@ -41,6 +116,7 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 | メール登録・ログイン | ― | メール登録（サインアップ）、ログイン、パスワードリセット |
 | 法務・SEO | 不要 | プライバシーポリシー（問い合わせ先記載）、利用規約、特商法表記、OGP設定 |
 
+無料の範囲は2段階に分かれる。①未登録でも使える無料32問（静的データとしてアプリに同梱、DBを介さない、認証不要）と、②メール登録後にマイページから使える無料100問（Supabaseの`questions`テーブルで`is_paid = false`、RLSでログイン済みユーザーのみ読み取り可）。残り約1,473問は有効なサブスクリプションを持つ有料会員のみ。
 
 ## 3. 基本設計（画面遷移図・ユーザーフロー）
 
@@ -115,6 +191,18 @@ Stripeの公式仕様では、Webhookは「少なくとも1回」配信される
 **理由**
 論理削除と物理削除（CASCADE）が1つのテーブル群の中に混在すると、「退会済みユーザーのデータがどこまで残っているか」をテーブルごとに個別に把握しないと判断できず、削除漏れの温床になる。乙4のような学習データサービスでは、退会後もユーザーの誤答履歴等が特定の個人と紐づいた形でDBに残り続けることは、プライバシー・個人情報保護の観点で放置できないリスクである。削除ルールをFKレベルで統一したことで、「`auth.users`から消せば、個人情報テーブルは物理削除され、契約記録は匿名化されて残る」という単一の保証をDB構造そのものに持たせ、アプリケーション側の削除処理漏れに依存しない設計にした。
 
+#### ⑤ 問題データの3段階アクセス制御
+
+練習問題データは、認証状態とRLSによって3段階に分かれている。
+
+| 段階 | 問題数 | 保存場所 | 条件 |
+|---|---|---|---|
+| 無料体験 | 32問 | 静的データ（アプリに同梱、DBを介さない） | 認証不要 |
+| 無料会員 | 100問 | `questions`テーブル（`is_paid = false`） | メール登録・ログイン必須（RLSでログイン済みユーザーのみ読み取り可） |
+| 有料会員 | 約1,473問 | `questions`テーブル（`is_paid = true`） | 有効なサブスクリプション必須（`user_active_subscriptions`ビューで判定） |
+
+全1,573問のうち無料は100問（約6%）にとどめ、残りを有料の壁の奥に置くことで、検索流入で評価を得ている法令・物理化学の解説ページ（`/basics`配下、認証不要）と、収益化対象の練習問題との間でバランスを取っている。
+
 ### API設計（Supabase Edge Functions）
 
 Next.js側にはAPI Routesを持たず、Stripe秘密鍵の使用や外部API連携が必要な処理のみをSupabase Edge Functions（Deno）に集約している。単純なCRUD（誤答リスト・復習リスト等）は、Row Level Security（RLS）を前提にクライアントから直接PostgRESTへ問い合わせる構成とした。
@@ -133,20 +221,20 @@ Next.js側にはAPI Routesを持たず、Stripe秘密鍵の使用や外部API連
 
 全エンドポイント共通のエラー形式を先に定義し、各エンドポイントの型はこれを参照する。
 
-\`\`\`typescript
+```typescript
 // 全エンドポイント共通のエラーレスポンス形式
 type ErrorResponse = {
   error: string;    // UPPER_SNAKE_CASEのエラーコード（例: MISSING_PRICE_ID）
   message?: string; // Stripe/DBエラー時の詳細メッセージ（人間可読な補足情報）
 };
-\`\`\`
+```
 
 
 #### `create-checkout-session`
 
 Stripe Checkoutセッションを作成する。`user_id`を任意項目にしているのは、未ログイン状態での購入（ゲスト決済）を許容するためで、ログイン後に`check-guest-subscription`でメールアドレス突合による紐付けを行う設計と対応している。
 
-\`\`\`typescript
+```typescript
 type CreateCheckoutSessionRequest = {
   priceId: string;
   user_id?: string;       // 未ログイン購入（ゲスト決済）時は省略可
@@ -159,7 +247,7 @@ type CreateCheckoutSessionResponse = {
   url: string;  // Stripe Checkoutへのリダイレクト先
   id: string;   // Checkout Session ID
 };
-\`\`\`
+```
 
 **エラー**
 
@@ -176,7 +264,7 @@ type CreateCheckoutSessionResponse = {
 
 決済完了後の`/success`ページで、Stripe Checkoutの`session_id`から決済結果を取得する。メールアドレスは`customer_details.email`を優先し、取得できない場合のみ追加でCustomerオブジェクトを取得する（Checkout完了直後は`customer_details`が未確定なケースがあるための保険的フォールバック）。このエンドポイントはセッション個人情報を返すため、`cache-control: no-store`を明示している。
 
-\`\`\`typescript
+```typescript
 type CheckoutSessionInfoRequest = {
   session_id: string;
 };
@@ -188,7 +276,7 @@ type CheckoutSessionInfoResponse = {
   payment_status: string;   // 'paid' | 'unpaid' | 'no_payment_required'
   subscription_id: string | null;
 };
-\`\`\`
+```
 
 **エラー**
 
@@ -205,13 +293,13 @@ type CheckoutSessionInfoResponse = {
 
 有料会員（`active`/`trialing`/`past_due`）と無料会員でレスポンスの形が分岐する。有料会員の場合、即時削除はしない。Stripe側の契約終了日（`current_period_end`）まで猶予を持たせる`deletion_requested`フラグを立て、ユーザー希望で退会予約（Stripe側の契約終了日での退会）をすることができる。無料会員は猶予する契約が存在しないため`auth.users`を即時削除する。この非対称性を1つのエンドポイントに集約したのは、フロント側が会員種別を意識せず同じボタン・同じAPI呼び出しで退会フローを完結できるようにするため。
 
-\`\`\`typescript
+```typescript
 // リクエストボディなし（Authorizationヘッダーのみ）
 
 type RequestAccountDeletionResponse =
   | { scheduled: true; effective_date: string | null } // 有料会員：契約終了日まで猶予
   | { deleted: true };                                  // 無料会員：即時削除
-\`\`\`
+```
 
 **エラー**
 
@@ -231,7 +319,7 @@ Stripeからのイベント通知を受信する。**リクエスト/レスポ�
 - リクエスト：JSONではなくStripeが生成する生のイベントペイロード。`stripe-signature`ヘッダーの署名検証（`stripe.webhooks.constructEventAsync`）でのみ認証し、Supabase JWTは使わない（呼び出し元がStripeのみで、フロントから直接叩かれることがないため）
 - レスポンス：JSONではなく**プレーンテキスト**。Stripeはレスポンスのステータスコードのみを見てリトライ要否を判断するため、構造化されたエラーコードを返す必要がない
 
-\`\`\`typescript
+```typescript
 // リクエストボディ：Stripe.Event（stripe-signatureヘッダーで署名検証）
 
 // レスポンス（プレーンテキスト、Content-Type指定なし）
@@ -239,7 +327,7 @@ Stripeからのイベント通知を受信する。**リクエスト/レスポ�
 // 200 "ok (duplicate)"  : stripe_eventsテーブルに同一event.idが既存（Stripeのリトライによる重複配信を無視）
 // 400 "invalid signature" : 署名検証失敗
 // 400 "handler error: ${message}" : 署名検証〜冪等性チェックまでの間の未捕捉例外
-\`\`\`
+```
 
 **処理するイベント種別**
 
@@ -264,12 +352,12 @@ Stripeは同一イベントを複数回配信することがあるため、`stri
 
 `request-account-deletion`との非対称性が1点ある：`request-account-deletion`は「サブスクリプション未登録＝無料会員」として即時削除に倒すが、`cancel-account-deletion`は行が無ければ`NO_SUBSCRIPTION`（404）で明示的に拒否する。これは「取り消す対象の予約が存在しない」ことを黙って200で返すと、フロントが誤操作に気づけなくなるための設計。既に取り消し済み（`deletion_requested`が既に`false`）の場合はエラーにせず、`already: true`を付けて200で返す（二重送信・多重クリックを異常系として扱わないため）。
 
-\`\`\`typescript
+```typescript
 // リクエストボディなし（Authorizationヘッダーのみ）
 
 type CancelAccountDeletionResponse =
   | { cancelled: true; already?: true } // 取り消し成功（already: trueは元々取り消し済みだった場合）
-\`\`\`
+```
 
 **エラー**
 
@@ -286,13 +374,13 @@ type CancelAccountDeletionResponse =
 
 Stripe Customer検索→該当顧客ごとにサブスクリプション検索、という2段階のStripe API呼び出しを行い、`active`/`trialing`状態の契約が見つかった時点で`user_profiles`/`subscriptions`に同期して返す。複数のStripe顧客が同じメールアドレスを持つケース（ゲスト決済を複数回行った等）を想定し、ループで全顧客を走査している。
 
-\`\`\`typescript
+```typescript
 // リクエストボディなし（Authorizationヘッダーのみ）
 
 type CheckGuestSubscriptionResponse =
   | { matched: true; subscription_id: string }
   | { matched: false; reason: "NO_CUSTOMER" | "NO_ACTIVE_SUBSCRIPTION" };
-\`\`\`
+```
 
 **エラー**
 
@@ -308,7 +396,7 @@ type CheckGuestSubscriptionResponse =
 
 Stripeカスタマーポータル（請求情報の確認・支払い方法の変更・サブスク解約）へのセッションURLを発行する。呼び出し前に、ログイン中ユーザーの`user_profiles.stripe_customer_id`をDBから引いており、リクエストボディからは`return_url`のみを受け取る（`customer_id`をクライアントから信用しない設計は他エンドポイントと共通）。
 
-\`\`\`typescript
+```typescript
 type BillingPortalRequest = {
   return_url: string; // ポータルから戻ってくる先のURL
 };
@@ -316,7 +404,7 @@ type BillingPortalRequest = {
 type BillingPortalResponse = {
   url: string; // Stripeカスタマーポータルへのリダイレクト先
 };
-\`\`\`
+```
 
 **エラー**
 
@@ -336,6 +424,26 @@ type BillingPortalResponse = {
 
 Edge Functionのログを確認し、Stripe側からのリクエスト自体は届いているが401で弾かれていることを特定。`supabase/config.toml`に`[functions.stripe-webhook] verify_jwt = false`を追加して解消した。あわせて、GitHub ActionsのデプロイワークフローがトリガーパスとしてEdge Functionsのコード（`supabase/functions/**`）のみを監視しており、`config.toml`単体の変更では自動デプロイが走らない設計上の穴も同時に発見し、トリガーパスに`supabase/config.toml`を追加して修正した。
 
+**この不具合は一度、本番で再発した。** 2026年7月31日、`stripe-webhook`は再び`verify_jwt`の401を返していた（Supabaseのファンクションログで確認）。この日の請求書作成時刻（06:04:01）と401発生時刻（06:04:02）が1秒差で一致しており、この日の月次更新イベントの受信に失敗したと考えられる。Stripe側では決済自体は正常に完了しており、Webhookの配信も試行された記録（`webhooks_delivered_at`）が残っているが、受信側が401で拒否したため`stripe_events`テーブルへの記録は行われなかった。`current_period_end`はこのWebhook経由でのみ更新される設計のため、この間は更新されていなかったと考えられる。
+
+2026-08-27 13:11（コミット`1ae39a5`「fix: stripe-webhook verify_jwt disable + workflow trigger path」）で`verify_jwt`の無効化設定を再適用し、同日13:18ごろから200が返るようになった。ただしStripeの標準的なWebhook再送は数日で打ち切られる仕様のため、7/31に失敗した`invoice.payment_succeeded`イベント自体は再送されず、`stripe_events`側の記録としては永久に欠落したままである。データが正しい状態に復帰したのは、復旧後に届いた`customer.subscription.updated`（サブスクリプションの最新状態そのものを運ぶイベント）によって、欠落したイベントを経由せず直接追いついたため。
+
+**教訓**：`verify_jwt: false`はSupabase側の設定であり、意図せず元に戻りうる。GitHub Actionsのデプロイが毎回成功（緑）していても、それは「デプロイ処理が成功した」ことの証明であって「関数が正しく動作している」ことの証明ではない。また、状態を運ぶイベント（`customer.subscription.updated`）が後から届けば実害としてのデータのズレは自己修復するが、それは欠落そのものを消すわけではなく、`stripe_events`という監査ログの完全性は失われたままになる。外部サービス側の記録（Stripeの請求書一覧）と自システムの記録を定期的に突き合わせる仕組みが無いと、この種の欠落は誰にも気づかれず残り続けるというのが、今回得た教訓である。
+
+#### 運用上の学び：migration のファイルと本番の履歴のずれ
+
+E2E をローカルの Supabase に移す準備として、`supabase db diff --linked` で、リポジトリの migrations から作ったスキーマと本番を比べた。本番にだけ、`subscriptions.cancel_at_period_end` 列と、その列を含む `user_active_subscriptions` ビューがあった。この列は、退会予約の判定（`request-account-deletion` の `SUBSCRIPTION_NOT_CANCELLED`）と `stripe-webhook` が使っている。
+
+`supabase migration list --linked` で履歴を比べると、本番にだけ `20260826100947` の記録があった。本番の履歴の表（`supabase_migrations.schema_migrations`）から SQL を確認すると、中身は列の追加だけだった。ずれは2種類あったことになる。
+
+| 差分 | 実際に起きていたこと | 対応 |
+|---|---|---|
+| 列の追加 | 2026-08-26 に migration で適用済み。ファイルがリポジトリに無かった | 本番の履歴にある SQL から、ファイルを復元 |
+| ビューの作り直し | migration を使わずに、本番で直接変更されていた | ビューの作り直しを migration にし、本番の履歴に適用済みとして記録（`supabase migration repair`）。本番のスキーマは変更していない |
+
+対応後、4つの migration から作ったスキーマが本番と一致すること（`No schema changes found`）と、ローカルで migrations と seed がエラーなく適用できること（`supabase db reset`）を確認した。
+
+**教訓**：リポジトリの migrations から本番のスキーマを再現できなければ、テスト環境は本番と違うスキーマで動く。ダッシュボードでの直接の変更は、リポジトリに痕跡を残さない。`db diff` と `migration list` は、どちらも本番を変更せずに実行できるため、スキーマに触れる作業の前に確認する。
 
 ## 5. 実装・技術スタック
 
@@ -365,7 +473,11 @@ Edge Functionのログを確認し、Stripe側からのリクエスト自体は�
 
 **React Compilerの有効化とその設計判断**：`next.config.ts`で`reactCompiler: true`を設定し、`babel-plugin-react-compiler`をビルドパイプラインに組み込んでいる。React Compilerはビルド時の静的解析でコンポーネント・値の依存関係を追跡し、`useMemo`/`useCallback`/`React.memo`が担っていた再レンダリング抑制を自動生成コードに置き換える。手動メモ化への依存を排除する狙いは、依存配列の記述漏れによる再レンダリング抑制の失敗（バグとして顕在化しにくい）と、過剰な`useMemo`によるメモリオーバーヘッドの両方を、実装者のスキルに関係なく機械的に防げる点にある。レビュアー不在の個人開発では、このクラスのバグは気づかれないまま本番に残りやすいため、コンパイラに委譲する判断はリスク低減として合理的である。
 
-**308リダイレクトによるSEO資産の保全**：バニラJS版からNext.js版への移行時、URL構造が変わったにもかかわらずリダイレクトを設定しておらず、Google Search Consoleにインデックス済みの66件のURLが404を返す状態になっていた。302（一時的リダイレクト）ではなく`next.config.ts`の`redirects()`で`permanent: true`を指定しているのは、Next.jsが恒久的リダイレクトに用いる**308**ステータスを返すためで、これにより検索エンジンに「恒久的な移転」であることを伝え、旧URLに蓄積されたインデックス評価・被リンク評価を新URLに引き継がせている。307/308が使われているのは、従来の301/302と異なりリダイレクト時にHTTPメソッドを変更しない仕様のため。`redirects()`はビルド時に解決され、Vercelのエッジ層でリダイレクトが完結するため、クライアントサイドでの一瞬の404表示やリダイレクトチェーンによる遅延が発生しない。
+**308リダイレクトによるSEO資産の保全**：バニラJS版からNext.js版への移行時、URL構造が変わったにもかかわらずリダイレクトを設定しておらず、Google Search Consoleにインデックス済みのURLが404を返す状態になっていた。移行時点で64件のリダイレクトを設定したが、後日3件の設定漏れ（`defined_substances`等）に気づいて追加し、最終的に69件のリダイレクトルールとなっている（全件、本番環境で308を返すことを確認済み）。
+
+302（一時的リダイレクト）ではなく`next.config.ts`の`redirects()`で`permanent: true`を指定しているのは、Next.jsが恒久的リダイレクトに用いる**308**ステータスを返すためで、これにより検索エンジンに「恒久的な移転」であることを伝え、旧URLに蓄積されたインデックス評価・被リンク評価を新URLに引き継がせている。307/308が使われているのは、従来の301/302と異なりリダイレクト時にHTTPメソッドを変更しない仕様のため。`redirects()`はビルド時に解決され、Vercelのエッジ層でリダイレクトが完結するため、クライアントサイドでの一瞬の404表示やリダイレクトチェーンによる遅延が発生しない。
+
+69件の`source`（旧URL）に重複が無いことも確認済みで、1つの旧URLが複数の転送先に矛盾して解決される余地はない。全件、本番環境に対してcurlでステータスコードを確認するスクリプト（`scripts/check_redirects.sh`）を作成し、69件すべてが308を返すことを検証済み。
 
 **Cookieベースのセッションリフレッシュ設計（`src/proxy.ts`）**：Next.js 16 で middleware が非推奨になり proxy に改名されたため、当初から proxy.ts を採用している（ランタイムは Node.js 固定）。本プロジェクトは初期実装の段階からこれに対応済みである。セッション検証には`getSession()`ではなく`getUser()`を使用している。`getSession()`はローカルのCookieに保存された値をそのまま信頼するため、Cookieの偽装に対して脆弱であるのに対し、`getUser()`はSupabase Authサーバーに問い合わせてJWTを再検証するため、なりすましを防げる。また、Cookieの更新を`request.cookies`と`response.cookies`の両方に対して行っているのは、`request`側を更新しないと同一リクエスト内で後続実行されるServer Componentsが既にリフレッシュ済みのトークンを知らずに二重にリフレッシュを試み、`response`側を更新しないとブラウザに新しいトークンが渡らず、次回リクエストで古いトークンを送り続けた末に強制的にログアウトされるため。この2段階の伝播はSupabase公式が明示的に要求している実装パターンである。
 
@@ -383,6 +495,22 @@ Edge Functionのログを確認し、Stripe側からのリクエスト自体は�
 
 **教訓**：`npm run dev`で問題が無くても、本番ビルド（`next build`）でしか顕在化しない不具合がある。デプロイパイプライン（GitHub Actions・Vercel）でビルド自体を実行させ、ローカルの目視確認に頼らないことが、この種の不具合を検知する唯一の方法である。
 
+### ケーススタディ：E2E のテスト環境を本番から分離する
+
+**問題**：E2E（Playwright）は `.env.local` を通じて本番の Supabase に接続しており、実行のたびに本番の `auth.users` にテストユーザーが作られていた。
+
+**対応**：
+
+- テスト専用の架空の問題データを `supabase/seed.sql` に用意した（公開リポジトリのため、本番の教材や会員のデータは含めない）。形式は本番の問題に合わせた
+- `playwright.config.ts` で、接続先を `supabase status` から取得するようにした。ローカルの Supabase が起動していない場合や、接続先がローカルでない場合は、テストを始める前に止まる
+- 本番に接続したサーバーを誤って使い回さないよう、`reuseExistingServer: false` にした
+
+**確認**：E2E の前後で、本番のテストユーザーの数が変わらず（5 → 5）、ローカルに3人作られたことを確認した。その後、本番に残っていたテストユーザー5人を削除した。関連するプロフィールも `ON DELETE CASCADE` で消えたことを確認している。
+
+**同時に見つかった不具合**：並行して動く2件のテストが、同じミリ秒に `Date.now()` からメールアドレスを作り、同じアドレスで登録していた。後から登録した側が 500（`Database error saving new user`）になっていた。Postgres のログで、`auth.users` のメールアドレスの一意制約（`users_email_partial_key`）違反を確認し、メールアドレスを `randomUUID()` で作るように直した。
+
+**未解決**：本番に接続していた時期に、マイページのボタンを押しても画面が移動しない失敗が、実行ごとに出たり出なかったりしていた。ローカルの Supabase では、30回繰り返しても再現していない。原因は特定できていない。
+
 ### テスト戦略
 
 Edge Functions（Deno）とNext.js（Node/Vite）でランタイムが異なるため、3層に分けている。
@@ -391,7 +519,7 @@ Edge Functions（Deno）とNext.js（Node/Vite）でランタイムが異なる�
 |---|---|---|
 | Edge Functions | 分岐ロジック（判定関数として切り出したもの） | `Deno.test` |
 | Next.js単体テスト | ユーティリティ関数・同期Client Components | Vitest + React Testing Library |
-| E2Eテスト | 無料登録〜マイページ〜練習問題〜誤答リストの一連の動作（コアフロー、実装・合格確認済み）、ゲスト決済〜Webhook〜マイページ解放（有料転換フロー、未実装）、非同期Server Components | Playwright |
+| E2Eテスト | 無料登録〜マイページ〜練習問題〜誤答リストの一連の動作（コアフロー、ローカルの Supabase で実装・合格確認済み）、ゲスト決済〜Webhook〜マイページ解放（有料転換フロー、未実装）、非同期Server Components | Playwright |
 
 Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密結合しており、そのままではDB・外部APIに接続しないとテストできない。そこで各関数の分岐ロジックだけを`decision.ts`として切り出し、実際の接続を挟まず全パターンを検証できる形にした。全関数を同じ密度でテストするのではなく、金銭・個人情報の削除が絡み誤りの影響が大きい関数（`request-account-deletion`・`cancel-account-deletion`・`stripe-webhook`）から優先的に着手している。
 
@@ -407,8 +535,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `create-checkout-session` | ✅ 7パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いためE2Eでカバー） |
 | Next.js側（Vitest） | ✅ 9パターン（`getFeedbackMessage`5・`formatChoiceText`4） |
-| E2E（Playwright） | コアフロー3件 ✅・有料転換フロー 未実装・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
-
+| E2E（Playwright） | コアフロー3件 ✅（ローカルの Supabase、30回連続合格）・有料転換フロー 未実装・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
 
 ### `request-account-deletion`（7パターン）
 
@@ -461,7 +588,9 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 ### テスト関連
 
-- **E2Eテスト（Playwright）**：コアフロー（無料登録〜マイページ〜練習問題への回答〜誤答リストへの遷移）3件を実装し、本番ビルド（`npm run build && npm run start`）に対して合格を確認済み。開発サーバー（`npm run dev`）に対して実行すると初回コンパイル待ちにより間欠的にタイムアウトする。E2Eは本番ビルド起動を前提とする設定（`webServer`）とした。次に実装するのはゲスト決済〜Webhookによる会員ステータス反映〜マイページ解放（有料転換フロー）で、決済フローはStripeのテストモード・Webhookイベント再送信で代替し、実際のカード決済は発生させない設計とする。その先の候補として、`useSearchParams`とSuspense境界のケーススタディ（本番ビルドでのみ顕在化する不具合のため、ユニットテストでは検出できない）と、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E対象とした2関数）が残っている。
+- **E2Eテスト（Playwright）**：コアフロー（無料登録〜マイページ〜練習問題への回答〜誤答リストへの遷移）3件を実装し、ローカルの Supabase に対して合格を確認済み（`--repeat-each=10` で30回連続合格）。E2E は本番ビルドを起動して実行する設定（`webServer`）とした。開発サーバーでは、初回のコンパイル待ちで間欠的にタイムアウトするため。次に実装するのは有料転換フロー（ゲスト決済〜Webhook による会員ステータスの反映〜マイページでの有料問題の解放）。Stripe の公式ドキュメントは、Checkout などの Stripe の決済画面には自動操作を防ぐ仕組みがあるため、自動テストでは結果を模擬するよう案内している。そのため E2E では、Checkout のセッション作成（決済画面への移動）までと、決済完了後の Webhook の処理を検証する。決済画面そのものの操作（テストカードでの支払い）は、テストモードで手動で確認する方針とする。
+
+  E2E を CI（GitHub Actions）で実行する仕組みは未整備で、現状は手元でのみ実行している。その先の候補として、`useSearchParams`とSuspense境界のケーススタディと、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E対象とした2関数）が残っている。
 
 - **Next.js側の他のユーティリティ関数**：`src/lib/feedback.ts`のみ着手済み。特に`src/lib/subscription.ts`の`isSubscribed()`は、契約ステータスに加えて「契約終了日時から60秒の猶予期間」を設けた判定ロジックを持っており、境界値のテスト価値が高い。他（`account.ts`・`mistakes.ts`・`review.ts`・`progress.ts`）は主にSupabase呼び出しのラッパーで、判定ロジックの比率が低いため優先度は下がる。
 
@@ -475,12 +604,10 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 ### 運用タスク
 
-- `stripe-webhook`の`current_period_end`自動更新が、実際のサブスクリプション更新（2026-08-31予定）で正しく機能するかの実地確認が未実施
-- 旧バニラJS版（`dangerous-materials-fe4`）のVercelプロジェクト削除（2026-09-01予定、Next.js版への完全移行が確認できてから実施）
 - `supabase/functions/`を独立したリポジトリへ切り出す作業（優先度は低く、緊急のバグ修正を優先してきたため未着手のまま）
+- 旧バニラJS版（`dangerous-materials-fe4`）の Vercel プロジェクトの削除（Next.js 版への移行は完了済み。プロジェクトは未削除）
 
 ### コンテンツ構造
 
 現状、`/basics`配下の解説ページは、本文（日本語の説明文）と定義・対比表のマークアップがJSXに直書きされている。ページ数が少ない段階では問題ないが、乙4は章・節数が多く、同型の「定義＋対比表」パターンが繰り返し出現するため、ページ数が増えるとJSXのコピペが増加する。対応候補は、①本文をMDXまたはJSONに分離してレイアウトと切り離す、②`ComparisonTable`のような型付き共通コンポーネントに繰り返しパターンを切り出す、の2つ。現段階では規模に対して過剰な対応（MDX導入等）はオーバーエンジニアリングと判断し、優先度は保留としている。
-
 
