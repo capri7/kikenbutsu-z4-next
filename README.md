@@ -13,7 +13,7 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 - Next.js 16（App Router）＋ Supabase（PostgreSQL・RLS・Edge Functions）＋ Stripe。要件定義・設計・実装・運用を1人で担当
 - データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（4章）
 - 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（4章「運用上の学び」）
-- テスト：分岐ロジックを関数に切り出し、Deno.test 37件・Vitest 9件・Playwright E2E 3件。E2E はローカルの Supabase に分離し、本番に触れない構成（6章）
+- テスト：分岐ロジックを関数に切り出し、Deno.test 37件・Vitest 9件・Playwright E2E 9件。E2E はローカルの Supabase に分離し、本番に触れない構成（6章）
 
 ## 動かし方
 
@@ -55,7 +55,7 @@ npm test -- --run
 # Edge Functions の判定ロジック（Deno.test、37件）
 deno test supabase/functions/
 
-# E2E（Playwright、3件）。ローカルの Supabase を起動してから実行する
+# E2E（Playwright、9件）。ローカルの Supabase を起動してから実行する
 npx playwright install chromium    # 初回のみ
 supabase start
 npx playwright test
@@ -481,7 +481,7 @@ E2E をローカルの Supabase に移す準備として、`supabase db diff --l
 
 **Cookieベースのセッションリフレッシュ設計（`src/proxy.ts`）**：Next.js 16 で middleware が非推奨になり proxy に改名されたため、当初から proxy.ts を採用している（ランタイムは Node.js 固定）。本プロジェクトは初期実装の段階からこれに対応済みである。セッション検証には`getSession()`ではなく`getUser()`を使用している。`getSession()`はローカルのCookieに保存された値をそのまま信頼するため、Cookieの偽装に対して脆弱であるのに対し、`getUser()`はSupabase Authサーバーに問い合わせてJWTを再検証するため、なりすましを防げる。また、Cookieの更新を`request.cookies`と`response.cookies`の両方に対して行っているのは、`request`側を更新しないと同一リクエスト内で後続実行されるServer Componentsが既にリフレッシュ済みのトークンを知らずに二重にリフレッシュを試み、`response`側を更新しないとブラウザに新しいトークンが渡らず、次回リクエストで古いトークンを送り続けた末に強制的にログアウトされるため。この2段階の伝播はSupabase公式が明示的に要求している実装パターンである。
 
-## 6. テスト・品質保証 （今回のSuspenseケーススタディを含む）
+## 6. テスト・品質保証 
 
 ### ケーススタディ：`useSearchParams`とSuspense境界（本番ビルドでのみ発生する不具合）
 
@@ -509,7 +509,33 @@ E2E をローカルの Supabase に移す準備として、`supabase db diff --l
 
 **同時に見つかった不具合**：並行して動く2件のテストが、同じミリ秒に `Date.now()` からメールアドレスを作り、同じアドレスで登録していた。後から登録した側が 500（`Database error saving new user`）になっていた。Postgres のログで、`auth.users` のメールアドレスの一意制約（`users_email_partial_key`）違反を確認し、メールアドレスを `randomUUID()` で作るように直した。
 
-**未解決**：本番に接続していた時期に、マイページのボタンを押しても画面が移動しない失敗が、実行ごとに出たり出なかったりしていた。ローカルの Supabase では、30回繰り返しても再現していない。原因は特定できていない。
+**その後**：本番に接続していた時期に、マイページのボタンを押しても画面が移動しない失敗が、実行ごとに出たり出なかったりしていた。この原因は、ローカルで条件を変えた再現実験によって特定し、修正した（次のケーススタディ）。
+
+### ケーススタディ：表示されているのに押せないボタン（ハイドレーション前のクリックの消失）
+
+**現象**：E2E で、マイページの「スタート」「誤答リストを開く」を押しても画面が移動しない失敗が、実行ごとに出たり出なかったりしていた（本番の Supabase に接続していた時期）。ローカルの Supabase では、30回繰り返しても再現しなかった。
+
+**仮説**：これらのボタンは、サーバーで作った HTML の時点で表示される。クリックの処理が付くのは、ブラウザに JavaScript が届き、ハイドレーションが終わった後である。その前に押されたクリックが失われている。
+
+**切り分け**：ローカルで、条件を1つずつ変えて再現を試した。
+
+| 条件 | 結果 |
+|---|---|
+| ブラウザの CPU を6倍遅くする | 10回すべて成功（再現せず） |
+| 通信を遅くする（遅延 400ms、上り下りとも 400kbps） | 10回すべて失敗（再現） |
+
+**証拠**：失敗したテストのトレースで、クリックは 9.1〜9.6 秒目、マイページ用の JavaScript（76.4KB）の到着は約 11.1 秒目だった。クリックの後、移動先への通信は一度も起きていなかった。登録画面と共通の JavaScript はブラウザのキャッシュからすぐに読み込まれるが、マイページで初めて使う JavaScript の到着を待つ間に、「見えているが押せない」時間ができていた。CPU を遅くしても再現しなかったのは、この時間の長さが、JavaScript の実行ではなく到着で決まっていたためである。
+
+**修正**：ボタンの役割ごとに、方式を選んだ。
+
+- 「誤答リストを開く」「復習リストを開く」：ページを移動するだけなので、`<Link>` に変更した。リンクは、JavaScript が届く前でも、ブラウザだけで移動できる
+- 「スタート」：問題の選択と、無料問題を解き終わったときの確認（`confirm()`）に JavaScript が必要なため、リンクにはできない。確認の動作は仕様として残し、ハイドレーションが終わるまでボタンを無効にした
+
+**効果**：同じ低速回線の条件で、修正前は10回すべて失敗、修正後は10回すべて成功した。E2E 全体でも25回すべて成功した。本番でも、見た目と動作に変化がないことを確認した。
+
+**再発防止**：低速回線での回帰テスト（`e2e/slow-network.spec.ts`、2件）と、誤答リスト・復習リストからマイページに戻った後に「スタート」が動くことの回帰テスト（`e2e/return-to-mypage.spec.ts`、4件）を追加した。
+
+**残る不確かさ**：本番の Supabase に接続していた時期の失敗は、トレースが残っていないため、同じ仕組みで起きたとまでは証明できていない。
 
 ### テスト戦略
 
@@ -535,7 +561,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `create-checkout-session` | ✅ 7パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いためE2Eでカバー） |
 | Next.js側（Vitest） | ✅ 9パターン（`getFeedbackMessage`5・`formatChoiceText`4） |
-| E2E（Playwright） | コアフロー3件 ✅（ローカルの Supabase、30回連続合格）・有料転換フロー 未実装・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
+| E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅（いずれもローカルの Supabase）・有料転換フロー 未実装・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
 
 ### `request-account-deletion`（7パターン）
 
