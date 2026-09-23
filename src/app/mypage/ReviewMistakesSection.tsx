@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { isSubscribed } from '@/lib/subscription'
 import { fetchReviewCountGlobal, fetchWrongCountGlobal } from '@/lib/dataLoader'
 import styles from './mypage.module.css'
+import Link from 'next/link'
 
 export default function ReviewMistakesSection({ userId }: { userId: string }) {
   const [reviewCount, setReviewCount] = useState(0)
@@ -45,13 +46,14 @@ export default function ReviewMistakesSection({ userId }: { userId: string }) {
             <span aria-live="polite">{reviewCount}</span> 問
           </strong>
         </div>
-        <button
-          type="button"
+
+        <Link
+          href="/review"
+          prefetch={false}
           className={`${styles.btn} ${styles.btnSecondary}`}
-          onClick={() => (window.location.href = '/review')}
         >
           復習リストを開く
-        </button>
+        </Link>
       </section>
 
       <section className={styles.subcatCard}>
@@ -66,13 +68,14 @@ export default function ReviewMistakesSection({ userId }: { userId: string }) {
           <strong>
             <span aria-live="polite">{wrongCount}</span> 問
           </strong>
-          <button
-            type="button"
+
+          <Link
+            href="/mistakes?view=wrong"
+            prefetch={false}
             className={`${styles.btn} ${styles.btnSecondary}`}
-            onClick={() => (window.location.href = '/mistakes?view=wrong')}
           >
             誤答リストを開く
-          </button>
+          </Link>
         </div>
       </section>
     </>

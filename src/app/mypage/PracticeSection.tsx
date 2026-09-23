@@ -1,12 +1,19 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { isSubscribed } from '@/lib/subscription'
 import { getRandomAnyQuestionId, getOrderedFreeQuestionIds } from '@/lib/dataLoader'
 import styles from './mypage.module.css'
 
 const QUESTIONS_BASE = '/contents'
+
+// ハイドレーションが終わったかを返す。サーバーでの描画とハイドレーションの間は false、その後は true。
+// false の間はボタンを無効にし、クリックの処理が付く前のクリックが失われるのを防ぐ。
+const noopSubscribe = () => () => {}
+function useHydrated() {
+  return useSyncExternalStore(noopSubscribe, () => true, () => false)
+}
 
 async function countAnsweredAndCorrectLatest(userId: string, paid: boolean) {
   const supabase = createClient()
@@ -65,6 +72,7 @@ async function fetchProgressSummaryGlobal(userId: string, paid: boolean) {
 export default function PracticeSection({ userId }: { userId: string }) {
   const [summary, setSummary] = useState({ total: 0, answered: 0, correct: 0 })
   const [busy, setBusy] = useState(false)
+  const hydrated = useHydrated()
 
   const refreshSummary = useCallback(async () => {
     try {
@@ -142,7 +150,7 @@ export default function PracticeSection({ userId }: { userId: string }) {
           type="button"
           className={`${styles.btn} ${styles.btnPrimary}`}
           onClick={handlePractice}
-          disabled={busy}
+          disabled={busy || !hydrated}
         >
           スタート
         </button>
