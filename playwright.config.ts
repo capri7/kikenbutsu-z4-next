@@ -1,4 +1,44 @@
 import { defineConfig, devices } from '@playwright/test';
+import { execSync } from 'node:child_process';
+
+/**
+ * E2E はローカルの Supabase（supabase start）に対してだけ実行する。
+ * 接続先は .env.local（本番）ではなく、supabase status から取得する。
+ */
+function loadLocalSupabaseEnv(): { url: string; anonKey: string } {
+  let output: string;
+  try {
+    output = execSync('supabase status -o env', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+  } catch {
+    throw new Error(
+      'ローカルの Supabase が起動していません。`supabase start` を実行してから E2E を実行してください。'
+    );
+  }
+
+  const env: Record<string, string> = {};
+  for (const line of output.split('\n')) {
+    const m = line.match(/^([A-Z0-9_]+)="?(.*?)"?$/);
+    if (m) env[m[1]] = m[2];
+  }
+
+  const url = env.API_URL;
+  const anonKey = env.ANON_KEY;
+  if (!url || !anonKey) {
+    throw new Error('supabase status から API_URL または ANON_KEY を取得できませんでした。');
+  }
+
+  const host = new URL(url).hostname;
+  if (host !== '127.0.0.1' && host !== 'localhost') {
+    throw new Error(`E2E の接続先がローカルではありません（${url}）。本番に対しては実行しません。`);
+  }
+
+  return { url, anonKey };
+}
+
+const localSupabase = loadLocalSupabaseEnv();
 
 /**
  * Read environment variables from file.
@@ -71,11 +111,16 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
+  /* E2E 用に本番ビルドを起動する（接続先はローカルの Supabase） */
   webServer: {
     command: 'npm run build && npm run start',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    // 本番に接続したサーバーを誤って使い回さないよう、常に新しく起動する
+    reuseExistingServer: false,
     timeout: 180 * 1000,
+    env: {
+      NEXT_PUBLIC_SUPABASE_URL: localSupabase.url,
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: localSupabase.anonKey,
+    },
   },
 });
