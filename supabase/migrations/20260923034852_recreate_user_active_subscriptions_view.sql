@@ -1,5 +1,3 @@
-alter table "public"."subscriptions" add column "cancel_at_period_end" boolean not null default false;
-
 create or replace view "public"."user_active_subscriptions" as  SELECT user_id,
     created_at,
     id,
