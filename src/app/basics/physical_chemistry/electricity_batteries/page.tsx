@@ -150,7 +150,7 @@ export default function ElectricityAndBatteriesPage() {
               <li><strong>単位トラップ：</strong>Gの単位は<strong>S</strong>、σは<strong>S/m</strong>（ここ混ぜて落とす）。</li>
               <li><strong>換算で落とす：</strong><span className={styles.mathBadge}>1 mS/cm = 0.1 S/m</span>（mS/cm ⇄ S/m）。</li>
               <li><strong>温度依存：</strong>金属はT↑でσ↓、電解質溶液はT↑でσ↑（これも逆にしがち）。</li>
-              <li><strong>純水の扱い：</strong>純水はσが小さい。塩分が混ざるとσ↑（"純水も通す"は×）。</li>
+              <li><strong>純水の扱い：</strong>純水はσが小さい。塩分が混ざるとσ↑（純水も通すは×）。</li>
             </ul>
           </div>
         </section>
@@ -425,7 +425,7 @@ export default function ElectricityAndBatteriesPage() {
           <div className={shared.examPoints}>
             <h4>ひっかけ注意！</h4>
             <ul className={shared.compact}>
-              <li><strong>正負の混同：</strong>電池（発電）は「負＝アノード／正＝カソード」。<strong>電気分解は"正負が逆"</strong>になりやすい</li>
+              <li><strong>正負の混同：</strong>電池（発電）は「負＝アノード／正＝カソード」。<strong>電気分解は正負が逆</strong>になりやすい</li>
               <li><strong>でもここは不変：</strong><strong>アノード＝酸化、カソード＝還元</strong>（ここだけは電池でも電気分解でも共通）</li>
               <li><strong>流れの混同：</strong>電子の向き（負→正）と、電流の向き（正→負）を<strong>逆に書くミス</strong>が多い</li>
               <li><strong>安全：</strong>漏液・ガスは<strong>腐食性／可燃性</strong>のリスク。作業は<strong>換気＋保護具</strong></li>
