@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "playwright-report/**",
     "test-results/**",
+    // supabase start が生成するファイル（supabase/.gitignore で除外済み）
+    "supabase/.temp/**",
   ]),
 ]);
 
