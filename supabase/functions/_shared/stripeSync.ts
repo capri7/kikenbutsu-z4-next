@@ -15,7 +15,14 @@ export async function upsertUserProfiles(args: {
   user_id: string; email?: string | null; stripe_customer_id?: string | null;
   subscription_status?: string | null; current_period_end?: string | null;
 }) {
-  const payload: any = {
+  const payload: {
+    user_id: string;
+    email: string | null;
+    stripe_customer_id: string | null;
+    subscription_status: string | null;
+    updated_at: string;
+    current_period_end?: string;
+  } = {
     user_id: args.user_id,
     email: args.email ?? null,
     stripe_customer_id: args.stripe_customer_id ?? null,
@@ -33,7 +40,16 @@ export async function upsertSubscriptions(args: {
   livemode: boolean | null;
   cancel_at_period_end?: boolean | null;
 }) {
-  const payload: any = {
+  const payload: {
+    user_id: string;
+    stripe_customer_id: string | null;
+    stripe_subscription_id: string;
+    status: string | null;
+    livemode: boolean | null;
+    updated_at: string;
+    current_period_end?: string;
+    cancel_at_period_end?: boolean;
+  } = {
     user_id: args.user_id,
     stripe_customer_id: args.stripe_customer_id,
     stripe_subscription_id: args.stripe_subscription_id,
