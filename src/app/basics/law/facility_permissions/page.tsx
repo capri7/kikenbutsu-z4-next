@@ -314,7 +314,7 @@ export default function FacilityPermissionsPage() {
             <ul className={shared.compact}>
               <li>「許可を受けたらそのまま使用開始できる」と書いてあれば<strong>誤り</strong>。必ず<strong>完成検査</strong>を受けてから。</li>
               <li><strong>仮使用承認</strong>と<strong>完成検査前検査</strong>は別物。「仮使用承認を受ければ完成検査を省略できる」とあれば<strong>NG</strong>。</li>
-              <li>完成検査を省略できるのは、<strong>完成検査前検査で適合とされた"項目部分"だけ</strong>。「施設全体の完成検査が不要になる」と書いてあればひっかけ。</li>
+              <li>完成検査を省略できるのは、<strong>完成検査前検査で適合とされた項目部分だけ</strong>。「施設全体の完成検査が不要になる」と書いてあればひっかけ。</li>
             </ul>
           </div>
         </section>

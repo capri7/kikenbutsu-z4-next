@@ -200,7 +200,7 @@ export default function DefinedSubstancesPage() {
             <ul className={shared.compact}>
               <li>「禁水性物質」＝<strong>水で消せない</strong>ではなく、<strong>水と接触して発火／可燃性ガス発生</strong>がキモ。</li>
               <li>第2類の「引火性固体」は<strong>固形アルコール等</strong>。液体（第4類）と混同しやすい。</li>
-              <li>鉄粉・金属粉は<strong>条件（目開き・形状・サイズ等）</strong>で"危険物に該当しない"例外が出る。</li>
+              <li>鉄粉・金属粉は<strong>条件（目開き・形状・サイズ等）</strong>で危険物に該当しない例外が出る。</li>
             </ul>
           </div>
         </section>
@@ -268,9 +268,9 @@ export default function DefinedSubstancesPage() {
             <h4>ひっかけ注意！</h4>
             <ul className={shared.compact}>
               <li><strong>「液体＝20°Cで液状」だけで決めない。</strong>「20°Cを超え40°C以下の間で液状となるもの」も液体に入る。</li>
-              <li><strong>「固体」は"固体っぽいもの"ではない。</strong>消防法では「液体・気体以外」の総称（粉体などもここに入る）として押さえる。</li>
+              <li><strong>「固体」は固体っぽいものではない。</strong>消防法では「液体・気体以外」の総称（粉体などもここに入る）として押さえる。</li>
               <li><strong>「気体」は温度と圧力セット。</strong>「20°C・1気圧で気体状」の条件を外して判断しない。</li>
-              <li><strong>類ごとの試験の箇条書きは"代表例"。</strong>「第2類・第4類だけが試験対象」と誤解しない（政令で類ごとに規定がある）。</li>
+              <li><strong>類ごとの試験の箇条書きは代表例。</strong>「第2類・第4類だけが試験対象」と誤解しない（政令で類ごとに規定がある）。</li>
             </ul>
           </div>
         </section>
@@ -376,7 +376,7 @@ export default function DefinedSubstancesPage() {
           <div className={shared.examPoints}>
             <h4>ひっかけ注意！</h4>
             <ul className={shared.compact}>
-              <li>「性状が2つある＝2つの類に同時に属する」は×。<strong>適用される品名（項・号）に"整理"される</strong>。</li>
+              <li>「性状が2つある＝2つの類に同時に属する」は×。<strong>適用される品名（項・号）に整理される</strong>。</li>
               <li><strong>第3類（自然発火性・禁水性）＋第4類（引火性液体）→第3類 項第12号</strong>が引っかけ。第4類に行くと誤認しやすい。</li>
               <li>表は「代表例」。<strong>他の組合せも政令・省令側で規定</strong>されるため、ここだけで全てと誤解しない。</li>
             </ul>
