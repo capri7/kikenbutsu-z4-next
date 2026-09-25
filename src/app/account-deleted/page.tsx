@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import styles from './account-deleted.module.css'
 
 export const metadata: Metadata = {
@@ -21,9 +22,9 @@ export default function AccountDeletedPage() {
           <br />
           再度ご利用の際は、新規登録からお申し込みください。
         </p>
-        <a href="/" className={styles.link}>
+        <Link href="/" prefetch={false} className={styles.link}>
           トップページへ戻る
-        </a>
+        </Link>
       </div>
     </div>
   )
