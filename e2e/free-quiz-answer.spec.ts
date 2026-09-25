@@ -5,6 +5,7 @@ import { test, expect, type Page } from '@playwright/test';
  * - 解説を見る前は、選んだ選択肢にチェックが付き、選ぶたびに判定が出る
  * - 解説を見た後は、判定を消し、選択肢を変えられない。「次へ」は押せる
  * - 「次へ」で進んでから「戻る」で戻ると、未回答の状態に戻り、もう一度解ける
+ * - reset=1 で開くと、記録が消え、URL から reset=1 が外れる
  * Q1（FREE_001）の正解は 5（プロパン）。
  */
 
@@ -52,4 +53,24 @@ test('解説を見る前は選ぶたびに判定が出て、解説を見た後�
   await choice(page, 5).click();
   await expect(choice(page, 5)).toBeChecked();
   await expect(page.locator('.judge')).toHaveText('正解です。');
+});
+
+// 回帰テスト：以前は URL に reset=1 が残り、再読み込みすると記録が再びリセットされていた
+test('reset=1 で開くと、記録が消えて Q1 から始まり、URL から reset が外れる', async ({ page }) => {
+  await page.goto('/contents/free');
+  await expect(page.getByText('Q1', { exact: true })).toBeVisible({ timeout: 15000 });
+  await choice(page, 5).click();
+  await expect(page.getByText('正解 1/32')).toBeVisible();
+  await page.getByRole('button', { name: '次へ', exact: true }).click();
+  await expect(page.getByText('Q2', { exact: true })).toBeVisible();
+
+  await page.goto('/contents/free?reset=1');
+  await expect(page).toHaveURL(/\/contents\/free$/, { timeout: 15000 });
+  await expect(page.getByText('Q1', { exact: true })).toBeVisible();
+  await expect(page.getByText('正解 0/32')).toBeVisible();
+
+  // 再読み込みしても消えたまま（空の状態が保存されている）
+  await page.reload();
+  await expect(page.getByText('Q1', { exact: true })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText('正解 0/32')).toBeVisible();
 });
