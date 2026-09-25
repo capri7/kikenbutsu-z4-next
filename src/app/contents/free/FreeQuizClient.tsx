@@ -67,8 +67,6 @@ export default function FreeQuizClient() {
   const [state, setState] = useState<FreeState>({ index: 0, answers: {} })
   const [shared, setShared] = useState(false)
   const [hintVisible, setHintVisible] = useState(false)
-  const [revealed, setRevealed] = useState(false)
-  const [judge, setJudge] = useState<'ok' | 'ng' | null>(null)
 
   const storageRef = useRef<Storage | null>(null)
 
@@ -104,13 +102,6 @@ export default function FreeQuizClient() {
   const index = state.index >= 0 && state.index < questions.length ? state.index : 0
   const q = questions[index]
   const done = q ? state.answers[q.id] : undefined
-
-  // 表示状態は問題が切り替わるたびリセット
-  useEffect(() => {
-    setHintVisible(false)
-    setJudge(null)
-    setRevealed(!!done?.revealed)
-  }, [index, done?.revealed])
 
   function save(next: FreeState) {
     setState(next)
@@ -170,20 +161,20 @@ export default function FreeQuizClient() {
   }
 
   function handleChoice(choice: number) {
-    if (!q || judge === 'ok') return
+    // 正解した後と、解説を見た後は、選択を変えられない
+    if (!q || done?.earned === true || done?.revealed === true) return
     const answerNum = Number(q.answer) || 1
     const ok = choice === answerNum
 
     const prev = state.answers[q.id] || {}
     const attempts = (prev.attempts || 0) + 1
-    const nextAnswer: Answer = { ...prev, choice, attempts, revealed: false }
+    const nextAnswer: Answer = { ...prev, choice, attempts }
     if (ok && !prev.earned) {
       nextAnswer.earned = true
       if (prev.peeked) nextAnswer.afterPeek = true
       else nextAnswer.firstTry = true
     }
     save({ ...state, answers: { ...state.answers, [q.id]: nextAnswer } })
-    setJudge(ok ? 'ok' : 'ng')
   }
 
   function handleShowHint() {
@@ -194,8 +185,6 @@ export default function FreeQuizClient() {
       answers: { ...state.answers, [q.id]: { ...prev, revealed: true, peeked: true } },
     }
     save(next)
-    setRevealed(true)
-    setHintVisible(true)
   }
 
   function handleBack() {
@@ -207,8 +196,9 @@ export default function FreeQuizClient() {
   const nq = questions[newIndex]
   const na = nq ? state.answers[nq.id] || {} : {}
   const answers =
-    nq && na.peeked && !na.earned ? { ...state.answers, [nq.id]: { ...na, revealed: false } } : state.answers
+    nq && na.peeked && !na.earned ? { ...state.answers, [nq.id]: { ...na, revealed: false, choice: undefined } } : state.answers
   save({ index: newIndex, answers })
+  setHintVisible(false)
 }
 
   function handleNext() {
@@ -222,8 +212,9 @@ export default function FreeQuizClient() {
     const nq = questions[newIndex]
     const na = nq ? state.answers[nq.id] || {} : {}
     const answers =
-      nq && na.peeked && !na.earned ? { ...state.answers, [nq.id]: { ...na, revealed: false } } : state.answers
-    save({ index: newIndex, answers })
+      nq && na.peeked && !na.earned ? { ...state.answers, [nq.id]: { ...na, revealed: false, choice: undefined } } : state.answers
+      save({ index: newIndex, answers })
+    setHintVisible(false)
   }
 
   if (!ready || !q) {
@@ -237,7 +228,11 @@ export default function FreeQuizClient() {
   const expl = q.explanation ?? expFromArray ?? ''
   const answerText = q.choices?.[answerNum - 1] ?? ''
   const canNext = !!(done?.earned === true || done?.peeked === true)
-  const suppressCheck = !!(done?.peeked && !done?.earned && !done?.revealed)
+  // 表示は保存したデータから計算する
+  const revealed = done?.revealed === true
+  const locked = revealed || done?.earned === true
+  const judge: 'ok' | 'ng' | null =
+    done?.choice != null && !revealed ? (done.choice === answerNum ? 'ok' : 'ng') : null
 
   return (
     <div className="site-main">
@@ -263,7 +258,7 @@ export default function FreeQuizClient() {
           {q.choices.map((c, i) => {
             const idx = i + 1
             const isCorrect = revealed && idx === answerNum
-            const checked = !suppressCheck && done?.choice === idx
+            const checked = done?.choice === idx
             return (
               <li key={idx} className={isCorrect ? 'is-correct' : ''}>
                 <label className="choice flex items-center gap-2 py-2">
@@ -273,7 +268,7 @@ export default function FreeQuizClient() {
                     value={idx}
                     checked={checked}
                     onChange={() => handleChoice(idx)}
-                    disabled={judge === 'ok'}
+                    disabled={locked}
                   />
                   <span className="num">{idx}.</span>
                   <span className="text">{c}</span>
