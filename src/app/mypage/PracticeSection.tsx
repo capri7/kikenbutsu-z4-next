@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { isSubscribed } from '@/lib/subscription'
 import { getRandomAnyQuestionId, getOrderedFreeQuestionIds } from '@/lib/dataLoader'
@@ -69,25 +69,32 @@ async function fetchProgressSummaryGlobal(userId: string, paid: boolean) {
   return { total, answered, correct }
 }
 
+// マイページの学習状況を取得する。失敗したときは 0 件として返す。
+async function loadSummary(userId: string) {
+  try {
+    const nowPaid = await isSubscribed(userId)
+    return await fetchProgressSummaryGlobal(userId, nowPaid)
+  } catch (e) {
+    console.error('[mypage] summary error', e)
+    return { total: 0, answered: 0, correct: 0 }
+  }
+}
+
 export default function PracticeSection({ userId }: { userId: string }) {
   const [summary, setSummary] = useState({ total: 0, answered: 0, correct: 0 })
   const [busy, setBusy] = useState(false)
   const hydrated = useHydrated()
 
-  const refreshSummary = useCallback(async () => {
-    try {
-      const nowPaid = await isSubscribed(userId)
-      const s = await fetchProgressSummaryGlobal(userId, nowPaid)
-      setSummary(s)
-    } catch (e) {
-      console.error('[mypage] summary error', e)
-      setSummary({ total: 0, answered: 0, correct: 0 })
+  useEffect(() => {
+    // 画面を離れた後や userId が変わった後に、古い結果で上書きしない
+    let ignore = false
+    loadSummary(userId).then((s) => {
+      if (!ignore) setSummary(s)
+    })
+    return () => {
+      ignore = true
     }
   }, [userId])
-
-  useEffect(() => {
-    refreshSummary()
-  }, [refreshSummary])
 
   async function handlePractice() {
     if (busy) return
