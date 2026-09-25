@@ -100,13 +100,9 @@ export default function FreeQuizClient() {
       .then((data: FreeQuestion[]) => setQuestions(data))
   }, [])
 
-  useEffect(() => {
-    if (questions.length && (state.index < 0 || state.index >= questions.length)) {
-      setState((s) => ({ ...s, index: 0 }))
-    }
-  }, [questions, state.index])
-
-  const q = questions[state.index]
+  // 保存された位置が問題数の範囲外なら（問題数が減ったときなど）、先頭の問題を表示する
+  const index = state.index >= 0 && state.index < questions.length ? state.index : 0
+  const q = questions[index]
   const done = q ? state.answers[q.id] : undefined
 
   // 表示状態は問題が切り替わるたびリセット
@@ -114,7 +110,7 @@ export default function FreeQuizClient() {
     setHintVisible(false)
     setJudge(null)
     setRevealed(!!done?.revealed)
-  }, [state.index, done?.revealed])
+  }, [index, done?.revealed])
 
   function save(next: FreeState) {
     setState(next)
@@ -149,7 +145,7 @@ export default function FreeQuizClient() {
   const progressPct = total ? Math.round((solvedCount / total) * 100) : 0
 
   function findNextUnsolved(start: number): number {
-    const cur = state.index
+    const cur = index
     for (let i = Math.max(0, start); i < questions.length; i++) {
       if (i === cur) continue
       const a = state.answers[questions[i].id] || {}
@@ -203,11 +199,11 @@ export default function FreeQuizClient() {
   }
 
   function handleBack() {
-  if (state.index <= 0) {
+  if (index <= 0) {
     router.back()
     return
   }
-  const newIndex = state.index - 1
+  const newIndex = index - 1
   const nq = questions[newIndex]
   const na = nq ? state.answers[nq.id] || {} : {}
   const answers =
@@ -220,8 +216,8 @@ export default function FreeQuizClient() {
     const a = state.answers[q.id] || {}
     if (!(a.earned === true || a.peeked === true)) return
 
-    const j = findNextUnsolved(state.index + 1)
-    const newIndex = j >= 0 ? j : Math.min(questions.length - 1, state.index + 1)
+    const j = findNextUnsolved(index + 1)
+    const newIndex = j >= 0 ? j : Math.min(questions.length - 1, index + 1)
 
     const nq = questions[newIndex]
     const na = nq ? state.answers[nq.id] || {} : {}
@@ -250,7 +246,7 @@ export default function FreeQuizClient() {
 
         <div className={styles.qHead}>
           <div className={styles.qCounter}>
-            <span className={styles.pill}>Q{state.index + 1}</span>
+            <span className={styles.pill}>Q{index + 1}</span>
             <span className={styles.solved}>
               正解 {solvedCount}/{total}
             </span>
