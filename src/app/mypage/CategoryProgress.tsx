@@ -182,7 +182,7 @@ export default function CategoryProgress({ userId }: { userId: string }) {
     qs.set('mode', nowPaid ? 'all' : 'free')
     qs.set('scope', 'sub')
     qs.set('sid', subId)
-    window.location.href = `${QUESTIONS_BASE}/${qid}?${qs.toString()}`
+    window.location.assign(`${QUESTIONS_BASE}/${qid}?${qs.toString()}`)
   }
 
   async function fetchQuestionIdsBySubHelper(subId: string, nowPaid: boolean): Promise<string[]> {
