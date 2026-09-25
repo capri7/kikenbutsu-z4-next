@@ -83,7 +83,8 @@ export default function FreeQuizClient() {
       initial.index = 0
       initial.answers = {}
       saveSafe(LS_KEY, initial, storage)
-      router.replace('/contents/free')
+      // 画面の移動はせず、URL から reset=1 だけを外す（再読み込みで再びリセットされないように）
+      window.history.replaceState(null, '', '/contents/free')
     }
 
     setState(initial)
