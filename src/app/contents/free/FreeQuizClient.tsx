@@ -65,11 +65,20 @@ function useHydrated() {
   return useSyncExternalStore(noopSubscribe, () => true, () => false)
 }
 
+// 正解していない問題を、未回答の状態に戻す（回答回数と「解説を見た」記録は残す）
+function clearUnsolved(a: Answer): Answer {
+  return a.earned ? a : { ...a, choice: undefined, revealed: false }
+}
+
 // 保存領域の選び方と、最初の状態を決める。reset=1 のときは空の状態から始める。
 function loadInitial(reset: boolean) {
   const shared = sessionStorage.getItem(LS_KEY) !== null
   const storage = shared ? sessionStorage : localStorage
-  const state: FreeState = reset ? { index: 0, answers: {} } : readState(storage)
+  const loaded: FreeState = reset ? { index: 0, answers: {} } : readState(storage)
+  // 正解していない問題は、開き直したときに未回答の状態から始める
+  const answers: Record<string, Answer> = {}
+  for (const [id, a] of Object.entries(loaded.answers ?? {})) answers[id] = clearUnsolved(a)
+  const state: FreeState = { ...loaded, answers }
   return { shared, storage, state }
 }
 
@@ -106,7 +115,7 @@ function FreeQuiz() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-    // 問題データの読み込み
+  // 問題データの読み込み
   useEffect(() => {
     fetch(`/data/free/free-32.json?v=${Date.now()}`, { cache: 'no-store' })
       .then((res) => res.json())
@@ -209,9 +218,9 @@ function FreeQuiz() {
     }
     const newIndex = index - 1
     const nq = questions[newIndex]
-    const na = nq ? state.answers[nq.id] || {} : {}
-    const answers =
-      nq && na.peeked && !na.earned ? { ...state.answers, [nq.id]: { ...na, revealed: false, choice: undefined } } : state.answers
+    const na = nq ? state.answers[nq.id] : undefined
+    // 正解していない問題は、表示し直したときに未回答の状態に戻す
+    const answers = nq && na ? { ...state.answers, [nq.id]: clearUnsolved(na) } : state.answers
     save({ index: newIndex, answers })
     setHintVisible(false)
   }
@@ -225,9 +234,9 @@ function FreeQuiz() {
     const newIndex = j >= 0 ? j : Math.min(questions.length - 1, index + 1)
 
     const nq = questions[newIndex]
-    const na = nq ? state.answers[nq.id] || {} : {}
-    const answers =
-      nq && na.peeked && !na.earned ? { ...state.answers, [nq.id]: { ...na, revealed: false, choice: undefined } } : state.answers
+    const na = nq ? state.answers[nq.id] : undefined
+    // 正解していない問題は、表示し直したときに未回答の状態に戻す
+    const answers = nq && na ? { ...state.answers, [nq.id]: clearUnsolved(na) } : state.answers
     save({ index: newIndex, answers })
     setHintVisible(false)
   }
@@ -276,7 +285,7 @@ function FreeQuiz() {
             const checked = done?.choice === idx
             return (
               <li key={idx} className={isCorrect ? 'is-correct' : ''}>
-                <label className="choice flex items-center gap-2 py-2">
+                <label className="choice inline-flex items-center gap-2 py-2 cursor-pointer">
                   <input
                     type="radio"
                     name="choice"

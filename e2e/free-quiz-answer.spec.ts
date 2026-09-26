@@ -6,7 +6,9 @@ import { test, expect, type Page } from '@playwright/test';
  * - 解説を見た後は、判定を消し、選択肢を変えられない。「次へ」は押せる
  * - 「次へ」で進んでから「戻る」で戻ると、未回答の状態に戻り、もう一度解ける
  * - reset=1 で開くと、記録が消え、URL から reset=1 が外れる
- * Q1（FREE_001）の正解は 5（プロパン）。
+ * - reset=1 で開くと、記録が消え、URL から reset=1 が外れる
+ * - 正解していない問題は、再読み込み・戻る・次へで表示し直すと未回答の状態に戻る
+ * - 選択肢は、ラジオボタンと文字を押したときだけ選ばれる（余白を押しても選ばれない）
  */
 
 const choice = (page: Page, n: number) => page.locator(`input[name="choice"][value="${n}"]`);
@@ -95,4 +97,54 @@ test('次の問題に進んでから再読み込みしても、未回答の問�
   await expect(page.getByText(/あなたの解答/)).toHaveCount(0);
   const saved = await page.evaluate(() => localStorage.getItem('free32_progress_v1'));
   expect(saved).not.toContain('FREE_002');
+});
+
+
+test('選択肢の文字の右側の余白を押しても選ばれず、文字を押すと選ばれる', async ({ page }) => {
+  await page.goto('/contents/free');
+  await expect(page.getByText('Q1', { exact: true })).toBeVisible({ timeout: 15000 });
+
+  // 選択肢の一覧の右端近く（文字のない余白）を、1行目の高さで押す
+  const list = await page.locator('ul.choices').boundingBox();
+  const firstRow = await page.locator('ul.choices li').first().boundingBox();
+  if (!list || !firstRow) throw new Error('選択肢の一覧が見つからない');
+  await page.mouse.click(list.x + list.width - 10, firstRow.y + firstRow.height / 2);
+  for (let n = 1; n <= 5; n++) await expect(choice(page, n)).not.toBeChecked();
+
+  // 文字を押すと選ばれる
+  await page.getByText('硫黄', { exact: true }).click();
+  await expect(choice(page, 2)).toBeChecked();
+});
+
+test('正解していない問題は、再読み込みすると未回答の状態に戻る', async ({ page }) => {
+  await page.goto('/contents/free');
+  await expect(page.getByText('Q1', { exact: true })).toBeVisible({ timeout: 15000 });
+  await choice(page, 2).click();
+  await expect(page.locator('.judge')).toContainText('不正解です');
+
+  await page.reload();
+  await expect(page.getByText('Q1', { exact: true })).toBeVisible({ timeout: 15000 });
+  for (let n = 1; n <= 5; n++) await expect(choice(page, n)).not.toBeChecked();
+  await expect(page.getByText(/あなたの解答/)).toHaveCount(0);
+  await expect(page.locator('.judge')).toHaveCount(0);
+});
+
+test('正解していない問題は、戻る・次へで表示し直すと未回答の状態に戻る', async ({ page }) => {
+  await page.goto('/contents/free');
+  await expect(page.getByText('Q1', { exact: true })).toBeVisible({ timeout: 15000 });
+  await choice(page, 5).click();
+  await page.getByRole('button', { name: '次へ', exact: true }).click();
+  await expect(page.getByText('Q2', { exact: true })).toBeVisible();
+
+  // Q2（正解は 2）で不正解を選んでから、戻って、また Q2 に進む
+  await choice(page, 1).click();
+  await expect(page.locator('.judge')).toContainText('不正解です');
+  await page.getByRole('button', { name: '戻る', exact: true }).click();
+  await expect(page.getByText('Q1', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '次へ', exact: true }).click();
+  await expect(page.getByText('Q2', { exact: true })).toBeVisible();
+
+  for (let n = 1; n <= 5; n++) await expect(choice(page, n)).not.toBeChecked();
+  await expect(page.getByText(/あなたの解答/)).toHaveCount(0);
+  await expect(page.locator('.judge')).toHaveCount(0);
 });
