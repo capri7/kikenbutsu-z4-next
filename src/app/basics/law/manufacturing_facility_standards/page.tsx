@@ -132,7 +132,7 @@ export default function ManufacturingFacilityStandardsPage() {
               </li>
               <li>
                 ※ 電気設備とは、電気配線、電熱体（ヒータ）、照明器具、電動機（モータ）、変圧器、開閉器（スイッチ）、継電器（リレー）などである。防爆構造については、
-                <Link href="/basics/physical_chemistry/ignition_and_flash_point">第2章4節 引火と発火</Link>
+                <Link href="/basics/physical_chemistry/ignition_and_flash_point" prefetch={false}>第2章4節 引火と発火</Link>
                 を参照。
               </li>
               <li>

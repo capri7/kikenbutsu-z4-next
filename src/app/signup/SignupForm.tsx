@@ -265,7 +265,7 @@ export default function SignupForm() {
       </form>
 
       <p className="small-link">
-        すでにアカウントをお持ちの方は <Link href="/login">ログイン</Link>
+        すでにアカウントをお持ちの方は <Link href="/login" prefetch={false}>ログイン</Link>
       </p>
     </div>
   )

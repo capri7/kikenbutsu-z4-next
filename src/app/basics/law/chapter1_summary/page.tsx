@@ -146,7 +146,7 @@ export default function Chapter1SummaryPage() {
           <nav className={styles.chapterLinks} aria-label="第1章 41節の一覧">
             <div className={styles.chapterGrid}>
               {CHAPTER_LINKS.map((item) => (
-                <Link key={item.href} className={styles.chapterCard} href={item.href}>
+                <Link key={item.href} className={styles.chapterCard} href={item.href} prefetch={false}>
                   <span className={`${styles.chapterIcon} ${item.isNumCircle ? styles.numCircle : ''}`} aria-hidden="true">
                     {item.icon}
                   </span>
