@@ -1,19 +1,13 @@
 'use client'
 
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useHydrated } from '@/lib/useHydrated'
 import { isSubscribed } from '@/lib/subscription'
 import { getRandomAnyQuestionId, getOrderedFreeQuestionIds } from '@/lib/dataLoader'
 import styles from './mypage.module.css'
 
 const QUESTIONS_BASE = '/contents'
-
-// ハイドレーションが終わったかを返す。サーバーでの描画とハイドレーションの間は false、その後は true。
-// false の間はボタンを無効にし、クリックの処理が付く前のクリックが失われるのを防ぐ。
-const noopSubscribe = () => () => {}
-function useHydrated() {
-  return useSyncExternalStore(noopSubscribe, () => true, () => false)
-}
 
 async function countAnsweredAndCorrectLatest(userId: string, paid: boolean) {
   const supabase = createClient()
