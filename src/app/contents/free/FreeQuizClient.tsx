@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useHydrated } from '@/lib/useHydrated'
 import Link from 'next/link'
 import styles from './FreeQuizClient.module.css'
 
@@ -51,13 +52,6 @@ function saveSafe(key: string, obj: unknown) {
   } catch {
     // 保存できなくても、画面の操作は続けられる（記録はページを開いている間だけ残る）
   }
-}
-
-// ハイドレーションが終わったかを返す。サーバーでの描画とハイドレーションの間は false、その後は true。
-// ブラウザの保存領域はサーバーでは読めないため、true になってから読む。
-const noopSubscribe = () => () => {}
-function useHydrated() {
-  return useSyncExternalStore(noopSubscribe, () => true, () => false)
 }
 
 // 正解していない問題を、未回答の状態に戻す（回答回数と「解説を見た」記録は残す）
@@ -284,7 +278,7 @@ function FreeQuiz() {
           <div className="hint mt-3">🧠 {q.hint}</div>
         )}
 
-                {done?.choice != null && !revealed && done.earned !== true && q.hint && !hintVisible && (
+        {done?.choice != null && !revealed && done.earned !== true && q.hint && !hintVisible && (
           <button
             type="button"
             onClick={() => setHintVisible(true)}
