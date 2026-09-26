@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import styles from './FreeQuizClient.module.css'
@@ -58,41 +58,55 @@ function saveSafe(key: string, obj: unknown, storage: Storage): boolean {
   }
 }
 
+// ハイドレーションが終わったかを返す。サーバーでの描画とハイドレーションの間は false、その後は true。
+// ブラウザの保存領域はサーバーでは読めないため、true になってから読む。
+const noopSubscribe = () => () => {}
+function useHydrated() {
+  return useSyncExternalStore(noopSubscribe, () => true, () => false)
+}
+
+// 保存領域の選び方と、最初の状態を決める。reset=1 のときは空の状態から始める。
+function loadInitial(reset: boolean) {
+  const shared = sessionStorage.getItem(LS_KEY) !== null
+  const storage = shared ? sessionStorage : localStorage
+  const state: FreeState = reset ? { index: 0, answers: {} } : readState(storage)
+  return { shared, storage, state }
+}
+
 export default function FreeQuizClient() {
+  const hydrated = useHydrated()
+  if (!hydrated) {
+    return <div className="site-main">読み込み中...</div>
+  }
+  return <FreeQuiz />
+}
+
+function FreeQuiz() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [ready, setReady] = useState(false)
+  const reset = searchParams.get('reset') === '1'
+
+  // 初期化：共有モード判定・状態読み込み。ハイドレーションの後にだけ描画されるので、保存領域を直接読める
+  const [initial] = useState(() => loadInitial(reset))
+
   const [questions, setQuestions] = useState<FreeQuestion[]>([])
-  const [state, setState] = useState<FreeState>({ index: 0, answers: {} })
-  const [shared, setShared] = useState(false)
+  const [state, setState] = useState<FreeState>(initial.state)
+  const [shared, setShared] = useState(initial.shared)
   const [hintVisible, setHintVisible] = useState(false)
 
-  const storageRef = useRef<Storage | null>(null)
+  const storageRef = useRef<Storage | null>(initial.storage)
 
-  // 初期化：共有モード判定・状態読み込み・resetクエリ処理
+  // reset=1 で開いたときは、空の状態を保存し、URL から reset=1 を外す（開いたときに1回だけ）
+  // 画面の移動はせず、URL だけを書き換える（再読み込みで再びリセットされないように）
   useEffect(() => {
-    const useSession = sessionStorage.getItem(LS_KEY) !== null
-    const storage = useSession ? sessionStorage : localStorage
-    storageRef.current = storage
-    setShared(useSession)
-
-    const initial = readState(storage)
-
-    if (searchParams.get('reset') === '1') {
-      initial.index = 0
-      initial.answers = {}
-      saveSafe(LS_KEY, initial, storage)
-      // 画面の移動はせず、URL から reset=1 だけを外す（再読み込みで再びリセットされないように）
-      window.history.replaceState(null, '', '/contents/free')
-    }
-
-    setState(initial)
-    setReady(true)
+    if (!reset) return
+    saveSafe(LS_KEY, initial.state, initial.storage)
+    window.history.replaceState(null, '', '/contents/free')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // 問題データの読み込み
+    // 問題データの読み込み
   useEffect(() => {
     fetch(`/data/free/free-32.json?v=${Date.now()}`, { cache: 'no-store' })
       .then((res) => res.json())
@@ -189,18 +203,18 @@ export default function FreeQuizClient() {
   }
 
   function handleBack() {
-  if (index <= 0) {
-    router.back()
-    return
+    if (index <= 0) {
+      router.back()
+      return
+    }
+    const newIndex = index - 1
+    const nq = questions[newIndex]
+    const na = nq ? state.answers[nq.id] || {} : {}
+    const answers =
+      nq && na.peeked && !na.earned ? { ...state.answers, [nq.id]: { ...na, revealed: false, choice: undefined } } : state.answers
+    save({ index: newIndex, answers })
+    setHintVisible(false)
   }
-  const newIndex = index - 1
-  const nq = questions[newIndex]
-  const na = nq ? state.answers[nq.id] || {} : {}
-  const answers =
-    nq && na.peeked && !na.earned ? { ...state.answers, [nq.id]: { ...na, revealed: false, choice: undefined } } : state.answers
-  save({ index: newIndex, answers })
-  setHintVisible(false)
-}
 
   function handleNext() {
     if (!q) return
@@ -214,11 +228,11 @@ export default function FreeQuizClient() {
     const na = nq ? state.answers[nq.id] || {} : {}
     const answers =
       nq && na.peeked && !na.earned ? { ...state.answers, [nq.id]: { ...na, revealed: false, choice: undefined } } : state.answers
-      save({ index: newIndex, answers })
+    save({ index: newIndex, answers })
     setHintVisible(false)
   }
 
-  if (!ready || !q) {
+  if (!q) {
     return <div className="site-main">読み込み中...</div>
   }
 

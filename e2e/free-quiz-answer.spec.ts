@@ -74,3 +74,25 @@ test('reset=1 で開くと、記録が消えて Q1 から始まり、URL から 
   await expect(page.getByText('Q1', { exact: true })).toBeVisible({ timeout: 15000 });
   await expect(page.getByText('正解 0/32')).toBeVisible();
 });
+
+
+// 次の問題に進んでから再読み込みしても、まだ解いていない問題に選択が付かないこと
+test('次の問題に進んでから再読み込みしても、未回答の問題に選択が付かない', async ({ page }) => {
+  await page.goto('/contents/free');
+  await expect(page.getByText('Q1', { exact: true })).toBeVisible({ timeout: 15000 });
+  await choice(page, 5).click();
+  await expect(page.getByText('正解 1/32')).toBeVisible();
+  await page.getByRole('button', { name: '次へ', exact: true }).click();
+  await expect(page.getByText('Q2', { exact: true })).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByText('Q2', { exact: true })).toBeVisible({ timeout: 15000 });
+  // 再読み込みの後に遅れて選択が起きないかを見るため、あえて待つ
+  await page.waitForTimeout(3000);
+
+  await expect(page.getByText('正解 1/32')).toBeVisible();
+  for (let n = 1; n <= 5; n++) await expect(choice(page, n)).not.toBeChecked();
+  await expect(page.getByText(/あなたの解答/)).toHaveCount(0);
+  const saved = await page.evaluate(() => localStorage.getItem('free32_progress_v1'));
+  expect(saved).not.toContain('FREE_002');
+});
