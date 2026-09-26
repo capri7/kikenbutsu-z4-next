@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import styles from './FreeQuizClient.module.css'
@@ -45,16 +45,11 @@ function readState(storage: Storage): FreeState {
   }
 }
 
-function saveSafe(key: string, obj: unknown, storage: Storage): boolean {
-  const v = JSON.stringify(obj)
+function saveSafe(key: string, obj: unknown) {
   try {
-    storage.setItem(key, v)
-    return true
+    localStorage.setItem(key, JSON.stringify(obj))
   } catch {
-    try {
-      sessionStorage.setItem(key, v)
-    } catch {}
-    return false
+    // 保存できなくても、画面の操作は続けられる（記録はページを開いている間だけ残る）
   }
 }
 
@@ -70,16 +65,13 @@ function clearUnsolved(a: Answer): Answer {
   return a.earned ? a : { ...a, choice: undefined, revealed: false }
 }
 
-// 保存領域の選び方と、最初の状態を決める。reset=1 のときは空の状態から始める。
-function loadInitial(reset: boolean) {
-  const shared = sessionStorage.getItem(LS_KEY) !== null
-  const storage = shared ? sessionStorage : localStorage
-  const loaded: FreeState = reset ? { index: 0, answers: {} } : readState(storage)
+// 最初の状態を決める。reset=1 のときは空の状態から始める。
+function loadInitial(reset: boolean): FreeState {
+  const loaded: FreeState = reset ? { index: 0, answers: {} } : readState(localStorage)
   // 正解していない問題は、開き直したときに未回答の状態から始める
   const answers: Record<string, Answer> = {}
   for (const [id, a] of Object.entries(loaded.answers ?? {})) answers[id] = clearUnsolved(a)
-  const state: FreeState = { ...loaded, answers }
-  return { shared, storage, state }
+  return { ...loaded, answers }
 }
 
 export default function FreeQuizClient() {
@@ -96,21 +88,18 @@ function FreeQuiz() {
 
   const reset = searchParams.get('reset') === '1'
 
-  // 初期化：共有モード判定・状態読み込み。ハイドレーションの後にだけ描画されるので、保存領域を直接読める
+  // 初期化：状態の読み込み。ハイドレーションの後にだけ描画されるので、保存領域を直接読める
   const [initial] = useState(() => loadInitial(reset))
 
   const [questions, setQuestions] = useState<FreeQuestion[]>([])
-  const [state, setState] = useState<FreeState>(initial.state)
-  const [shared, setShared] = useState(initial.shared)
+  const [state, setState] = useState<FreeState>(initial)
   const [hintVisible, setHintVisible] = useState(false)
-
-  const storageRef = useRef<Storage | null>(initial.storage)
 
   // reset=1 で開いたときは、空の状態を保存し、URL から reset=1 を外す（開いたときに1回だけ）
   // 画面の移動はせず、URL だけを書き換える（再読み込みで再びリセットされないように）
   useEffect(() => {
     if (!reset) return
-    saveSafe(LS_KEY, initial.state, initial.storage)
+    saveSafe(LS_KEY, initial)
     window.history.replaceState(null, '', '/contents/free')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -129,23 +118,7 @@ function FreeQuiz() {
 
   function save(next: FreeState) {
     setState(next)
-    const storage = storageRef.current ?? localStorage
-    const ok = saveSafe(LS_KEY, next, storage)
-    if (!ok) storageRef.current = sessionStorage
-  }
-
-  function toggleShared(checked: boolean) {
-    const src = checked ? localStorage : sessionStorage
-    const dst = checked ? sessionStorage : localStorage
-    const v = src.getItem(LS_KEY)
-    if (v !== null) {
-      dst.setItem(LS_KEY, v)
-      src.removeItem(LS_KEY)
-    } else if (dst.getItem(LS_KEY) === null) {
-      dst.setItem(LS_KEY, JSON.stringify(state))
-    }
-    storageRef.current = dst
-    setShared(checked)
+    saveSafe(LS_KEY, next)
   }
 
   const solvedCount = useMemo(
@@ -354,7 +327,7 @@ function FreeQuiz() {
 
         <div className="my-4">
           <p className="font-bold text-base mb-1">
-            今の記録、このブラウザを閉じると消えます。
+            今の記録は、このブラウザにだけ保存されています。
           </p>
           <p className="text-sm text-gray-600 mb-3">
             メール登録すると、解いた記録がマイページに残り、続きをいつでも再開できます。無料100問＋ヒント解説も使い放題。
@@ -363,11 +336,6 @@ function FreeQuiz() {
             メール登録
           </Link>
         </div>
-
-        <label className="block my-3">
-          <input type="checkbox" checked={shared} onChange={(e) => toggleShared(e.target.checked)} />{' '}
-          共有端末で利用する（チェックすると、ブラウザを閉じたときに進捗が残りません）
-        </label>
 
         <div className="nav-buttons flex justify-between gap-4 mt-8">
           <button type="button" onClick={handleBack} className="underline text-accent">
