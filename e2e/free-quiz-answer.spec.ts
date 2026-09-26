@@ -9,6 +9,7 @@ import { test, expect, type Page } from '@playwright/test';
  * - 正解していない問題は、再読み込み・戻る・次へで表示し直すと未回答の状態に戻る
  * - 選択肢は、ラジオボタンと文字を押したときだけ選ばれる（余白を押しても選ばれない）
  * - 選択肢を押せるときだけ、ラジオボタンと文字の上でカーソルが指の形になる
+ * - 「ヒントを見る」は不正解のときだけ表示し、正解した後は表示しない
  */
 
 const choice = (page: Page, n: number) => page.locator(`input[name="choice"][value="${n}"]`);
@@ -153,4 +154,33 @@ test('正解していない問題は、戻る・次へで表示し直すと未�
   for (let n = 1; n <= 5; n++) await expect(choice(page, n)).not.toBeChecked();
   await expect(page.getByText(/あなたの解答/)).toHaveCount(0);
   await expect(page.locator('.judge')).toHaveCount(0);
+});
+
+// 回帰テスト：以前は正解した後も「ヒントを見る」が表示されていた
+test('不正解のときはヒントを見られ、正解した後はヒントを表示しない', async ({ page }) => {
+  await page.goto('/contents/free');
+  await expect(page.getByText('Q1', { exact: true })).toBeVisible({ timeout: 15000 });
+
+  // 不正解：ヒントを見られる
+  await choice(page, 2).click();
+  await expect(page.locator('.judge')).toContainText('不正解です');
+  await page.getByRole('button', { name: 'ヒントを見る' }).click();
+  await expect(page.locator('.hint')).toContainText('気体ではなく');
+
+  // 正解：ヒントもボタンも表示しない。解説は見られる
+  await choice(page, 5).click();
+  await expect(page.locator('.judge')).toHaveText('正解です。');
+  await expect(page.locator('.hint')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'ヒントを見る' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '正解と解説を見る' })).toBeVisible();
+});
+
+test('1回目で正解したときは、ヒントを表示しない', async ({ page }) => {
+  await page.goto('/contents/free');
+  await expect(page.getByText('Q1', { exact: true })).toBeVisible({ timeout: 15000 });
+
+  await choice(page, 5).click();
+  await expect(page.locator('.judge')).toHaveText('正解です。');
+  await expect(page.getByRole('button', { name: 'ヒントを見る' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '正解と解説を見る' })).toBeVisible();
 });

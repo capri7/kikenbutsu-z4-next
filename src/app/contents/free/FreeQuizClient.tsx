@@ -280,11 +280,11 @@ function FreeQuiz() {
           <div className="your-answer mt-4">あなたの解答：{done.choice}</div>
         )}
 
-        {done?.choice != null && !revealed && hintVisible && q.hint && (
+        {done?.choice != null && !revealed && done.earned !== true && hintVisible && q.hint && (
           <div className="hint mt-3">🧠 {q.hint}</div>
         )}
 
-        {done?.choice != null && !revealed && q.hint && !hintVisible && (
+                {done?.choice != null && !revealed && done.earned !== true && q.hint && !hintVisible && (
           <button
             type="button"
             onClick={() => setHintVisible(true)}
