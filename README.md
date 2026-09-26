@@ -13,7 +13,7 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 - Next.js 16（App Router）＋ Supabase（PostgreSQL・RLS・Edge Functions）＋ Stripe。要件定義・設計・実装・運用を1人で担当
 - データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（4章）
 - 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（4章「運用上の学び」）
-- テスト：分岐ロジックを関数に切り出し、Deno.test 37件・Vitest 9件・Playwright E2E 9件。E2E はローカルの Supabase に分離し、本番に触れない構成（6章）。3種類とも、PR ごとに GitHub Actions で自動実行
+- テスト：分岐ロジックを関数に切り出し、Deno.test 37件・Vitest 9件・Playwright E2E 17件。E2E はローカルの Supabase に分離し、本番に触れない構成（6章）。3種類のテストと ESLint を、PR ごとに GitHub Actions で自動実行
 
 ## 動かし方
 
@@ -55,10 +55,13 @@ npm test -- --run
 # Edge Functions の判定ロジック（Deno.test、37件）
 deno test supabase/functions/
 
-# E2E（Playwright、9件）。ローカルの Supabase を起動してから実行する
+# E2E（Playwright、17件）。ローカルの Supabase を起動してから実行する
 npx playwright install chromium    # 初回のみ
 supabase start
 npx playwright test
+
+# lint（ESLint）
+npm run lint
 ```
 
 E2E の接続先は、`.env.local` ではなく `supabase status` から取得する。ローカルの Supabase が起動していない場合や、接続先がローカルでない場合は、テストを始める前に止まる。E2E は本番ビルド（`npm run build && npm run start`）を自動で起動してから実行する。
@@ -111,8 +114,9 @@ Supabase Edge Functions（`supabase secrets set` で登録）
 |---|---|---|
 | 基礎知識学習 | 不要 | 節ごとのミニクイズ付き解説ページ（法令・物理化学・性質と火災予防 全3章） |
 | 練習問題（無料体験） | 不要 | 無料32問体験（静的データ、簡易版のヒント・解説） |
-| マイページ | メール登録のみ（ログイン不要） | ①大分野・小分野別の練習問題（大分野タップで該当分野からランダム出題、小分野タップで該当節のみ出題）　②誤答リストUI　③復習リストUI　④学習カレンダー　⑤試験日カウントダウン　⑥分野別進捗グラフ　⑦サブスクリプション購入への導線 |
-| 決済・会員管理 | メール登録＋ログイン | Stripeサブスクリプション決済、請求情報確認、Webhookによる状態同期 |
+| マイページ | メール登録（登録と同時にログインした状態になる） | ①大分野・小分野別の練習問題（大分野タップで該当分野からランダム出題、小分野タップで該当節のみ出題）　②誤答リストUI　③復習リストUI　④学習カレンダー　⑤試験日カウントダウン　⑥分野別進捗グラフ　⑦サブスクリプション購入への導線 |
+| 決済 | 不要 | Stripeサブスクリプション決済。ログイン中はアカウントの ID で、ログインしていない場合は決済時のメールアドレスで、アカウントと紐付ける。Webhookで契約の状態をDBに同期 |
+| 会員管理 | メール登録（ログインした状態） | 請求情報の確認・解約（Stripeのカスタマーポータル） |
 | メール登録・ログイン | ― | メール登録（サインアップ）、ログイン、パスワードリセット |
 | 法務・SEO | 不要 | プライバシーポリシー（問い合わせ先記載）、利用規約、特商法表記、OGP設定 |
 
@@ -198,7 +202,7 @@ Stripeの公式仕様では、Webhookは「少なくとも1回」配信される
 | 段階 | 問題数 | 保存場所 | 条件 |
 |---|---|---|---|
 | 無料体験 | 32問 | 静的データ（アプリに同梱、DBを介さない） | 認証不要 |
-| 無料会員 | 100問 | `questions`テーブル（`is_paid = false`） | メール登録・ログイン必須（RLSでログイン済みユーザーのみ読み取り可） |
+| 無料会員 | 100問 | `questions`テーブル（`is_paid = false`） | メール登録（登録と同時にログインした状態になる。RLSでログイン済みユーザーのみ読み取り可） |
 | 有料会員 | 約1,473問 | `questions`テーブル（`is_paid = true`） | 有効なサブスクリプション必須（`user_active_subscriptions`ビューで判定） |
 
 全1,573問のうち無料は100問（約6%）にとどめ、残りを有料の壁の奥に置くことで、検索流入で評価を得ている法令・物理化学の解説ページ（`/basics`配下、認証不要）と、収益化対象の練習問題との間でバランスを取っている。
@@ -420,15 +424,31 @@ type BillingPortalResponse = {
 
 #### 運用上の学び：`verify_jwt`とWebhook認証の落とし穴
 
-`stripe-webhook`は当初`verify_jwt: true`でデプロイされており、SupabaseプラットフォームレベルのJWT検証が、関数のコードに到達する前に全リクエストを`401 UNAUTHORIZED_NO_AUTH_HEADER`で拒否していた。StripeのWebhookはSupabaseのJWTではなく独自の署名（`stripe-signature`ヘッダー）で認証するため、この設定では関数内の署名検証ロジックに一切到達できず、サブスクリプションの状態同期が機能しない状態が続いていた。
+`stripe-webhook`は、SupabaseのJWTではなく、Stripe独自の署名（`stripe-signature`ヘッダー）で認証する。SupabaseのJWT検証（`verify_jwt`）が有効だと、関数のコードに届く前に全リクエストが`401 UNAUTHORIZED_NO_AUTH_HEADER`で拒否されるため、この関数ではJWT検証を無効にする必要がある。開発の初期にこの401を特定し、JWT検証を無効にして解消したが、設定をリポジトリに書いていなかった。そのため、後に本番で再発した。
 
-Edge Functionのログを確認し、Stripe側からのリクエスト自体は届いているが401で弾かれていることを特定。`supabase/config.toml`に`[functions.stripe-webhook] verify_jwt = false`を追加して解消した。あわせて、GitHub ActionsのデプロイワークフローがトリガーパスとしてEdge Functionsのコード（`supabase/functions/**`）のみを監視しており、`config.toml`単体の変更では自動デプロイが走らない設計上の穴も同時に発見し、トリガーパスに`supabase/config.toml`を追加して修正した。
+**再発した障害の要約**
 
-**この不具合は一度、本番で再発した。** 2026年7月31日、`stripe-webhook`は再び`verify_jwt`の401を返していた（Supabaseのファンクションログで確認）。この日の請求書作成時刻（06:04:01）と401発生時刻（06:04:02）が1秒差で一致しており、この日の月次更新イベントの受信に失敗したと考えられる。Stripe側では決済自体は正常に完了しており、Webhookの配信も試行された記録（`webhooks_delivered_at`）が残っているが、受信側が401で拒否したため`stripe_events`テーブルへの記録は行われなかった。`current_period_end`はこのWebhook経由でのみ更新される設計のため、この間は更新されていなかったと考えられる。
+| 項目 | 内容 |
+|---|---|
+| 期間 | 2026-07-31〜08-27（ログで401を確認した範囲。開始は6/30〜7/31の間） |
+| 影響（利用者） | なし。有料の問題の読み取りは、契約終了日に加えて契約の状態（`active` など）でも許可する判定のため、止まらなかった。期間中の有料会員は、期間中も有料の問題を利用していた（回答の記録で確認） |
+| 影響（データ） | 7/31の月次更新イベントを受信できず、`stripe_events` の記録が欠落した。`current_period_end` は、この期間は更新されなかったと考えられる |
+| 影響（決済） | なし。決済は Stripe 側で正常に完了していた |
+| 原因 | JWT 検証を無効にする設定がリポジトリに書かれておらず、再デプロイ（関数の版 59 → 61）で有効に戻ったと考えられる |
+| 対処 | 2026-08-27、設定を `config.toml` に書き、自動デプロイの対象に追加した（コミット `1ae39a5`）。直後から200を返すようになった |
+| 再発防止 | 設定をリポジトリで管理し、デプロイのたびに同じ設定が適用されるようにした。マージ後に、`stripe-webhook` が400を返すことを手動で確認している（自動化は今後の課題） |
 
-2026-08-27 13:11（コミット`1ae39a5`「fix: stripe-webhook verify_jwt disable + workflow trigger path」）で`verify_jwt`の無効化設定を再適用し、同日13:18ごろから200が返るようになった。ただしStripeの標準的なWebhook再送は数日で打ち切られる仕様のため、7/31に失敗した`invoice.payment_succeeded`イベント自体は再送されず、`stripe_events`側の記録としては永久に欠落したままである。データが正しい状態に復帰したのは、復旧後に届いた`customer.subscription.updated`（サブスクリプションの最新状態そのものを運ぶイベント）によって、欠落したイベントを経由せず直接追いついたため。
+**詳細**
 
-**教訓**：`verify_jwt: false`はSupabase側の設定であり、意図せず元に戻りうる。GitHub Actionsのデプロイが毎回成功（緑）していても、それは「デプロイ処理が成功した」ことの証明であって「関数が正しく動作している」ことの証明ではない。また、状態を運ぶイベント（`customer.subscription.updated`）が後から届けば実害としてのデータのズレは自己修復するが、それは欠落そのものを消すわけではなく、`stripe_events`という監査ログの完全性は失われたままになる。外部サービス側の記録（Stripeの請求書一覧）と自システムの記録を定期的に突き合わせる仕組みが無いと、この種の欠落は誰にも気づかれず残り続けるというのが、今回得た教訓である。
+ファンクションログでは、2026-06-30（UTC）に版59の`stripe-webhook`が200を返しており、正常に動いていた。2026-07-31 06:04（UTC）以降は、版61が401を返していた。この間に私が関数を再デプロイしている。最初にJWT検証を無効にしたときと、この再デプロイの、方法と日時の記録は残っていない。
+
+7/31の請求書作成時刻（06:04:01）と401の発生時刻（06:04:02）が1秒差で一致しており、この日の月次更新イベント（`invoice.payment_succeeded`）の受信に失敗したと考えられる。Stripe側ではWebhookの配信が試行された記録（`webhooks_delivered_at`）が残っている。
+
+2026-08-27のコミット`1ae39a5`で、`supabase/config.toml`に`[functions.stripe-webhook] verify_jwt = false`を書き、GitHub Actionsの自動デプロイのトリガーパスに`supabase/config.toml`を追加した（それまでは`supabase/functions/**`のみを監視しており、`config.toml`だけを変更してもデプロイが走らなかった）。ファンクションログでは、同日04:18（UTC）に関数の版が78から79に変わり、その時点から401が200に変わった。版79がこのコミットのデプロイであることは、時刻の一致からの推測である。
+
+StripeのWebhookの再送は最大3日で打ち切られるため、7/31に失敗したイベント自体は再送されず、`stripe_events`の記録は欠落したままである。データが正しい状態に戻ったのは、復旧後に届いた`customer.subscription.updated`（サブスクリプションの最新状態そのものを運ぶイベント）によって、欠落したイベントを経由せず直接追いついたためである。
+
+**教訓**：関数の設定は、リポジトリに書かなければ、再デプロイで意図せず元に戻りうる。GitHub Actionsのデプロイが成功（緑）していても、それは「デプロイ処理が成功した」ことの証明であって、「関数が正しく動作している」ことの証明ではない。また、状態を運ぶイベントが後から届けばデータのずれは直るが、欠落した記録は戻らない。外部サービス側の記録（Stripeの請求書一覧）と自システムの記録を定期的に突き合わせる仕組みがないと、この種の欠落は気づかれずに残る。
 
 #### 運用上の学び：migration のファイルと本番の履歴のずれ
 
@@ -467,7 +487,7 @@ E2E をローカルの Supabase に移す準備として、`supabase db diff --l
 | Supabase Edge Functions（Deno） | Stripe秘密鍵を扱う処理・外部API連携の集約先（4章のAPI設計参照） |
 | Stripe | 決済・サブスクリプション管理 |
 | Vercel | Next.jsアプリのホスティング（本番稼働中） |
-| GitHub Actions | PR ごとのテスト（Vitest・Deno.test・Playwright E2E）と Lighthouse CI の実行。Edge Functionsのデプロイパイプライン（`supabase/functions/**`と`config.toml`の変更を検知して自動デプロイ） |
+| GitHub Actions | PR ごとのテスト（Vitest・Deno.test・Playwright E2E）・ESLint・Lighthouse CI の実行。Edge Functionsのデプロイパイプライン（`supabase/functions/**`と`config.toml`の変更を検知して自動デプロイ） |
 
 ### 技術的なハイライト
 
@@ -561,7 +581,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `create-checkout-session` | ✅ 7パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いためE2Eでカバー） |
 | Next.js側（Vitest） | ✅ 9パターン（`getFeedbackMessage`5・`formatChoiceText`4） |
-| E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅（いずれもローカルの Supabase）・有料転換フロー 未実装・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
+| E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅（いずれもローカルの Supabase）・有料転換フロー 未実装・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
 
 ### `request-account-deletion`（7パターン）
 
@@ -616,7 +636,7 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 - **E2Eテスト（Playwright）**：コアフロー（無料登録〜マイページ〜練習問題への回答〜誤答リストへの遷移）3件を実装し、ローカルの Supabase に対して合格を確認済み（`--repeat-each=10` で30回連続合格）。E2E は本番ビルドを起動して実行する設定（`webServer`）とした。開発サーバーでは、初回のコンパイル待ちで間欠的にタイムアウトするため。次に実装するのは有料転換フロー（ゲスト決済〜Webhook による会員ステータスの反映〜マイページでの有料問題の解放）。Stripe の公式ドキュメントは、Checkout などの Stripe の決済画面には自動操作を防ぐ仕組みがあるため、自動テストでは結果を模擬するよう案内している。そのため E2E では、Checkout のセッション作成（決済画面への移動）までと、決済完了後の Webhook の処理を検証する。決済画面そのものの操作（テストカードでの支払い）は、テストモードで手動で確認する方針とする。
 
-  E2E は、Vitest・Deno.test とあわせて、PR ごとと main への push ごとに GitHub Actions で実行している（`.github/workflows/test.yml`）。CI の中で `supabase start` を実行し、migrations と `seed.sql` を適用したローカルの Supabase に接続するため、本番には触れない。その先の候補として、`useSearchParams`とSuspense境界のケーススタディと、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E対象とした2関数）が残っている。
+  E2E は、Vitest・Deno.test・ESLint とあわせて、PR ごとと main への push ごとに GitHub Actions で実行している（`.github/workflows/test.yml`）。CI の中で `supabase start` を実行し、migrations と `seed.sql` を適用したローカルの Supabase に接続するため、本番には触れない。その先の候補として、`useSearchParams`とSuspense境界のケーススタディと、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E対象とした2関数）が残っている。
 
 - **Next.js側の他のユーティリティ関数**：`src/lib/feedback.ts`のみ着手済み。特に`src/lib/subscription.ts`の`isSubscribed()`は、契約ステータスに加えて「契約終了日時から60秒の猶予期間」を設けた判定ロジックを持っており、境界値のテスト価値が高い。他（`account.ts`・`mistakes.ts`・`review.ts`・`progress.ts`）は主にSupabase呼び出しのラッパーで、判定ロジックの比率が低いため優先度は下がる。
 
