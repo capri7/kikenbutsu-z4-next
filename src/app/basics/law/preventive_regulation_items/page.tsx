@@ -165,7 +165,7 @@ export default function PreventiveRegulationItemsPage() {
           <div className={shared.bandCard}>
             <p>
               専用タンクへの危険物の注入作業中における立会い・監視およびその他の保安措置に関すること（
-              <Link href="/basics/law/refueling_station_standards">規則第40条の3の3の2「専用タンクに危険物を注入する時の措置」</Link>
+              <Link href="/basics/law/refueling_station_standards" prefetch={false}>規則第40条の3の3の2「専用タンクに危険物を注入する時の措置」</Link>
               ）。
             </p>
             <ul className={shared.compact}>
@@ -179,7 +179,7 @@ export default function PreventiveRegulationItemsPage() {
           <div className={shared.bandCard}>
             <p>
               給油業務が行われていないときの保安措置および表示に関すること（
-              <Link href="/basics/law/refueling_station_standards">規則第40条の3の6の2「給油の業務が行われていない時の措置」</Link>
+              <Link href="/basics/law/refueling_station_standards" prefetch={false}>規則第40条の3の6の2「給油の業務が行われていない時の措置」</Link>
               ）。
             </p>
             <ul className={shared.compact}>

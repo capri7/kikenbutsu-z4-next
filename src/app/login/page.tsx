@@ -211,7 +211,7 @@ export default function LoginPage() {
       </p>
 
       <p>
-        初めての方は <Link href="/signup">新規登録</Link>
+        初めての方は <Link href="/signup" prefetch={false}>新規登録</Link>
       </p>
     </div>
   </main>
