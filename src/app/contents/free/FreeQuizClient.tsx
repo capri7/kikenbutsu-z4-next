@@ -285,7 +285,7 @@ function FreeQuiz() {
             const checked = done?.choice === idx
             return (
               <li key={idx} className={isCorrect ? 'is-correct' : ''}>
-                <label className="choice inline-flex items-center gap-2 py-2 cursor-pointer">
+                <label className={`choice inline-flex items-center gap-2 py-2 ${locked ? 'cursor-default' : 'cursor-pointer'}`}>
                   <input
                     type="radio"
                     name="choice"
@@ -293,6 +293,7 @@ function FreeQuiz() {
                     checked={checked}
                     onChange={() => handleChoice(idx)}
                     disabled={locked}
+                    className={locked ? 'cursor-default' : 'cursor-pointer'}
                   />
                   <span className="num">{idx}.</span>
                   <span className="text">{c}</span>

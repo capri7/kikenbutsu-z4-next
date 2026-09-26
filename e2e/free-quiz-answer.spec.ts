@@ -6,9 +6,9 @@ import { test, expect, type Page } from '@playwright/test';
  * - 解説を見た後は、判定を消し、選択肢を変えられない。「次へ」は押せる
  * - 「次へ」で進んでから「戻る」で戻ると、未回答の状態に戻り、もう一度解ける
  * - reset=1 で開くと、記録が消え、URL から reset=1 が外れる
- * - reset=1 で開くと、記録が消え、URL から reset=1 が外れる
  * - 正解していない問題は、再読み込み・戻る・次へで表示し直すと未回答の状態に戻る
  * - 選択肢は、ラジオボタンと文字を押したときだけ選ばれる（余白を押しても選ばれない）
+ * - 選択肢を押せるときだけ、ラジオボタンと文字の上でカーソルが指の形になる
  */
 
 const choice = (page: Page, n: number) => page.locator(`input[name="choice"][value="${n}"]`);
@@ -34,6 +34,9 @@ test('解説を見る前は選ぶたびに判定が出て、解説を見た後�
   await expect(page.getByText('あなたの解答：3')).toBeVisible();
   await expect(page.locator('.judge')).toHaveCount(0);
   for (let n = 1; n <= 5; n++) await expect(choice(page, n)).toBeDisabled();
+  // 押せないときは、ラジオボタンにも文字にも、カーソルを指の形にしない
+  await expect(choice(page, 1)).toHaveCSS('cursor', 'default');
+  await expect(page.getByText('過酸化水素', { exact: true })).toHaveCSS('cursor', 'default');
   await expect(page.getByRole('button', { name: '次へ', exact: true })).toBeEnabled();
 
   // 次へ進んでから戻る
@@ -103,6 +106,9 @@ test('次の問題に進んでから再読み込みしても、未回答の問�
 test('選択肢の文字の右側の余白を押しても選ばれず、文字を押すと選ばれる', async ({ page }) => {
   await page.goto('/contents/free');
   await expect(page.getByText('Q1', { exact: true })).toBeVisible({ timeout: 15000 });
+  // 押せる部分（ラジオボタンと文字）では、カーソルが指の形になる
+  await expect(choice(page, 1)).toHaveCSS('cursor', 'pointer');
+  await expect(page.getByText('過酸化水素', { exact: true })).toHaveCSS('cursor', 'pointer');
 
   // 選択肢の一覧の右端近く（文字のない余白）を、1行目の高さで押す
   const list = await page.locator('ul.choices').boundingBox();
