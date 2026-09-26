@@ -326,9 +326,6 @@ function FreeQuiz() {
         )}
 
         <div className="my-4">
-          <p className="font-bold text-base mb-1">
-            今の記録は、このブラウザにだけ保存されています。
-          </p>
           <p className="text-sm text-gray-600 mb-3">
             メール登録すると、解いた記録がマイページに残り、続きをいつでも再開できます。無料100問＋ヒント解説も使い放題。
           </p>
