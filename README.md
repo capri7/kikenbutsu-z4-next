@@ -659,16 +659,19 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 ### 有料会員の判定
 
-有料会員かどうかの条件が、3か所に2通りの形で書かれている。
+有料会員かどうかの判定が5か所に書かれており、条件は3通りある。
 
 | 場所 | 参照する表 | 条件 | 用途 |
 |---|---|---|---|
 | RLS の関数 `has_active_subscription` | `user_profiles` | 契約終了日が「現在 − 60秒」より後、または状態が `active`・`trialing`・`past_due` | 有料の問題の読み取り |
 | `src/lib/subscription.ts` の `isSubscribed()` | `user_profiles` | 上と同じ | マイページの表示など |
+| `src/components/SiteHeader.tsx` | `subscriptions` の最新の1行（取れなければ `user_profiles`） | 状態が `active`・`trialing`・`past_due`（契約終了日は見ない） | ヘッダーの「購入」「請求情報」の出し分け |
+| `src/app/mypage/WithdrawalCard.tsx` | `subscriptions` の最新の1行 | 状態が `active`・`trialing`・`past_due`（契約終了日は見ない） | 退会の手続きの出し分け |
 | ビュー `user_active_subscriptions` | `subscriptions` | 状態が `active`、かつ契約終了日が空または未来 | メール未確認のユーザーを削除する関数（`maintenance.delete_stale_unverified`）の除外条件 |
 
-- 同じ条件を SQL と TypeScript で別々に書いているため、片方だけ直すとずれる。画面側からも同じ関数を呼ぶ形に統一する
+- 同じ条件を SQL と TypeScript で別々に書いているため、片方だけ直すとずれる。状態の一覧も、TypeScript の3つのファイルにそれぞれ書いている。画面側からも同じ関数を呼ぶ形に統一する
 - `has_active_subscription` は引数でユーザー ID を受け取り、`anon` にも実行を許可している。ID を知っていれば、他人が有料会員かどうかを確かめられる。統一の際は、引数を取らずに `auth.uid()` で本人だけを判定する関数にし、`anon` の実行権限を外す
+- ヘッダーと退会のカードは契約終了日を見ないため、有料の問題を読めるかどうかと、画面の出し分けが食い違う場合がある
 - ビューだけ、参照する表と条件が違う。削除の対象を決める条件が、有料の判定とずれている
 - 削除の定期実行（`daily_unverified_cleanup`、毎日 03:25 UTC）は本番の `pg_cron` に登録されているが、リポジトリには書かれていない
 
@@ -678,6 +681,7 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 ### 運用タスク
 
+- Stripe の記録と DB の記録を定期的に突き合わせ、イベントの記録の欠落を見つける仕組みの作成（[運用上の学び](#運用上の学びverify_jwtとwebhook認証の落とし穴)の教訓を受けた次の対策。現在は `stripe-webhook` の応答を1時間ごとに確かめる監視までを入れている）
 - `supabase/functions/`を独立したリポジトリへ切り出す作業（優先度は低く、緊急のバグ修正を優先してきたため未着手のまま）
 - 旧バニラJS版（`dangerous-materials-fe4`）の Vercel プロジェクトの削除（Next.js 版への移行は完了済み。プロジェクトは未削除）
 
