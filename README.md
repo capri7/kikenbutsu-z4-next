@@ -431,12 +431,13 @@ type BillingPortalResponse = {
 | 項目 | 内容 |
 |---|---|
 | 期間 | 2026-07-31〜08-27（ログで401を確認した範囲。開始は6/30〜7/31の間） |
+| 検知 | 2026-08-03、Stripe から Webhook の失敗を知らせるメールが届いていたが、大量の受信メールに埋もれて見落とした。2026-08-27、作業中に `stripe-webhook` の401に気づき、その日のうちに修正した。7/31から続いていたことは、2026-09-22 にファンクションログを調べて確認した |
 | 影響（利用者） | なし。有料の問題の読み取りは、契約終了日に加えて契約の状態（`active` など）でも許可する判定のため、止まらなかった。期間中の有料会員は、期間中も有料の問題を利用していた（回答の記録で確認） |
 | 影響（データ） | 7/31の月次更新イベントを受信できず、`stripe_events` の記録が欠落した。`current_period_end` は、この期間は更新されなかったと考えられる |
 | 影響（決済） | なし。決済は Stripe 側で正常に完了していた |
 | 原因 | JWT 検証を無効にする設定がリポジトリに書かれておらず、再デプロイ（関数の版 59 → 61）で有効に戻ったと考えられる |
 | 対処 | 2026-08-27、設定を `config.toml` に書き、自動デプロイの対象に追加した（コミット `1ae39a5`）。直後から200を返すようになった |
-| 再発防止 | 設定をリポジトリで管理し、デプロイのたびに同じ設定が適用されるようにした。マージ後に、`stripe-webhook` が400を返すことを手動で確認している（自動化は今後の課題） |
+| 再発防止 | 設定をリポジトリで管理し、デプロイのたびに同じ設定が適用されるようにした。GitHub Actions で1時間ごとに `stripe-webhook` の応答を確かめ、期待どおりでなければ GitHub からメールで知らせるようにした（`.github/workflows/webhook-health-check.yml`）。Stripe と GitHub の失敗の通知は、メールのフィルタで他のメールと分け、見落とさないようにした |
 
 **詳細**
 
@@ -487,7 +488,7 @@ E2E をローカルの Supabase に移す準備として、`supabase db diff --l
 | Supabase Edge Functions（Deno） | Stripe秘密鍵を扱う処理・外部API連携の集約先（4章のAPI設計参照） |
 | Stripe | 決済・サブスクリプション管理 |
 | Vercel | Next.jsアプリのホスティング（本番稼働中） |
-| GitHub Actions | PR ごとのテスト（Vitest・Deno.test・Playwright E2E）・ESLint・Lighthouse CI の実行。Edge Functionsのデプロイパイプライン（`supabase/functions/**`と`config.toml`の変更を検知して自動デプロイ） |
+| GitHub Actions | PR ごとのテスト（Vitest・Deno.test・Playwright E2E）・ESLint・Lighthouse CI の実行。Edge Functionsのデプロイパイプライン（`supabase/functions/**`と`config.toml`の変更を検知して自動デプロイ）。`stripe-webhook`の応答を1時間ごとに確かめる監視 |
 
 ### 技術的なハイライト
 
