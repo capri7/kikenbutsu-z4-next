@@ -138,34 +138,33 @@ Supabase Edge Functions（`supabase secrets set` で登録）
 
 ### 画面遷移図
 
+画面の移動を、ヘッダーと3つの流れに分けて示す。
+
+**ヘッダー（全画面共通）**
+
+| 表示の条件 | リンク |
+|---|---|
+| 常に | トップ・基礎知識・学習ガイド |
+| 未ログイン | ログイン |
+| ログイン中 | マイページ・ログアウト |
+| 有料会員でない（未ログインを含む） | 購入 |
+| 有料会員 | 請求情報（Stripe のカスタマーポータル。戻るとマイページ） |
+
+ヘッダーの有料会員の判定は、`subscriptions` の状態だけで行っている（[有料会員の判定](#有料会員の判定)）。
+
+**① 登録・ログイン**
+
 ```mermaid
 flowchart TD
-  HEADER["ヘッダー<br/>全画面共通"]
   TOP["トップ<br/>/"]
-  BASICS["基礎知識<br/>/basics"]
   GUIDE["学習ガイド<br/>/contents"]
+  BASICS["基礎知識<br/>/basics"]
   FREE["無料32問<br/>/contents/free"]
   SIGNUP["メール登録<br/>/signup"]
   LOGIN["ログイン<br/>/login"]
   MAIL(["パスワード再設定のメール"])
   RESET["パスワード再設定<br/>/reset-password"]
   MY["マイページ<br/>/mypage"]
-  Q["練習問題<br/>/contents/[id]"]
-  MIST["誤答リスト<br/>/mistakes"]
-  REV["復習リスト<br/>/review"]
-  CO["購入<br/>/checkout"]
-  STRIPE[["Stripe の決済画面<br/>外部"]]
-  DONE["決済完了<br/>/success"]
-  PORTAL[["カスタマーポータル<br/>外部"]]
-  DEL["退会完了<br/>/account-deleted"]
-
-  HEADER -->|常に表示| TOP
-  HEADER -->|常に表示| BASICS
-  HEADER -->|常に表示| GUIDE
-  HEADER -->|未ログイン| LOGIN
-  HEADER -->|ログイン中| MY
-  HEADER -->|有料会員でない| CO
-  HEADER -->|有料会員| PORTAL
 
   TOP -->|登録へ| SIGNUP
   TOP -->|無料32問へ| FREE
@@ -174,40 +173,60 @@ flowchart TD
   GUIDE -->|無料32問へ| FREE
   GUIDE -->|基礎知識へ| BASICS
   FREE -->|登録へ| SIGNUP
-  FREE -->|購入へ| CO
-
   SIGNUP -->|登録完了| MY
   SIGNUP -->|ログインへ| LOGIN
-  LOGIN -->|ログイン成功| MY
   LOGIN -->|新規登録へ| SIGNUP
+  LOGIN -->|ログイン成功| MY
+  MY -->|未ログインなら自動で移動| LOGIN
   LOGIN -->|パスワードを忘れた| MAIL
   SIGNUP -->|パスワード再設定を依頼| MAIL
   MAIL -->|メールのリンク| RESET
   RESET -->|設定完了| LOGIN
+```
 
-  MY -->|未ログインなら自動で移動| LOGIN
+**② 学習（マイページから）**
+
+```mermaid
+flowchart LR
+  MY["マイページ<br/>/mypage"]
+  Q["練習問題<br/>/contents/[id]"]
+  MIST["誤答リスト<br/>/mistakes"]
+  REV["復習リスト<br/>/review"]
+
   MY -->|分野を選んで開始| Q
   MY -->|誤答リストを開く| MIST
   MY -->|復習リストを開く| REV
-  MY -->|購入へ| CO
-  MY -->|退会 無料会員は即時| DEL
-  DEL -->|トップへ| TOP
-
-  Q -->|次の問題| Q
   MIST -->|問題を開く| Q
   REV -->|問題を開く| Q
-  Q -->|誤答リストの問題を最後まで解いた| MIST
-  Q -->|復習リストの問題を最後まで解いた| REV
-
-  CO -->|購入手続き| STRIPE
-  STRIPE -->|支払い完了| DONE
-  STRIPE -->|キャンセル| CO
-  DONE -->|ログイン中 または 決済を確認できない| MY
-  DONE -->|未ログイン アカウントを作成| SIGNUP
-  PORTAL -->|戻る| MY
+  Q -->|次の問題| Q
+  Q -->|誤答リストから開き、最後まで解いた| MIST
+  Q -->|復習リストから開き、最後まで解いた| REV
 ```
 
-- ヘッダーの「有料会員」「有料会員でない」は、`subscriptions` の状態だけで判定している（[有料会員の判定](#有料会員の判定)）
+**③ 決済・退会**
+
+```mermaid
+flowchart LR
+  FREE["無料32問<br/>/contents/free"]
+  MY["マイページ<br/>/mypage"]
+  CO["購入<br/>/checkout"]
+  STRIPE[["Stripe の決済画面<br/>外部"]]
+  DONE["決済完了<br/>/success"]
+  SIGNUP["メール登録<br/>/signup"]
+  DEL["退会完了<br/>/account-deleted"]
+  TOP["トップ<br/>/"]
+
+  FREE -->|購入へ| CO
+  MY -->|購入へ| CO
+  CO -->|購入手続き| STRIPE
+  STRIPE -->|キャンセル| CO
+  STRIPE -->|支払い完了| DONE
+  DONE -->|ログイン中、または決済を確認できない| MY
+  DONE -->|未ログイン：アカウントを作成| SIGNUP
+  MY -->|退会：無料会員は即時| DEL
+  DEL -->|トップへ| TOP
+```
+
 - 有料会員の退会は予約になり、画面は移らない。契約終了日に `stripe-webhook` が削除する
 - 法務ページ（利用規約・プライバシーポリシー・特商法表記）と、練習問題の画面からログインへの移動（復習リストへの追加時にログインが切れていた場合）は省いている
 
