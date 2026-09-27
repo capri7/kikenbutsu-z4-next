@@ -1,0 +1,26 @@
+name: Webhook health check
+
+# 1時間ごとに stripe-webhook が関数のコードまで届いているかを確かめる。
+# 署名のないリクエストには 400 と "invalid signature" が返るのが正常。
+# verify_jwt が有効に戻った場合（401）や、関数が落ちている場合（5xx）は失敗になり、GitHub からメールが届く。
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: stripe-webhook の応答を確かめる
+        run: |
+          status=$(curl -s -o response.txt -w '%{http_code}' -X POST \
+            https://vyzkkkskmwyctznbczzr.functions.supabase.co/stripe-webhook \
+            -H 'Content-Type: application/json' -d '{}')
+          echo "status: $status"
+          echo "body: $(cat response.txt)"
+          if [ "$status" != "400" ] || ! grep -q 'invalid signature' response.txt; then
+            echo "::error::stripe-webhook が期待どおりに応答していない（status: $status）"
+            exit 1
+          fi
