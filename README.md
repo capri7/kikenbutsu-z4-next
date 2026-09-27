@@ -473,7 +473,7 @@ E2E をローカルの Supabase に移す準備として、`supabase db diff --l
 | 技術 | バージョン | 採用理由 |
 |---|---|---|
 | Next.js（App Router） | 16.2.10 | Server Components前提の設計で、認証済みユーザー情報の取得をサーバー側に寄せられる。バニラJS版（`dangerous-materials-fe4`）からの移植先として選定し、現在は本番ドメイン`kikenbutsu-z4.com`で稼働中 |
-| React | 19.2.4 | React Compilerがネイティブ対応する最新版。React 17/18でも`react-compiler-runtime`パッケージを追加すれば利用可能だが、19系であれば追加パッケージ無しでビルトインのランタイムAPIが使える |
+| React | 19.2.4 | React Compiler を追加のパッケージなしで使うため、19系を採用 |
 | TypeScript | ^5 | `strict: true`。API設計のリクエスト/レスポンス型を明示する運用（4章参照）はTypeScriptの型システムを前提にしている |
 | CSS Modules | - | コンポーネント単位でスタイルを閉じ込める目的で全面採用（92ファイル） |
 | Tailwind CSS | v4 | デザイントークン（`--color-navy`等）の一元管理と、一部コンポーネントのユーティリティクラスに限定利用。CSS Modulesと併用し、レイアウト崩れが起きやすい細かい調整のみTailwindに寄せる方針 |
@@ -492,17 +492,13 @@ E2E をローカルの Supabase に移す準備として、`supabase db diff --l
 
 ### 技術的なハイライト
 
-**React Compilerの有効化とその設計判断**：`next.config.ts`で`reactCompiler: true`を設定し、`babel-plugin-react-compiler`をビルドパイプラインに組み込んでいる。React Compilerはビルド時の静的解析でコンポーネント・値の依存関係を追跡し、`useMemo`/`useCallback`/`React.memo`が担っていた再レンダリング抑制を自動生成コードに置き換える。手動メモ化への依存を排除する狙いは、依存配列の記述漏れによる再レンダリング抑制の失敗（バグとして顕在化しにくい）と、過剰な`useMemo`によるメモリオーバーヘッドの両方を、実装者のスキルに関係なく機械的に防げる点にある。レビュアー不在の個人開発では、このクラスのバグは気づかれないまま本番に残りやすいため、コンパイラに委譲する判断はリスク低減として合理的である。
+**React Compiler の有効化**：`next.config.ts` で `reactCompiler: true` を設定し、`babel-plugin-react-compiler` を組み込んでいる。メモ化はコンパイラに任せる方針にした。依存配列の書き漏れは表に出にくく、レビューする人がいない個人開発では本番に残りやすいため。
 
-**308リダイレクトによるSEO資産の保全**：バニラJS版からNext.js版への移行時、URL構造が変わったにもかかわらずリダイレクトを設定しておらず、Google Search Consoleにインデックス済みのURLが404を返す状態になっていた。移行時点で64件のリダイレクトを設定したが、後日3件の設定漏れ（`defined_substances`等）に気づいて追加し、最終的に69件のリダイレクトルールとなっている（全件、本番環境で308を返すことを確認済み）。
+**308リダイレクトによる旧URLの引き継ぎ**：バニラJS版からの移行でURLの構造が変わり、Google Search Console でインデックス済みのURLが404を返していた。まず64件を設定し、その後 `/index.html`、設定漏れの3件（`defined_substances` など）、`/checkout.html` を順に追加して、現在は69件。`next.config.ts` の `redirects()` で `permanent: true` を指定し、308を返す。`source` に重複がないこと、本番で全件が308を返すことを `scripts/check_redirects.sh` で確かめた。
 
-302（一時的リダイレクト）ではなく`next.config.ts`の`redirects()`で`permanent: true`を指定しているのは、Next.jsが恒久的リダイレクトに用いる**308**ステータスを返すためで、これにより検索エンジンに「恒久的な移転」であることを伝え、旧URLに蓄積されたインデックス評価・被リンク評価を新URLに引き継がせている。307/308が使われているのは、従来の301/302と異なりリダイレクト時にHTTPメソッドを変更しない仕様のため。`redirects()`はビルド時に解決され、Vercelのエッジ層でリダイレクトが完結するため、クライアントサイドでの一瞬の404表示やリダイレクトチェーンによる遅延が発生しない。
+**Cookie によるセッションの更新（`src/proxy.ts`）**：Next.js 16 で middleware が proxy に改名されたため、最初から `proxy.ts` で実装している（ランタイムは Node.js）。ユーザーの確認には、Supabase Auth のサーバーで JWT を確かめる `getUser()` を使う。Cookie は Supabase の公式の手順どおり、`request` と `response` の両方で更新している。
 
-69件の`source`（旧URL）に重複が無いことも確認済みで、1つの旧URLが複数の転送先に矛盾して解決される余地はない。全件、本番環境に対してcurlでステータスコードを確認するスクリプト（`scripts/check_redirects.sh`）を作成し、69件すべてが308を返すことを検証済み。
-
-**Cookieベースのセッションリフレッシュ設計（`src/proxy.ts`）**：Next.js 16 で middleware が非推奨になり proxy に改名されたため、当初から proxy.ts を採用している（ランタイムは Node.js 固定）。本プロジェクトは初期実装の段階からこれに対応済みである。セッション検証には`getSession()`ではなく`getUser()`を使用している。`getSession()`はローカルのCookieに保存された値をそのまま信頼するため、Cookieの偽装に対して脆弱であるのに対し、`getUser()`はSupabase Authサーバーに問い合わせてJWTを再検証するため、なりすましを防げる。また、Cookieの更新を`request.cookies`と`response.cookies`の両方に対して行っているのは、`request`側を更新しないと同一リクエスト内で後続実行されるServer Componentsが既にリフレッシュ済みのトークンを知らずに二重にリフレッシュを試み、`response`側を更新しないとブラウザに新しいトークンが渡らず、次回リクエストで古いトークンを送り続けた末に強制的にログアウトされるため。この2段階の伝播はSupabase公式が明示的に要求している実装パターンである。
-
-## 6. テスト・品質保証 
+## 6. テスト・品質保証
 
 ### ケーススタディ：`useSearchParams`とSuspense境界（本番ビルドでのみ発生する不具合）
 
@@ -657,4 +653,3 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 ### コンテンツ構造
 
 現状、`/basics`配下の解説ページは、本文（日本語の説明文）と定義・対比表のマークアップがJSXに直書きされている。ページ数が少ない段階では問題ないが、乙4は章・節数が多く、同型の「定義＋対比表」パターンが繰り返し出現するため、ページ数が増えるとJSXのコピペが増加する。対応候補は、①本文をMDXまたはJSONに分離してレイアウトと切り離す、②`ComparisonTable`のような型付き共通コンポーネントに繰り返しパターンを切り出す、の2つ。現段階では規模に対して過剰な対応（MDX導入等）はオーバーエンジニアリングと判断し、優先度は保留としている。
-
