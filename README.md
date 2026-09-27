@@ -7,13 +7,25 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 
 **公開サイト**: [https://kikenbutsu-z4.com](https://kikenbutsu-z4.com)（本リポジトリを2026年8月にVercelへ本番デプロイ・ドメイン移行済み）
 
+## 目次
+
+- [要点](#要点)
+- [動かし方](#動かし方)
+- [1. プロジェクト概要（要件定義）](#1-プロジェクト概要要件定義)
+- [2. 機能一覧](#2-機能一覧)
+- [3. 基本設計（画面遷移図・ユーザーフロー）](#3-基本設計画面遷移図ユーザーフロー)
+- [4. 詳細設計（DBスキーマ、API設計、Stripe/Supabase連携のシーケンス図）](#4-詳細設計-dbスキーマapi設計stripesupabase連携のシーケンス図)
+- [5. 実装・技術スタック](#5-実装技術スタック)
+- [6. テスト・品質保証](#6-テスト品質保証)
+- [7. 今後の課題](#7-今後の課題)
+
 ## 要点
 
 - 乙4受験者向けの有料学習サービス。誤答リスト・復習リスト・分野別正答率で「弱点を優先して潰す」学習フローを提供（本番稼働中）
 - Next.js 16（App Router）＋ Supabase（PostgreSQL・RLS・Edge Functions）＋ Stripe。要件定義・設計・実装・運用を1人で担当
-- データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（4章）
-- 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（4章「運用上の学び」）
-- テスト：分岐ロジックを関数に切り出し、Deno.test 37件・Vitest 9件・Playwright E2E 17件。E2E はローカルの Supabase に分離し、本番に触れない構成（6章）。3種類のテストと ESLint を、PR ごとに GitHub Actions で自動実行
+- データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（[4. 詳細設計](#4-詳細設計-dbスキーマapi設計stripesupabase連携のシーケンス図)）
+- 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（[4. 詳細設計「運用上の学び」](#運用上の学びverify_jwtとwebhook認証の落とし穴)）
+- テスト：分岐ロジックを関数に切り出し、Deno.test 37件・Vitest 9件・Playwright E2E 17件。E2E はローカルの Supabase に分離し、本番に触れない構成（[6. テスト・品質保証](#6-テスト品質保証)）。3種類のテストと ESLint を、PR ごとに GitHub Actions で自動実行
 
 ## 動かし方
 
@@ -203,7 +215,7 @@ Stripeの公式仕様では、Webhookは「少なくとも1回」配信される
 |---|---|---|---|
 | 無料体験 | 32問 | 静的データ（アプリに同梱、DBを介さない） | 認証不要 |
 | 無料会員 | 100問 | `questions`テーブル（`is_paid = false`） | メール登録（登録と同時にログインした状態になる。RLSでログイン済みユーザーのみ読み取り可） |
-| 有料会員 | 約1,473問 | `questions`テーブル（`is_paid = true`） | 有効なサブスクリプション必須（RLS の関数 `has_active_subscription` で判定。7章「有料会員の判定」参照） |
+| 有料会員 | 約1,473問 | `questions`テーブル（`is_paid = true`） | 有効なサブスクリプション必須（RLS の関数 `has_active_subscription` で判定。[7. 今後の課題「有料会員の判定」](#有料会員の判定)参照） |
 
 全1,573問のうち無料は100問（約6%）にとどめ、残りを有料の壁の奥に置くことで、検索流入で評価を得ている法令・物理化学の解説ページ（`/basics`配下、認証不要）と、収益化対象の練習問題との間でバランスを取っている。
 
@@ -474,7 +486,7 @@ E2E をローカルの Supabase に移す準備として、`supabase db diff --l
 |---|---|---|
 | Next.js（App Router） | 16.2.10 | Server Components前提の設計で、認証済みユーザー情報の取得をサーバー側に寄せられる。バニラJS版（`dangerous-materials-fe4`）からの移植先として選定し、現在は本番ドメイン`kikenbutsu-z4.com`で稼働中 |
 | React | 19.2.4 | React Compiler を追加のパッケージなしで使うため、19系を採用 |
-| TypeScript | ^5 | `strict: true`。API設計のリクエスト/レスポンス型を明示する運用（4章参照）はTypeScriptの型システムを前提にしている |
+| TypeScript | ^5 | `strict: true`。API設計のリクエスト/レスポンス型を明示する運用（[4. 詳細設計の API 設計](#api設計supabase-edge-functions)参照）はTypeScriptの型システムを前提にしている |
 | CSS Modules | - | コンポーネント単位でスタイルを閉じ込める目的で全面採用（92ファイル） |
 | Tailwind CSS | v4 | デザイントークン（`--color-navy`等）の一元管理と、一部コンポーネントのユーティリティクラスに限定利用。CSS Modulesと併用し、レイアウト崩れが起きやすい細かい調整のみTailwindに寄せる方針 |
 | Chart.js | ^4.5.1 | マイページの学習進捗グラフ描画 |
@@ -485,7 +497,7 @@ E2E をローカルの Supabase に移す準備として、`supabase db diff --l
 |---|---|
 | Supabase（PostgreSQL） | メインDB。RLSでユーザーごとのデータアクセス制御 |
 | Supabase Auth | 認証（JWT発行、`@supabase/ssr`でサーバー/クライアント両対応のセッション管理） |
-| Supabase Edge Functions（Deno） | Stripe秘密鍵を扱う処理・外部API連携の集約先（4章のAPI設計参照） |
+| Supabase Edge Functions（Deno） | Stripe秘密鍵を扱う処理・外部API連携の集約先（[4. 詳細設計の API 設計](#api設計supabase-edge-functions)参照） |
 | Stripe | 決済・サブスクリプション管理 |
 | Vercel | Next.jsアプリのホスティング（本番稼働中） |
 | GitHub Actions | PR ごとのテスト（Vitest・Deno.test・Playwright E2E）・ESLint・Lighthouse CI の実行。Edge Functionsのデプロイパイプライン（`supabase/functions/**`と`config.toml`の変更を検知して自動デプロイ）。`stripe-webhook`の応答を1時間ごとに確かめる監視 |
