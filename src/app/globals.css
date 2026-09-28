@@ -743,6 +743,13 @@ a:hover {
   margin: 4px auto 0;
 }
 
+.page-checkout .checkout-guest-note {
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-mid);
+  margin: 0 auto 16px;
+}
+
 .page-checkout .checkout-account {
   max-width: 520px;
   margin: 0 auto 20px;

@@ -81,14 +81,17 @@ export default function CheckoutClient({ isLoggedIn, userEmail }: Props) {
         ) : (
           <div className="checkout-login-notice" role="note">
             <p className="checkout-login-notice-title">無料会員の方へ</p>
-            <p>お申し込みの前に、登録済みのメールアドレスでログインしてください。</p>
             <p>
               ログインせずに別のメールアドレスでお申し込みをすると、今お使いのアカウントに有料プランが反映されません。
             </p>
-            <Link href="/login" prefetch={false} className="btn btn-secondary">
+            <Link href="/login?next=/checkout" prefetch={false} className="btn btn-secondary">
               ログイン
             </Link>
           </div>
+        )}
+
+        {!isLoggedIn && (
+          <p className="checkout-guest-note">会員登録がお済みでない方は、このままお申し込みいただけます。</p>
         )}
 
         <div className="consent-row">
