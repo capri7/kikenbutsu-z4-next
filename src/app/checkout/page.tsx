@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { createClient } from '@/lib/supabase/server'
 import CheckoutClient from './CheckoutClient'
 
 export const metadata: Metadata = {
@@ -6,6 +7,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default function CheckoutPage() {
-  return <CheckoutClient />
+export default async function CheckoutPage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  return <CheckoutClient isLoggedIn={!!user} userEmail={user?.email ?? null} />
 }

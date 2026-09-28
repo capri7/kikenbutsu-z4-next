@@ -684,13 +684,6 @@ a:hover {
   text-align: center;
 }
 
-.page-checkout .auth-logo {
-  display: block;
-  margin: 0 auto 12px;
-  width: clamp(40px, 6vw, 56px);
-  height: auto;
-}
-
 .page-checkout .hero-title {
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -719,6 +712,54 @@ a:hover {
   font-size: 13px;
   color: var(--red);
   margin: -6px auto 14px;
+}
+
+.page-checkout .checkout-login-notice {
+  max-width: 520px;
+  margin: 0 auto 20px;
+  padding: 16px 20px;
+  border-left: 4px solid var(--accent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-mid);
+  word-break: auto-phrase;
+}
+
+.page-checkout .checkout-login-notice p {
+  margin: 0 0 8px;
+}
+
+.page-checkout .checkout-login-notice-title {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.page-checkout .checkout-login-notice .btn {
+  display: flex;
+  width: fit-content;
+  margin: 4px auto 0;
+}
+
+.page-checkout .checkout-account {
+  max-width: 520px;
+  margin: 0 auto 20px;
+  font-size: 14px;
+  color: var(--text-mid);
+}
+
+.page-checkout .checkout-account p {
+  margin: 0;
+}
+
+.page-checkout .checkout-account .checkout-account-email {
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  overflow-wrap: anywhere;
 }
 
 .page-checkout .consent-row label{
@@ -916,24 +957,6 @@ a:hover {
   .contents .cta-free .btn {
     width: 100%;
   }
-}
-
-.checkout-benefits {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 1.5rem;
-  text-align: left;
-}
-
-.checkout-benefits li {
-  padding: 6px 0;
-  font-size: 0.95rem;
-}
-
-.checkout-benefits li::before {
-  content: "✓ ";
-  color: #2563eb;
-  font-weight: bold;
 }
 
 }
