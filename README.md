@@ -748,7 +748,7 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 ### 有料会員の判定
 
-有料会員かどうかの判定が5か所に書かれており、条件は3通りある。
+有料会員かどうかの判定が4か所に書かれており、条件は2通りある。
 
 | 場所 | 参照する表 | 条件 | 用途 |
 |---|---|---|---|
@@ -756,13 +756,12 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 | `src/lib/subscription.ts` の `isSubscribed()` | `user_profiles` | 上と同じ | マイページの表示など |
 | `src/components/SiteHeader.tsx` | `subscriptions` の最新の1行（取れなければ `user_profiles`） | 状態が `active`・`trialing`・`past_due`（契約終了日は見ない） | ヘッダーの「購入」「請求情報」の出し分け |
 | `src/app/mypage/WithdrawalCard.tsx` | `subscriptions` の最新の1行 | 状態が `active`・`trialing`・`past_due`（契約終了日は見ない） | 退会の手続きの出し分け |
-| ビュー `user_active_subscriptions` | `subscriptions` | 状態が `active`、かつ契約終了日が空または未来 | メール未確認のユーザーを削除する関数（`maintenance.delete_stale_unverified`）の除外条件 |
 
 - 同じ条件を SQL と TypeScript で別々に書いているため、片方だけ直すとずれる。状態の一覧も、TypeScript の3つのファイルにそれぞれ書いている。画面側からも同じ関数を呼ぶ形に統一する
 - `has_active_subscription` は引数でユーザー ID を受け取り、`anon` にも実行を許可している。ID を知っていれば、他人が有料会員かどうかを確かめられる。統一の際は、引数を取らずに `auth.uid()` で本人だけを判定する関数にし、`anon` の実行権限を外す
 - ヘッダーと退会のカードは契約終了日を見ないため、有料の問題を読めるかどうかと、画面の出し分けが食い違う場合がある
-- ビューだけ、参照する表と条件が違う。削除の対象を決める条件が、有料の判定とずれている
-- 削除の定期実行（`daily_unverified_cleanup`、毎日 03:25 UTC）は本番の `pg_cron` に登録されているが、リポジトリには書かれていない
+- ビュー `user_active_subscriptions`（`subscriptions` の状態が `active`、かつ契約終了日が空または未来）は、メールアドレス未確認のユーザーを削除する関数だけが使っていた。関数を廃止したため、今はどこからも使われていない
+- メールアドレス未確認のユーザーを削除する定期実行（`daily_unverified_cleanup`）は、本番にだけ登録されていた。関数の中で呼んでいた削除の命令（`auth.delete_user`）が存在せず、2025-09-02 の開始から一度も削除できていなかった（2026-02-21 以降は毎日失敗）。登録から確認済みになる今の設計では対象が生まれないため、関数とともに廃止した（`supabase/migrations/20260928061907_remove_unverified_cleanup.sql`）
 
 ### 決済とアカウントの紐付け
 
