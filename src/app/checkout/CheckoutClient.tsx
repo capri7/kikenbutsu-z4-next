@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 const PRICE_ID = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID!
@@ -17,7 +18,12 @@ function trackEvent(name: string, params?: Record<string, unknown>) {
   }
 }
 
-export default function CheckoutClient() {
+type Props = {
+  isLoggedIn: boolean
+  userEmail: string | null
+}
+
+export default function CheckoutClient({ isLoggedIn, userEmail }: Props) {
   const [agreed, setAgreed] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
@@ -62,17 +68,28 @@ export default function CheckoutClient() {
   return (
     <main className="site-main page-checkout">
       <div className="auth-card">
-        <img src="/images/logo.svg" alt="危険物乙4対策サイトロゴ" className="auth-logo" width={56} height={56} />
-
         <h2 className="hero-title">乙4合格マスターコース</h2>
         <p className="plan-info">1280円／月（税込）</p>
 
-        <ul className="checkout-benefits">
-          <li>本試験のどんな出題にも対応できる実力がつく</li>
-          <li>苦手分野だけを繰り返し復習できるから、最短ルートで合格レベルに到達</li>
-          <li>学習の進み具合が見える化されるから、迷わず勉強を続けられる</li>
-          <li>気に入らなければいつでも解約、リスクなく始められる</li>
-        </ul>
+        {isLoggedIn ? (
+          userEmail && (
+            <div className="checkout-account">
+              <p>次のアカウント（メールアドレス）でお申し込みします。</p>
+              <p className="checkout-account-email">{userEmail}</p>
+            </div>
+          )
+        ) : (
+          <div className="checkout-login-notice" role="note">
+            <p className="checkout-login-notice-title">無料会員の方へ</p>
+            <p>お申し込みの前に、登録済みのメールアドレスでログインしてください。</p>
+            <p>
+              ログインせずに別のメールアドレスでお申し込みをすると、今お使いのアカウントに有料プランが反映されません。
+            </p>
+            <Link href="/login" prefetch={false} className="btn btn-secondary">
+              ログイン
+            </Link>
+          </div>
+        )}
 
         <div className="consent-row">
           <label>
