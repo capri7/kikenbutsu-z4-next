@@ -85,7 +85,7 @@ export default function CheckoutClient({ isLoggedIn, userEmail }: Props) {
             <p>
               ログインせずに別のメールアドレスでお申し込みをすると、今お使いのアカウントに有料プランが反映されません。
             </p>
-            <Link href="/login" prefetch={false} className="btn btn-secondary">
+            <Link href="/login?next=/checkout" prefetch={false} className="btn btn-secondary">
               ログイン
             </Link>
           </div>

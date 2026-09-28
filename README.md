@@ -221,7 +221,7 @@ flowchart LR
   CO -->|購入手続き| STRIPE
   STRIPE -->|キャンセル| CO
   CO -->|未ログイン：ログインへ| LOGIN
-  LOGIN -->|ログイン後| MY
+  LOGIN -->|ログイン後| CO
   STRIPE -->|支払い完了| DONE
   DONE -->|ログイン中、または決済を確認できない| MY
   DONE -->|未ログイン：アカウントを作成| SIGNUP
