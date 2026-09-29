@@ -68,6 +68,8 @@ jobs:
       # migrations と seed.sql を適用したローカルの Supabase を起動する
       - name: Start local Supabase
         run: supabase start
+      - name: DB のテスト（pgTAP）
+        run: supabase test db
 
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
