@@ -195,7 +195,7 @@ useEffect(() => {
         qs.set('cid', cid)
       } else if (scope === 'free') {
         qs.set('scope', 'free')
-      
+
       } else if (scope === 'review') {
         qs.set('scope', 'review')
       } else if (scope === 'mistakes') {
@@ -221,9 +221,6 @@ useEffect(() => {
 
     const result = await addToReview({
       questionId: question.id,
-      title: question.title,
-      subcategoryId: question.subcategory_id,
-      contentPath: window.location.pathname,
     })
 
     if (result.ok) {
