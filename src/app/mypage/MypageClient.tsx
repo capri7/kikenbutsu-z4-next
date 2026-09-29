@@ -32,7 +32,7 @@ export default function MypageClient({ userEmail, userId }: { userEmail: string;
             </h2>
 
             <div className={styles.dashboard}>
-              <ExamCountdown userId={userId} />
+              <ExamCountdown />
               <StudyCalendar userId={userId} />
               <PracticeSection userId={userId} />
               <PaidUpsellSection userId={userId} />

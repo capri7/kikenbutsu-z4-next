@@ -58,7 +58,7 @@ function formatDisplay(ymd: string | null): string {
   return `試験日から ${Math.abs(left)}日経過`
 }
 
-export default function ExamCountdown({ userId }: { userId: string }) {
+export default function ExamCountdown() {
   const [examDate, setExamDate] = useState<string | null>(null)
   const [display, setDisplay] = useState('受験日を設定してください')
   const [busy, setBusy] = useState(false)
@@ -68,31 +68,19 @@ export default function ExamCountdown({ userId }: { userId: string }) {
 
   const fetchExamDate = useCallback(async (): Promise<string | null> => {
     const supabase = createClient()
-    try {
-      const { data, error } = await supabase.from('exam_dates').select('exam_date').maybeSingle()
-      if (!error) return data?.exam_date ?? null
-    } catch {
-      // フォールバックへ
-    }
-    try {
-      const { data } = await supabase.rpc('get_exam_date')
-      if (Array.isArray(data)) return data[0]?.exam_date ?? null
-      return data?.exam_date ?? null
-    } catch {
+    const { data, error } = await supabase.from('exam_dates').select('exam_date').maybeSingle()
+    if (error) {
+      console.error('[exam-date fetch]', error)
       return null
     }
+    return data?.exam_date ?? null
   }, [])
 
   const saveExamDate = useCallback(async (ymd: string | null) => {
     const supabase = createClient()
-    try {
-      const { error } = await supabase.rpc('set_exam_date', { p_exam_date: ymd })
-      if (!error) return
-    } catch {
-      // フォールバックへ
-    }
-    await supabase.from('exam_dates').upsert({ user_id: userId, exam_date: ymd })
-  }, [userId])
+    const { error } = await supabase.rpc('set_exam_date', { p_exam_date: ymd })
+    if (error) throw error
+  }, [])
 
   // 初期ロード
   useEffect(() => {
