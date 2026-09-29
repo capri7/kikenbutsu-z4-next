@@ -2,16 +2,14 @@ import { createClient } from '@/lib/supabase/client'
 
 export async function recordMistake(
   questionId: string,
-  clientNonce?: string,
-  subcategoryId?: string | null
+  clientNonce?: string
 ): Promise<unknown> {
   if (!questionId) throw new Error('questionId is required')
   const supabase = createClient()
-  const params: { p_question_id: string; p_client_nonce?: string; p_subcategory_id?: string } = {
+  const params: { p_question_id: string; p_client_nonce?: string } = {
     p_question_id: String(questionId),
   }
   if (clientNonce) params.p_client_nonce = String(clientNonce)
-  if (subcategoryId) params.p_subcategory_id = String(subcategoryId)
   const { data, error } = await supabase.rpc('record_mistake', params)
   if (error) throw error
   return data
@@ -76,4 +74,3 @@ export async function getOrderedMistakeQuestionIds(): Promise<string[]> {
   const items = await getMistakeItems()
   return items.map((it) => it.questionId)
 }
-

@@ -107,7 +107,7 @@ useEffect(() => {
         }
       } else {
         try {
-          await recordMistake(question.id, clientNonce, question.subcategory_id)
+          await recordMistake(question.id, clientNonce)
         } catch (e) {
           console.error('[mistakes] record failed', e)
         }

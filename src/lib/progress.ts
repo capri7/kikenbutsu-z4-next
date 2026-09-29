@@ -45,7 +45,6 @@ export async function saveProgress({
   const { error } = await supabase.rpc('record_progress', {
     p_question_id: String(questionId),
     p_is_correct: !!isCorrect,
-    p_answered_at: ts,
     p_client_nonce: nonce,
   })
 
