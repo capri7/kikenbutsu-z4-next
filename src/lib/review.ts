@@ -3,9 +3,6 @@ import { createClient } from '@/lib/supabase/client'
 
 export type AddToReviewParams = {
   questionId: string
-  title?: string | null
-  subcategoryId?: string | null
-  contentPath: string
 }
 
 export type AddToReviewResult =
@@ -16,9 +13,6 @@ export type AddToReviewResult =
 
 export async function addToReview({
   questionId,
-  title,
-  subcategoryId,
-  contentPath,
 }: AddToReviewParams): Promise<AddToReviewResult> {
   const supabase = createClient()
 
@@ -27,36 +21,9 @@ export async function addToReview({
   } = await supabase.auth.getUser()
   if (!user) return { ok: false, reason: 'auth' }
 
-  const payload = {
-    user_id: user.id,
-    question_id: questionId,
-    title: title || null,
-    subcategory_id: subcategoryId || null,
-    content_path: contentPath,
-    status: 'active',
-  }
-
-  let { error } = await supabase.from('user_review_items').insert(payload)
-
-  if (
-    error &&
-    (error.code === '23505' || /duplicate key/i.test(error.message || ''))
-  ) {
-    const { error: upErr } = await supabase
-      .from('user_review_items')
-
-      .update({
-        title: payload.title,
-        subcategory_id: payload.subcategory_id,
-        content_path: payload.content_path,
-        status: 'active',
-      })
-      .eq('user_id', user.id)
-      .eq('question_id', questionId)
-      .eq('status', 'active')
-
-    error = upErr || null
-  }
+  const { error } = await supabase.rpc('add_review_item', {
+    p_question_id: questionId,
+  })
 
   if (error) return { ok: false, error }
   return { ok: true }
@@ -117,11 +84,9 @@ export async function markReviewItemMastered(id: string): Promise<{ ok: boolean 
   } = await supabase.auth.getUser()
   if (!user) return { ok: false }
 
-  const { error } = await supabase
-    .from('user_review_items')
-    .update({ status: 'mastered', last_reviewed_at: new Date().toISOString() })
-    .eq('id', id)
-    .eq('user_id', user.id)
+  const { error } = await supabase.rpc('mark_review_item_mastered', {
+    p_id: id,
+  })
 
   if (error) return { ok: false }
   return { ok: true }
