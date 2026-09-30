@@ -119,8 +119,6 @@ async function syncFromSubscription(
     user_id,
     email: email ?? null,
     stripe_customer_id: customerId,
-    subscription_status: status,
-    current_period_end: currentPeriodEnd,
   });
 
   await upsertSubscriptions({
