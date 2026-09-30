@@ -13,23 +13,18 @@ export const toIsoOrNull = (sec?: number | string | null) =>
 
 export async function upsertUserProfiles(args: {
   user_id: string; email?: string | null; stripe_customer_id?: string | null;
-  subscription_status?: string | null; current_period_end?: string | null;
 }) {
   const payload: {
     user_id: string;
     email: string | null;
     stripe_customer_id: string | null;
-    subscription_status: string | null;
     updated_at: string;
-    current_period_end?: string;
   } = {
     user_id: args.user_id,
     email: args.email ?? null,
     stripe_customer_id: args.stripe_customer_id ?? null,
-    subscription_status: args.subscription_status ?? null,
     updated_at: new Date().toISOString(),
   };
-  if (args.current_period_end) payload.current_period_end = args.current_period_end;
   const { error } = await admin.from("user_profiles").upsert(payload, { onConflict: "user_id" });
   if (error) throw error;
 }

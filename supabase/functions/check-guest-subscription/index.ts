@@ -58,8 +58,6 @@ Deno.serve(async (req) => {
           user_id,
           email,
           stripe_customer_id: customer.id,
-          subscription_status: status,
-          current_period_end: currentPeriodEnd,
         });
 
         await upsertSubscriptions({
