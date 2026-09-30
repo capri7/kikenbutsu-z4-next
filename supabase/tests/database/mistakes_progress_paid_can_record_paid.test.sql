@@ -7,9 +7,9 @@ select plan(4);
 insert into auth.users (id, email)
 values ('66666666-6666-6666-6666-666666666666', 'progress-paid-member@example.test');
 
--- 有料会員にする（user_profiles の行はトリガーで自動で作られている）
-update public.user_profiles set subscription_status = 'active'
-where user_id = '66666666-6666-6666-6666-666666666666';
+-- 有料会員にする（subscriptions に active の契約の行を作る）
+insert into public.subscriptions (user_id, stripe_subscription_id, status)
+values ('66666666-6666-6666-6666-666666666666', 'sub_test_mistakes_paid', 'active');
 
 insert into public.categories (id)
 values ('77777777-7777-7777-7777-777777777777');
