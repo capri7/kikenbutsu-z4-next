@@ -6,9 +6,8 @@ select plan(1);
 -- テストの中だけで使うデータ（最後に rollback で消える）
 insert into auth.users (id, email)
 values ('11111111-1111-1111-1111-111111111111', 'paid-read-test@example.test');
-update public.user_profiles
-   set subscription_status = 'active', current_period_end = now() + interval '30 days'
- where user_id = '11111111-1111-1111-1111-111111111111';
+insert into public.subscriptions (user_id, stripe_subscription_id, status)
+values ('11111111-1111-1111-1111-111111111111', 'sub_test_paid_read', 'active');
 insert into public.categories (id, name, slug)
 values ('33333333-3333-3333-3333-333333333333', 'テスト分野', 'paid-read-test-category');
 insert into public.subcategories (id, name, slug, category_id)
