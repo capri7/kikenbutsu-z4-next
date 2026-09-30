@@ -406,7 +406,7 @@ export async function getNextRandomQuestionId(
   } = await supabase.auth.getUser()
   if (!user) return null
 
-  const paidUser = await isSubscribed(user.id)
+  const paidUser = await isSubscribed()
 
   const allIdsRaw = await getQuestionPoolIds(scope)
   const allIds = allIdsRaw.map(String)
@@ -439,7 +439,7 @@ export async function getNextForUser(
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  const paid = user ? await isSubscribed(user.id) : false
+  const paid = user ? await isSubscribed() : false
   const includePaid = mode !== 'free' && !!paid
 
   try {

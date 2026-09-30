@@ -14,7 +14,7 @@ export default function ReviewMistakesSection({ userId }: { userId: string }) {
     let cancelled = false
     ;(async () => {
       try {
-        const paid = await isSubscribed(userId)
+        const paid = await isSubscribed()
         const [review, wrong] = await Promise.all([
           fetchReviewCountGlobal(userId),
           fetchWrongCountGlobal(userId, paid),
