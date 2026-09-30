@@ -12,7 +12,7 @@ export default function PaidUpsellSection({ userId }: { userId: string }) {
 
     async function checkSubscription() {
       try {
-        const paid = await isSubscribed(userId)
+        const paid = await isSubscribed()
         if (!cancelled) {
           setShouldShow(!paid)
         }

@@ -4,8 +4,7 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { openBillingPortal } from '@/lib/billing'
-
-const ACTIVE_STATUSES = ['active', 'trialing', 'past_due']
+import { isSubscribed } from '@/lib/subscription'
 
 export default function SiteHeader() {
   const supabase = createClient()
@@ -41,44 +40,7 @@ export default function SiteHeader() {
         if (cancelled) return
         setLoggedIn(true)
 
-        const ACTIVE = ACTIVE_STATUSES
-        let active = false
-        let sub = null
-        let subError = null
-
-        let res = await supabase
-          .from('subscriptions')
-          .select('status, updated_at, created_at')
-          .eq('user_id', session.user.id)
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-
-        sub = res.data
-        subError = res.error
-
-        if (subError && /updated_at/i.test(subError.message || '')) {
-          res = await supabase
-            .from('subscriptions')
-            .select('status, created_at')
-            .eq('user_id', session.user.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle()
-          sub = res.data
-          subError = res.error
-        }
-
-        if (!subError && sub) {
-          active = ACTIVE.includes(String(sub.status || '').toLowerCase())
-        } else {
-          const { data: prof } = await supabase
-            .from('user_profiles')
-            .select('subscription_status')
-            .eq('user_id', session.user.id)
-            .maybeSingle()
-          active = ACTIVE.includes(String(prof?.subscription_status || '').toLowerCase())
-        }
+        const active = await isSubscribed()
 
         if (cancelled) return
         setShowCheckout(!active)
@@ -244,4 +206,3 @@ export default function SiteHeader() {
     </header>
   )
 }
-

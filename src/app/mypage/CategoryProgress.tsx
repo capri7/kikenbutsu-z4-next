@@ -63,7 +63,7 @@ export default function CategoryProgress({ userId }: { userId: string }) {
     let cancelled = false
     ;(async () => {
       const map = await buildSubcategoryMap()
-      const paid = await isSubscribed(userId)
+      const paid = await isSubscribed()
       const data = await fetchUserProgress(userId, paid, map)
       if (cancelled) return
       setChapterMap(map)
@@ -80,7 +80,7 @@ export default function CategoryProgress({ userId }: { userId: string }) {
       const categoryId = categoryNameToId[label]
       if (!categoryId) return
 
-      const nowPaid = await isSubscribed(userId)
+      const nowPaid = await isSubscribed()
       const targetIds = await fetchQuestionIdsByCategory(categoryId, nowPaid, chapterMap)
       if (!targetIds.length) {
         alert('この分野の問題が見つかりませんでした。')
@@ -166,7 +166,7 @@ export default function CategoryProgress({ userId }: { userId: string }) {
   }
 
   async function onSubBarClick(subId: string, catName: string, chapName: string) {
-    const nowPaid = await isSubscribed(userId)
+    const nowPaid = await isSubscribed()
     const supabaseIds = await fetchQuestionIdsBySubHelper(subId, nowPaid)
     if (!supabaseIds.length) {
       alert('この小分野の問題が見つかりませんでした。')

@@ -66,7 +66,7 @@ async function fetchProgressSummaryGlobal(userId: string, paid: boolean) {
 // マイページの学習状況を取得する。失敗したときは 0 件として返す。
 async function loadSummary(userId: string) {
   try {
-    const nowPaid = await isSubscribed(userId)
+    const nowPaid = await isSubscribed()
     return await fetchProgressSummaryGlobal(userId, nowPaid)
   } catch (e) {
     console.error('[mypage] summary error', e)
@@ -94,7 +94,7 @@ export default function PracticeSection({ userId }: { userId: string }) {
     if (busy) return
     setBusy(true)
     try {
-      const nowPaid = await isSubscribed(userId)
+      const nowPaid = await isSubscribed()
 
       if (nowPaid) {
         const qid = await getRandomAnyQuestionId()
