@@ -248,6 +248,8 @@ flowchart LR
 
 ![ER図](./public/diagrams/er-diagram.svg)
 
+> この図は 2026年9月の DB の整理（PR 3）より前の状態です。棚卸しと、使われていない関数・索引・`maintenance` スキーマの削除と引数の整理のあと、本番の DB から作り直します。
+
 ### シーケンス図（決済〜Webhook同期）
 
 ![Stripe/Supabase連携シーケンス図](./public/diagrams/sequence-diagram-stripe-webhook.svg)
@@ -739,7 +741,7 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
   E2E は、Vitest・Deno.test・ESLint とあわせて、PR ごとと main への push ごとに GitHub Actions で実行している（`.github/workflows/test.yml`）。CI の中で `supabase start` を実行し、migrations と `seed.sql` を適用したローカルの Supabase に接続するため、本番には触れない。その先の候補として、`useSearchParams`とSuspense境界のケーススタディと、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E対象とした2関数）が残っている。
 
-- **Next.js側の他のユーティリティ関数**：`src/lib/feedback.ts`のみ着手済み。特に`src/lib/subscription.ts`の`isSubscribed()`は、契約ステータスに加えて「契約終了日時から60秒の猶予期間」を設けた判定ロジックを持っており、境界値のテスト価値が高い。他（`account.ts`・`mistakes.ts`・`review.ts`・`progress.ts`）は主にSupabase呼び出しのラッパーで、判定ロジックの比率が低いため優先度は下がる。
+- **Next.js側の他のユーティリティ関数**：`src/lib/feedback.ts`と`src/lib/safeRedirect.ts`は着手済み。`src/lib/subscription.ts`の`isSubscribed()`は、判定を DB の関数 `has_active_subscription()` に任せ、呼び出した結果を返すだけになったため、判定の検証は pgTAP で行っている（[有料会員の判定](#有料会員の判定)参照）。他（`account.ts`・`mistakes.ts`・`review.ts`・`progress.ts`）は主にSupabase呼び出しのラッパーで、判定ロジックの比率が低いため優先度は下がる。
 
 ### 型安全性
 
@@ -751,7 +753,7 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 ### 有料会員の判定
 
-有料会員かどうかの判定が4か所に書かれており、条件は2通りある。
+**対応前**：有料会員かどうかの判定が4か所に書かれており、条件は2通りあった。
 
 | 場所 | 参照する表 | 条件 | 用途 |
 |---|---|---|---|
@@ -760,9 +762,30 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 | `src/components/SiteHeader.tsx` | `subscriptions` の最新の1行（取れなければ `user_profiles`） | 状態が `active`・`trialing`・`past_due`（契約終了日は見ない） | ヘッダーの「購入」「請求情報」の出し分け |
 | `src/app/mypage/WithdrawalCard.tsx` | `subscriptions` の最新の1行 | 状態が `active`・`trialing`・`past_due`（契約終了日は見ない） | 退会の手続きの出し分け |
 
-- 同じ条件を SQL と TypeScript で別々に書いているため、片方だけ直すとずれる。状態の一覧も、TypeScript の3つのファイルにそれぞれ書いている。画面側からも同じ関数を呼ぶ形に統一する
-- `has_active_subscription` は引数でユーザー ID を受け取り、`anon` にも実行を許可している。ID を知っていれば、他人が有料会員かどうかを確かめられる。統一の際は、引数を取らずに `auth.uid()` で本人だけを判定する関数にし、`anon` の実行権限を外す
-- ヘッダーと退会のカードは契約終了日を見ないため、有料の問題を読めるかどうかと、画面の出し分けが食い違う場合がある
+- 同じ条件を SQL と TypeScript で別々に書いていたため、片方だけ直すとずれる状態だった
+- `has_active_subscription` は引数でユーザー ID を受け取り、`anon` にも実行を許可していた。ID を知っていれば、他人が有料会員かどうかを確かめられた
+- ヘッダーと退会のカードは契約終了日を見ないため、有料の問題を読めるかどうかと、画面の出し分けが食い違う場合があった
+
+**対応**：
+
+- `has_active_subscription` を、引数を取らずに `auth.uid()` で本人だけを判定する関数に作り直し、`anon` の実行権限を外した（PR #45）
+- 判定の条件を「`subscriptions` の本人の行のどれかの状態が `active`・`trialing`・`past_due`」に一本化し、契約終了日の条件は外した。Stripe は「期間の終わりに解約」を選んだ契約を期間の終わりまで `active` のまま保つため、使える期間は変わらない。一方で、即時に解約された契約（`canceled`）が契約終了日まで有料のまま残る状態はなくなった（PR #51）
+- 画面側の `isSubscribed()` とヘッダーは、この関数を呼ぶだけにした（PR #52）
+- `user_profiles` の契約の情報の列（`subscription_status`・`current_period_end`）は、Edge Functions からの書き込みをやめ、本番で Webhook の書き込みが成功することを確かめてから削除した（PR #53・#54）
+- 切り替えの前後で、本番の全利用者の判定が変わらないことを確かめた
+
+今の使われ方：
+
+| 使う場所 | 用途 |
+|---|---|
+| `questions` の RLS のポリシー `read_paid_questions_with_subscription` | 有料の問題の読み取り |
+| 関数 `add_review_item`・`record_progress`・`record_mistake` | 有料の問題の復習リストへの追加、解答と誤答の記録 |
+| `src/lib/subscription.ts` の `isSubscribed()`（rpc で呼ぶ） | マイページの表示、次の問題の選び方、ヘッダーの「購入」「請求情報」の出し分け |
+
+**残っている課題**：退会の流れ（`src/app/mypage/WithdrawalCard.tsx` と Edge Function `request-account-deletion`）は、退会予約の印（`deletion_requested`）を付ける契約の行を決める必要があるため、`subscriptions` の本人の行のうち**一番新しく更新された1行**を、画面とサーバーで同じ条件（状態が `active`・`trialing`・`past_due`）で見ている。`has_active_subscription` は**どれか1行**が有効なら有料と判定するため、解約した古い契約と再契約した新しい契約の2行を持つ利用者で、古い行が後から更新された場合、有料の問題は読めるのに、退会では無料会員として即時削除に進むことがありうる。行の選び方を、画面とサーバーの両方で直す。
+
+**あわせて廃止したもの**：
+
 - ビュー `user_active_subscriptions`（`subscriptions` の状態が `active`、かつ契約終了日が空または未来）は、メールアドレス未確認のユーザーを削除する関数だけが使っていた。関数を廃止して使われなくなったため、削除した（`supabase/migrations/20260928072508_drop_user_active_subscriptions_view.sql`）
 - メールアドレス未確認のユーザーを削除する定期実行（`daily_unverified_cleanup`）は、本番にだけ登録されていた。関数の中で呼んでいた削除の命令（`auth.delete_user`）が存在せず、2025-09-02 の開始から一度も削除できていなかった（2026-02-21 以降は毎日失敗）。登録から確認済みになる今の設計では対象が生まれないため、関数とともに廃止した（`supabase/migrations/20260928061907_remove_unverified_cleanup.sql`）
 
