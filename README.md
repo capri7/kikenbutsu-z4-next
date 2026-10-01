@@ -782,7 +782,7 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 | 関数 `add_review_item`・`record_progress`・`record_mistake` | 有料の問題の復習リストへの追加、解答と誤答の記録 |
 | `src/lib/subscription.ts` の `isSubscribed()`（rpc で呼ぶ） | マイページの表示、次の問題の選び方、ヘッダーの「購入」「請求情報」の出し分け |
 
-**退会の流れ**：退会の流れ（`src/app/mypage/WithdrawalCard.tsx` と Edge Function `request-account-deletion`・`cancel-account-deletion`）は、退会予約の印（`deletion_requested`）を付ける契約の行を決める必要があるため、関数ではなく契約の行そのものを読む。以前は本人の行のうち**一番新しく更新された1行**を見ていたため、解約した古い契約と再契約した新しい契約の2行を持つ利用者で、古い行が後から更新されると（Webhook のイベントが遅れて届いた場合など）、有料会員を無料会員として即時削除しうる作りだった。対象を「状態が `active`・`trialing`・`past_due` の行のうち、一番新しく更新された1行」に変え、`has_active_subscription` と同じ考え方にそろえた（PR #56）。
+**退会の流れ**：`src/app/mypage/WithdrawalCard.tsx` と Edge Function `request-account-deletion`・`cancel-account-deletion` は、退会予約の印（`deletion_requested`）を付ける契約の行を決める必要があるため、関数ではなく契約の行そのものを読む。以前は本人の行のうち**一番新しく更新された1行**を見ていたため、解約した古い契約と再契約した新しい契約の2行を持つ利用者で、古い行が後から更新されると（Webhook のイベントが遅れて届いた場合など）、有料会員を無料会員として即時削除しうる作りだった。対象を「状態が `active`・`trialing`・`past_due` の行のうち、一番新しく更新された1行。該当する行がなければ無料会員」に変え、`has_active_subscription` と同じ考え方にそろえた（PR #56）。
 
 **あわせて廃止したもの**：
 
