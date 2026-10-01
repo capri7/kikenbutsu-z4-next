@@ -25,6 +25,8 @@ export default function WithdrawalCard({ userId }: { userId: string }) {
         .from('subscriptions')
         .select('status, current_period_end, deletion_requested, cancel_at_period_end')
         .eq('user_id', userId)
+        // 有効な契約の行を対象にする（退会の Edge Functions の _shared/activeSubscription.ts と同じルール）
+        .in('status', ACTIVE_STATUSES)
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle()

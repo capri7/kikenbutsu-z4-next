@@ -4,6 +4,7 @@ import { admin } from "../_shared/stripeSync.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getAuthenticatedUser } from "../_shared/auth.ts";
 import { decideCancelDeletion } from "./decision.ts";
+import { pickActiveSubscription } from "../_shared/activeSubscription.ts";
 
 const j = (body, status, headers) =>
   new Response(JSON.stringify(body), { status, headers });
@@ -20,16 +21,15 @@ Deno.serve(async (req) => {
 
   const user_id = user.id;
 
-  const { data: subRow, error: subErr } = await admin
+  const { data: subRows, error: subErr } = await admin
     .from("subscriptions")
-    .select("id, deletion_requested")
-    .eq("user_id", user_id)
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .select("id, deletion_requested, status, updated_at")
+    .eq("user_id", user_id);
 
   if (subErr) return j({ error: "DB_ERROR", message: subErr.message }, 500, headers);
 
+  // 有効な契約の行を対象にする（予約の印は有効な契約にだけ付く）
+  const subRow = pickActiveSubscription(subRows ?? []);
   const decision = decideCancelDeletion(subRow);
 
   if (decision.action === "reject") {
