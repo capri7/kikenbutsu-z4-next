@@ -7,6 +7,19 @@ import styles from './mypage.module.css'
 
 const ACTIVE_STATUSES = ['active', 'trialing', 'past_due']
 
+// Edge Functions が返す理由ごとの、利用者向けの案内（ここにない理由は、呼び出し側の文を使う）
+const ERROR_MESSAGES: Record<string, string> = {
+  SUBSCRIPTION_NOT_CANCELLED:
+    '先に上記「請求情報を開く」からサブスクリプションを解約してください。ページを再読み込みすると、最新の状態が表示されます。',
+  NO_SUBSCRIPTION: '取り消す退会予約がありません。ページを再読み込みすると、最新の状態が表示されます。',
+  UNAUTHORIZED: 'ログインの有効期限が切れています。再度ログインしてから、もう一度お試しください。',
+}
+
+function toErrorMessage(err: unknown, fallback: string): string {
+  const code = err instanceof Error ? err.message : ''
+  return ERROR_MESSAGES[code] ?? fallback
+}
+
 export default function WithdrawalCard({ userId }: { userId: string }) {
   const [status, setStatus] = useState<string | null>(null)
   const [endStr, setEndStr] = useState('')
@@ -73,7 +86,7 @@ export default function WithdrawalCard({ userId }: { userId: string }) {
       }
     } catch (err) {
       console.error(err)
-      setError('退会手続きに失敗しました。しばらくして再度お試しください。')
+      setError(toErrorMessage(err, '退会手続きに失敗しました。しばらくして再度お試しください。'))
     } finally {
       setBusy(false)
     }
@@ -88,7 +101,7 @@ export default function WithdrawalCard({ userId }: { userId: string }) {
       setDeletionRequested(false)
     } catch (err) {
       console.error(err)
-      setError('予約の取り消しに失敗しました。しばらくして再度お試しください。')
+      setError(toErrorMessage(err, '予約の取り消しに失敗しました。しばらくして再度お試しください。'))
     } finally {
       setBusy(false)
     }
