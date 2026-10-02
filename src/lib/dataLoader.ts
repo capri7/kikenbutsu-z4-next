@@ -445,7 +445,6 @@ export async function getNextForUser(
   try {
     if (user) {
       const { data, error } = await supabase.rpc('pick_next_question', {
-        p_user_id: user.id,
         p_include_paid: includePaid,
         p_subcategory_id: subcategoryId ?? null,
         p_category_id: categoryId ?? null,
@@ -455,7 +454,6 @@ export async function getNextForUser(
         if (nextId) return nextId
         if (!includePaid && paid) {
           const r2 = await supabase.rpc('pick_next_question', {
-            p_user_id: user.id,
             p_include_paid: true,
             p_subcategory_id: subcategoryId ?? null,
             p_category_id: categoryId ?? null,

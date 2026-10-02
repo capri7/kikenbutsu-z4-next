@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import styles from './mypage.module.css'
 
-async function fetchStudyDaysSet(userId: string): Promise<Set<string>> {
+async function fetchStudyDaysSet(): Promise<Set<string>> {
   const supabase = createClient()
-  const { data, error } = await supabase.rpc('get_study_days', { p_user_id: userId })
+  const { data, error } = await supabase.rpc('get_study_days')
   if (error) {
     console.error('[study-calendar] fetchStudyDaysSet error:', error)
     return new Set()
@@ -70,7 +70,7 @@ export default function StudyCalendar({ userId }: { userId: string }) {
     let cancelled = false
     ;(async () => {
       const [days, s] = await Promise.all([
-        fetchStudyDaysSet(userId),
+        fetchStudyDaysSet(),
         fetchProfileStreak(userId),
       ])
       if (cancelled) return
