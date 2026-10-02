@@ -246,9 +246,141 @@ flowchart LR
 
 ### ER図（DBスキーマ）
 
-![ER図](./public/diagrams/er-diagram.svg)
+```mermaid
+erDiagram
+  auth_users ||--o| user_profiles : "user_id"
+  auth_users ||--o| exam_dates : "user_id"
+  auth_users |o--o{ subscriptions : "user_id"
+  auth_users ||--o{ user_progress : "user_id"
+  auth_users ||--o{ mistakes : "user_id"
+  auth_users ||--o{ mistake_attempts : "user_id"
+  auth_users |o--o{ user_review_items : "user_id"
+  categories ||--o{ subcategories : "category_id"
+  subcategories ||--o{ questions : "subcategory_id"
+  subcategories |o--o{ mistakes : "subcategory_id"
+  subcategories |o--o{ user_review_items : "subcategory_id"
+  questions ||--o{ user_progress : "question_id"
+  questions ||--o{ mistakes : "question_id"
+  questions ||--o{ mistake_attempts : "question_id"
+  questions |o--o{ user_review_items : "question_id"
 
-> この図は 2026年9月の DB の整理（PR 3）より前の状態です。棚卸しと、使われていない関数・索引・`maintenance` スキーマの削除と引数の整理のあと、本番の DB から作り直します。
+  auth_users {
+    uuid id PK
+  }
+  user_profiles {
+    uuid user_id PK, FK
+    text email
+    text stripe_customer_id
+    integer streak_days
+    date last_active_date
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  subscriptions {
+    uuid id PK
+    uuid user_id FK
+    text stripe_customer_id
+    text stripe_subscription_id UK
+    text status
+    timestamptz current_period_end
+    boolean cancel_at_period_end
+    boolean deletion_requested
+    boolean livemode
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  stripe_events {
+    text id PK
+    text type
+    boolean livemode
+    jsonb payload
+    timestamptz received_at
+  }
+  exam_dates {
+    uuid user_id PK, FK
+    date exam_date
+    timestamptz updated_at
+  }
+  categories {
+    uuid id PK
+    text name
+    text slug
+    integer order
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  subcategories {
+    uuid id PK
+    uuid category_id FK
+    text name
+    text slug UK
+    integer order
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  questions {
+    text id PK
+    uuid subcategory_id FK
+    text title
+    text question
+    jsonb choices
+    integer answer
+    text hint
+    jsonb explanation
+    jsonb statement_explanations
+    text image
+    jsonb fields
+    jsonb headers
+    text feedback_mode
+    text difficulty
+    jsonb tags
+    integer order
+    boolean is_paid
+    date version
+    uuid user_id
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  user_progress {
+    uuid id PK
+    uuid user_id FK, UK "question_id・client_nonce と組で一意"
+    text question_id FK, UK
+    uuid client_nonce UK
+    boolean is_correct
+    timestamptz answered_at
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  mistakes {
+    uuid id PK
+    uuid user_id FK, UK "question_id と組で一意"
+    text question_id FK, UK
+    uuid subcategory_id FK
+    integer incorrect_count
+    timestamptz last_seen_at
+    uuid client_nonce
+  }
+  mistake_attempts {
+    uuid id PK
+    uuid user_id FK, UK "question_id・client_nonce と組で一意"
+    text question_id FK, UK
+    uuid client_nonce UK
+    timestamptz created_at
+  }
+  user_review_items {
+    uuid id PK
+    uuid user_id FK
+    text question_id FK
+    uuid subcategory_id FK
+    text title
+    text content_path
+    text status
+    timestamptz created_at
+    timestamptz last_reviewed_at
+  }
+```
+
+> 本番の DB（2026年10月2日時点）の public スキーマの全テーブルと、外部キーの参照先の `auth.users`（Supabase の認証のテーブル。id の列だけを示す）です。PK は主キー、FK は外部キー、UK は一意の制約・一意の索引です。条件つきの一意の索引（`WHERE` 付き）と、ビューは図に含めていません。
 
 ### シーケンス図（決済〜Webhook同期）
 
