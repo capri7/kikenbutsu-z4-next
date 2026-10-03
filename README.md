@@ -25,7 +25,7 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 - Next.js 16（App Router）＋ Supabase（PostgreSQL・RLS・Edge Functions）＋ Stripe。要件定義・設計・実装・運用を1人で担当
 - データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（[4. 詳細設計](#4-詳細設計-dbスキーマapi設計stripesupabase連携のシーケンス図)）
 - 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（[4. 詳細設計「運用上の学び」](#運用上の学びverify_jwtとwebhook認証の落とし穴)）
-- テスト：分岐ロジックを関数に切り出し、Deno.test 42件・Vitest 24件・Playwright E2E 17件。DB の権限・RLS・関数は pgTAP 101件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[6. テスト・品質保証](#6-テスト品質保証)）。4種類のテストと ESLint を、PR ごとに GitHub Actions で自動実行
+- テスト：分岐ロジックを関数に切り出し、Deno.test 42件・Vitest 24件・Playwright E2E 17件。DB の権限・RLS・関数は pgTAP 102件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[6. テスト・品質保証](#6-テスト品質保証)）。4種類のテストと ESLint を、PR ごとに GitHub Actions で自動実行
 
 ## 動かし方
 
@@ -72,7 +72,7 @@ npx playwright install chromium    # 初回のみ
 supabase start
 npx playwright test
 
-# DB の権限・RLS・関数のテスト（pgTAP、61ファイル・101件）。E2E と同じく、ローカルの Supabase に対して実行する
+# DB の権限・RLS・関数のテスト（pgTAP、62ファイル・102件）。E2E と同じく、ローカルの Supabase に対して実行する
 supabase test db
 
 # lint（ESLint）
@@ -464,7 +464,7 @@ Stripeの公式仕様では、Webhookは「少なくとも1回」配信される
 ユーザー ID を引数で受け取る関数は、ID を知っていれば他人の情報を確かめられる作りだった（`has_active_subscription`）。読み書きのすべての関数を `auth.uid()` に統一し（PR #45・#60・#61）、使われていない関数・ポリシーと `anon` の権限を外した（PR #58）。これにより、クライアントが DB に書き込める経路は6つの関数だけになった。
 
 **検証**
-権限は pgTAP で確かめ、CI で PR ごとに実行している。ロールの権限を確かめるテストが10ファイル（`public_no_client_write_privileges` など）。関数が本人の記録だけを使うことは、`get_study_days()` が本人の学習日だけを返すこと（`study_days_own_only`）と、`pick_next_question` が本人の解答の記録で次の問題を選ぶこと（`next_question_own_progress`）で確かめている。
+権限は pgTAP で確かめ、CI で PR ごとに実行している。ロールの権限を確かめるテストが10ファイル（`public_no_client_write_privileges` など）。関数が本人の記録だけを使うことは、`get_study_days()` が本人の学習日だけを返すこと（`study_days_own_only`）と、`pick_next_question` が本人の解答の記録で次の問題を選ぶこと（`next_question_own_progress`）で確かめている。あわせて、public の関数がすべて search_path を固定していること（`public_functions_fixed_search_path`）も確かめている。
 
 #### ⑦ 有料会員の判定
 
@@ -877,7 +877,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `_shared/activeSubscription.ts` | ✅ 5パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。呼び出し側の `invokeEdgeFunction` は Vitest で検証） |
 | Next.js側（Vitest） | ✅ 24パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5） |
-| DB（pgTAP） | ✅ 61ファイル・101件（ロールの権限・RLS・関数） |
+| DB（pgTAP） | ✅ 62ファイル・102件（ロールの権限・RLS・関数） |
 | E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅（いずれもローカルの Supabase）・有料転換フロー 未実装・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
 
 ### `request-account-deletion`（7パターン）
