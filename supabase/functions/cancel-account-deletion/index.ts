@@ -6,7 +6,7 @@ import { getAuthenticatedUser } from "../_shared/auth.ts";
 import { decideCancelDeletion } from "./decision.ts";
 import { pickActiveSubscription } from "../_shared/activeSubscription.ts";
 
-const j = (body, status, headers) =>
+const j = (body: unknown, status: number, headers: HeadersInit) =>
   new Response(JSON.stringify(body), { status, headers });
 
 Deno.serve(async (req) => {

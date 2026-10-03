@@ -1,5 +1,9 @@
 // supabase/functions/stripe-webhook/index.ts
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+// edge-runtime.d.ts の宣言は、JSR から読み込むとグローバルにならず、deno check で EdgeRuntime が見つからない
+// （同じファイルを手元にコピーして読み込むとグローバルになることを確認済み）。型だけを取り出して globalThis から呼ぶ。
+// import type は実行時には消えるため、動きは変わらない。
+import type * as EdgeRuntimeTypes from "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Stripe from "https://esm.sh/stripe@14?target=denonext";
 import {
   admin,
@@ -275,7 +279,7 @@ Deno.serve(async (req) => {
       console.error("[webhook] failed to log stripe event:", logError);
     }
 
-    EdgeRuntime.waitUntil(processEvent(event, livemode));
+    (globalThis as unknown as { EdgeRuntime: typeof EdgeRuntimeTypes.EdgeRuntime }).EdgeRuntime.waitUntil(processEvent(event, livemode));
 
     return new Response(responseDecision.body, { status: responseDecision.status });
   } catch (e) {

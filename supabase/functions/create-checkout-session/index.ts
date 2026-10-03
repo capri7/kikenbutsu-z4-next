@@ -11,7 +11,7 @@ const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: "2024-06-20"
 });
 
-const j = (body, status, headers) =>
+const j = (body: unknown, status: number, headers: HeadersInit) =>
   new Response(JSON.stringify(body), { status, headers });
 
 // ---- handler ----
