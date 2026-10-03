@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
+import { invokeEdgeFunction } from '@/lib/edge-functions'
 
 export async function openBillingPortal(returnPath: string = '/mypage'): Promise<void> {
   const supabase = createClient()
@@ -22,18 +23,13 @@ export async function openBillingPortal(returnPath: string = '/mypage'): Promise
     return
   }
 
-  const endpoint = 'https://vyzkkkskmwyctznbczzr.functions.supabase.co/billing-portal'
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify({ return_url: `${window.location.origin}${returnPath}` }),
-  })
-
-  const json = await res.json().catch(() => ({}))
-  if (!res.ok || !json.url) throw new Error(json.error || 'No portal URL')
+  const json = await invokeEdgeFunction<{ url?: string }>(
+    supabase,
+    'billing-portal',
+    'No portal URL',
+    { return_url: `${window.location.origin}${returnPath}` },
+  )
+  if (!json?.url) throw new Error('No portal URL')
 
   window.location.href = json.url
 }
