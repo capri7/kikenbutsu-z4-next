@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
+import { invokeEdgeFunction } from '@/lib/edge-functions'
 
 export type AccountDeletionResult =
   | { deleted: true }
@@ -14,18 +15,11 @@ export async function requestAccountDeletion(): Promise<AccountDeletionResult> {
     throw new Error('not logged in')
   }
 
-  const endpoint = 'https://vyzkkkskmwyctznbczzr.functions.supabase.co/request-account-deletion'
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${session.access_token}`,
-    },
-  })
-
-  const json = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(json.error || 'Account deletion request failed')
-  return json
+  return invokeEdgeFunction<AccountDeletionResult>(
+    supabase,
+    'request-account-deletion',
+    'Account deletion request failed',
+  )
 }
 
 export type CancelAccountDeletionResult = { cancelled: true; already?: boolean }
@@ -40,16 +34,9 @@ export async function cancelAccountDeletion(): Promise<CancelAccountDeletionResu
     throw new Error('not logged in')
   }
 
-  const endpoint = 'https://vyzkkkskmwyctznbczzr.functions.supabase.co/cancel-account-deletion'
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${session.access_token}`,
-    },
-  })
-
-  const json = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(json.error || 'Cancel account deletion failed')
-  return json
+  return invokeEdgeFunction<CancelAccountDeletionResult>(
+    supabase,
+    'cancel-account-deletion',
+    'Cancel account deletion failed',
+  )
 }
