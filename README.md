@@ -25,7 +25,7 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 - Next.js 16（App Router）＋ Supabase（PostgreSQL・RLS・Edge Functions）＋ Stripe。要件定義・設計・実装・運用を1人で担当
 - データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（[4. 詳細設計](#4-詳細設計-dbスキーマapi設計stripesupabase連携のシーケンス図)）
 - 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（[4. 詳細設計「運用上の学び」](#運用上の学びverify_jwtとwebhook認証の落とし穴)）
-- テスト：分岐ロジックを関数に切り出し、Deno.test 37件・Vitest 9件・Playwright E2E 17件。E2E はローカルの Supabase に分離し、本番に触れない構成（[6. テスト・品質保証](#6-テスト品質保証)）。3種類のテストと ESLint を、PR ごとに GitHub Actions で自動実行
+- テスト：分岐ロジックを関数に切り出し、Deno.test 42件・Vitest 24件・Playwright E2E 17件。DB の権限・RLS・関数は pgTAP 101件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[6. テスト・品質保証](#6-テスト品質保証)）。4種類のテストと ESLint を、PR ごとに GitHub Actions で自動実行
 
 ## 動かし方
 
@@ -61,16 +61,19 @@ npm run dev                        # http://localhost:3000
 ### テスト
 
 ```bash
-# Next.js の単体テスト（Vitest、9件）
+# Next.js の単体テスト（Vitest、24件）
 npm test -- --run
 
-# Edge Functions の判定ロジック（Deno.test、37件）
+# Edge Functions の判定ロジック（Deno.test、42件）
 deno test supabase/functions/
 
 # E2E（Playwright、17件）。ローカルの Supabase を起動してから実行する
 npx playwright install chromium    # 初回のみ
 supabase start
 npx playwright test
+
+# DB の権限・RLS・関数のテスト（pgTAP、61ファイル・101件）。E2E と同じく、ローカルの Supabase に対して実行する
+supabase test db
 
 # lint（ESLint）
 npm run lint
@@ -150,7 +153,7 @@ Supabase Edge Functions（`supabase secrets set` で登録）
 | 有料会員でない（未ログインを含む） | 購入 |
 | 有料会員 | 請求情報（Stripe のカスタマーポータル。戻るとマイページ） |
 
-ヘッダーの有料会員の判定は、`subscriptions` の状態だけで行っている（[有料会員の判定](#有料会員の判定)）。
+ヘッダーの有料会員の判定は、`subscriptions` の状態だけで行っている（4章「設計判断のハイライト ⑦ 有料会員の判定」参照）。
 
 **① 登録・ログイン**
 
@@ -441,13 +444,69 @@ Stripeの公式仕様では、Webhookは「少なくとも1回」配信される
 |---|---|---|---|
 | 無料体験 | 32問 | 静的データ（アプリに同梱、DBを介さない） | 認証不要 |
 | 無料会員 | 100問 | `questions`テーブル（`is_paid = false`） | メール登録（登録と同時にログインした状態になる。RLSでログイン済みユーザーのみ読み取り可） |
-| 有料会員 | 約1,473問 | `questions`テーブル（`is_paid = true`） | 有効なサブスクリプション必須（RLS の関数 `has_active_subscription` で判定。[7. 今後の課題「有料会員の判定」](#有料会員の判定)参照） |
+| 有料会員 | 約1,473問 | `questions`テーブル（`is_paid = true`） | 有効なサブスクリプション必須（RLS の関数 `has_active_subscription` で判定。本章「⑦ 有料会員の判定」参照） |
 
 全1,573問のうち無料は100問（約6%）にとどめ、残りを有料の壁の奥に置くことで、検索流入で評価を得ている法令・物理化学の解説ページ（`/basics`配下、認証不要）と、収益化対象の練習問題との間でバランスを取っている。
 
+#### ⑥ DB の権限の設計
+
+ブラウザから届く要求には読み取りだけを許し、書き込みは本人の行だけを書く関数に限っている。
+
+| ロール | テーブル・ビュー | 関数の実行 |
+|---|---|---|
+| `anon`（ログインなし） | 権限なし | 権限なし |
+| `authenticated`（ログイン済み） | `SELECT` のみ（読める行は RLS で決める） | 書き込みの関数6つ、読み取りの関数3つ |
+
+- 書き込みの関数（`add_review_item`・`clear_mistake`・`mark_review_item_mastered`・`record_mistake`・`record_progress`・`set_exam_date`）は `SECURITY DEFINER`。ユーザー ID を引数で受け取らず、関数の中で `auth.uid()` を使って本人を決める
+- 読み取りの関数（`get_study_days`・`pick_next_question`・`has_active_subscription`）もユーザー ID を引数で受け取らず、`SECURITY INVOKER` で RLS を通る
+
+**理由**
+ユーザー ID を引数で受け取る関数は、ID を知っていれば他人の情報を確かめられる作りだった（`has_active_subscription`）。読み書きのすべての関数を `auth.uid()` に統一し（PR #45・#60・#61）、使われていない関数・ポリシーと `anon` の権限を外した（PR #58）。これにより、クライアントが DB に書き込める経路は6つの関数だけになった。
+
+**検証**
+権限は pgTAP で確かめ、CI で PR ごとに実行している。ロールの権限を確かめるテストが10ファイル（`public_no_client_write_privileges` など）。関数が本人の記録だけを使うことは、`get_study_days()` が本人の学習日だけを返すこと（`study_days_own_only`）と、`pick_next_question` が本人の解答の記録で次の問題を選ぶこと（`next_question_own_progress`）で確かめている。
+
+#### ⑦ 有料会員の判定
+
+**対応前**：有料会員かどうかの判定が4か所に書かれており、条件は2通りあった。
+
+| 場所 | 参照する表 | 条件 | 用途 |
+|---|---|---|---|
+| RLS の関数 `has_active_subscription` | `user_profiles` | 契約終了日が「現在 − 60秒」より後、または状態が `active`・`trialing`・`past_due` | 有料の問題の読み取り |
+| `src/lib/subscription.ts` の `isSubscribed()` | `user_profiles` | 上と同じ | マイページの表示など |
+| `src/components/SiteHeader.tsx` | `subscriptions` の最新の1行（取れなければ `user_profiles`） | 状態が `active`・`trialing`・`past_due`（契約終了日は見ない） | ヘッダーの「購入」「請求情報」の出し分け |
+| `src/app/mypage/WithdrawalCard.tsx` | `subscriptions` の最新の1行 | 状態が `active`・`trialing`・`past_due`（契約終了日は見ない） | 退会の手続きの出し分け |
+
+- 同じ条件を SQL と TypeScript で別々に書いていたため、片方だけ直すとずれる状態だった
+- `has_active_subscription` は引数でユーザー ID を受け取り、`anon` にも実行を許可していた。ID を知っていれば、他人が有料会員かどうかを確かめられた
+- ヘッダーと退会のカードは契約終了日を見ないため、有料の問題を読めるかどうかと、画面の出し分けが食い違う場合があった
+
+**対応**：
+
+- `has_active_subscription` を、引数を取らずに `auth.uid()` で本人だけを判定する関数に作り直し、`anon` の実行権限を外した（PR #45）
+- 判定の条件を「`subscriptions` の本人の行のどれかの状態が `active`・`trialing`・`past_due`」に一本化し、契約終了日の条件は外した。Stripe は「期間の終わりに解約」を選んだ契約を期間の終わりまで `active` のまま保つため、使える期間は変わらない。一方で、即時に解約された契約（`canceled`）が契約終了日まで有料のまま残る状態はなくなった（PR #51）
+- 画面側の `isSubscribed()` とヘッダーは、この関数を呼ぶだけにした（PR #52）
+- `user_profiles` の契約の情報の列（`subscription_status`・`current_period_end`）は、Edge Functions からの書き込みをやめ、本番で Webhook の書き込みが成功することを確かめてから削除した（PR #53・#54）
+- 切り替えの前後で、本番の全利用者の判定が変わらないことを確かめた
+
+今の使われ方：
+
+| 使う場所 | 用途 |
+|---|---|
+| `questions` の RLS のポリシー `read_paid_questions_with_subscription` | 有料の問題の読み取り |
+| 関数 `add_review_item`・`record_progress`・`record_mistake` | 有料の問題の復習リストへの追加、解答と誤答の記録 |
+| `src/lib/subscription.ts` の `isSubscribed()`（rpc で呼ぶ） | マイページの表示、次の問題の選び方、ヘッダーの「購入」「請求情報」の出し分け |
+
+**退会の流れ**：`src/app/mypage/WithdrawalCard.tsx` と Edge Function `request-account-deletion`・`cancel-account-deletion` は、退会予約の印（`deletion_requested`）を付ける契約の行を決める必要があるため、関数ではなく契約の行そのものを読む。以前は本人の行のうち**一番新しく更新された1行**を見ていたため、解約した古い契約と再契約した新しい契約の2行を持つ利用者で、古い行が後から更新されると（Webhook のイベントが遅れて届いた場合など）、有料会員を無料会員として即時削除しうる作りだった。対象を「状態が `active`・`trialing`・`past_due` の行のうち、一番新しく更新された1行。該当する行がなければ無料会員」に変え、`has_active_subscription` と同じ考え方にそろえた（PR #56）。
+
+**あわせて廃止したもの**：
+
+- ビュー `user_active_subscriptions`（`subscriptions` の状態が `active`、かつ契約終了日が空または未来）は、メールアドレス未確認のユーザーを削除する関数だけが使っていた。関数を廃止して使われなくなったため、削除した（`supabase/migrations/20260928072508_drop_user_active_subscriptions_view.sql`）
+- メールアドレス未確認のユーザーを削除する定期実行（`daily_unverified_cleanup`）は、本番にだけ登録されていた。関数の中で呼んでいた削除の命令（`auth.delete_user`）が存在せず、2025-09-02 の開始から一度も削除できていなかった（2026-02-21 以降は毎日失敗）。登録から確認済みになる今の設計では対象が生まれないため、関数とともに廃止した（`supabase/migrations/20260928061907_remove_unverified_cleanup.sql`）
+
 ### API設計（Supabase Edge Functions）
 
-Next.js側にはAPI Routesを持たず、Stripe秘密鍵の使用や外部API連携が必要な処理のみをSupabase Edge Functions（Deno）に集約している。単純なCRUD（誤答リスト・復習リスト等）は、Row Level Security（RLS）を前提にクライアントから直接PostgRESTへ問い合わせる構成とした。
+Next.js側にはAPI Routesを持たず、Stripe秘密鍵の使用や外部API連携が必要な処理のみをSupabase Edge Functions（Deno）に集約している。誤答リスト・復習リスト等の読み取りは、Row Level Security（RLS）を前提にクライアントから直接PostgRESTへ問い合わせ、書き込みは本人の行だけを書くDBの関数を通す（本章「設計判断のハイライト ⑥ DB の権限の設計」参照）。Edge Functionsの呼び出しは、`supabase.functions.invoke`を包んだ共通の関数`invokeEdgeFunction`（`src/lib/edge-functions.ts`）にまとめ、URLをコードに直接書かない（PR #62）。
 
 | エンドポイント | メソッド | 認証 | 用途 |
 |---|---|---|---|
@@ -794,12 +853,13 @@ E2E をローカルの Supabase に移す準備として、`supabase db diff --l
 
 ### テスト戦略
 
-Edge Functions（Deno）とNext.js（Node/Vite）でランタイムが異なるため、3層に分けている。
+Edge Functions（Deno）・Next.js（Node/Vite）・DB（PostgreSQL）で実行環境が異なるため、4層に分けている。
 
 | 層 | 対象 | ツール |
 |---|---|---|
 | Edge Functions | 分岐ロジック（判定関数として切り出したもの） | `Deno.test` |
 | Next.js単体テスト | ユーティリティ関数・同期Client Components | Vitest + React Testing Library |
+| DB | ロールの権限・RLS・関数が本人の記録だけを使うこと | pgTAP（`supabase test db`） |
 | E2Eテスト | 無料登録〜マイページ〜練習問題〜誤答リストの一連の動作（コアフロー、ローカルの Supabase で実装・合格確認済み）、ゲスト決済〜Webhook〜マイページ解放（有料転換フロー、未実装）、非同期Server Components | Playwright |
 
 Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密結合しており、そのままではDB・外部APIに接続しないとテストできない。そこで各関数の分岐ロジックだけを`decision.ts`として切り出し、実際の接続を挟まず全パターンを検証できる形にした。全関数を同じ密度でテストするのではなく、金銭・個人情報の削除が絡み誤りの影響が大きい関数（`request-account-deletion`・`cancel-account-deletion`・`stripe-webhook`）から優先的に着手している。
@@ -814,8 +874,10 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `stripe-webhook` | ✅ 6パターン |
 | `check-guest-subscription` | ✅ 6パターン |
 | `create-checkout-session` | ✅ 7パターン |
-| `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いためE2Eでカバー） |
-| Next.js側（Vitest） | ✅ 9パターン（`getFeedbackMessage`5・`formatChoiceText`4） |
+| `_shared/activeSubscription.ts` | ✅ 5パターン |
+| `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。呼び出し側の `invokeEdgeFunction` は Vitest で検証） |
+| Next.js側（Vitest） | ✅ 24パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5） |
+| DB（pgTAP） | ✅ 61ファイル・101件（ロールの権限・RLS・関数） |
 | E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅（いずれもローカルの Supabase）・有料転換フロー 未実装・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
 
 ### `request-account-deletion`（7パターン）
@@ -857,11 +919,15 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 チェック順序（`priceId`→リダイレクトURL→許可リスト）を意図的にテストで固定した。優先度の低いチェックが先に実行されて誤ったエラーコードを返す、という将来の実装変更によるリグレッションを防ぐため。`checkout-session-info`・`billing-portal`は判定ロジックがほぼ無いので、ユニットテストではなく後述のE2Eでカバーする方針とした。
 
-### Next.js側（Vitest）：`getFeedbackMessage` / `formatChoiceText`（9パターン）
+### Next.js側（Vitest、24パターン）
 
 クイズの正誤判定ロジック（`src/lib/feedback.ts`）を検証している。既にSupabaseへの呼び出しを含まない純粋関数として実装されていたため、Edge Functionsのような切り出し作業は不要だった。
 
 このロジックには、否定形問題（「適切でないものを選べ」形式）特有の注意点がある。例えば「ガソリンの性質として誤っているものを選べ」という設問で、選択肢3が「誤った内容」＝公式の正解だとする。受験者が選択肢3を選んだ場合、「設問に正解した」ことにはなるが、「選んだ選択肢3自体の内容」は誤りである。この2つは別物であり、`questionIsCorrect`（設問に正解したか）と`contentIsCorrect`（選んだ内容自体が正しいか）という2つの値に分けて管理している。否定形問題でこの2つが逆転することを取り違えると、成績記録が反転しかねないため、通常問題・否定形問題それぞれで正解/不正解の4パターンを個別に検証した。
+
+ログイン後の移動先（`?next=`）を決める`src/lib/safeRedirect.ts`（10パターン）は、移動先をサイトの中のパスだけに限り、外部のサイトへの誘導（オープンリダイレクト）を防ぐ。ブラウザと同じ`new URL`で解釈して判定しているため、`//`で始まる値のように、文字列の見た目ではサイトの中か外か見分けにくい行き先もはじく。
+
+Edge Functionsの呼び出しの共通関数`src/lib/edge-functions.ts`（5パターン）は、`supabase.functions.invoke`を偽物に差し替え、成功時に結果を返すこと、失敗の応答に含まれるエラーの内容を呼び出し側へ渡すこと、エラーの内容を取り出せない場合（JSONでない応答・通信の失敗など）は呼び出し側が渡した既定の文言になることを検証している。
 
 **セットアップ**：Next.js公式ドキュメントに沿って、Vitest・React Testing Library・jsdomを導入した。`vitest.config.mts`で`supabase/**`を検索対象から除外している（Edge Functions側は`Deno.test`という別のテストランナーを使っており、混在させるとVitestが誤って実行しようとしてエラーになるため）。
 
@@ -871,9 +937,9 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 - **E2Eテスト（Playwright）**：コアフロー（無料登録〜マイページ〜練習問題への回答〜誤答リストへの遷移）3件を実装し、ローカルの Supabase に対して合格を確認済み（`--repeat-each=10` で30回連続合格）。E2E は本番ビルドを起動して実行する設定（`webServer`）とした。開発サーバーでは、初回のコンパイル待ちで間欠的にタイムアウトするため。次に実装するのは有料転換フロー（ゲスト決済〜Webhook による会員ステータスの反映〜マイページでの有料問題の解放）。Stripe の公式ドキュメントは、Checkout などの Stripe の決済画面には自動操作を防ぐ仕組みがあるため、自動テストでは結果を模擬するよう案内している。そのため E2E では、Checkout のセッション作成（決済画面への移動）までと、決済完了後の Webhook の処理を検証する。決済画面そのものの操作（テストカードでの支払い）は、テストモードで手動で確認する方針とする。
 
-  E2E は、Vitest・Deno.test・ESLint とあわせて、PR ごとと main への push ごとに GitHub Actions で実行している（`.github/workflows/test.yml`）。CI の中で `supabase start` を実行し、migrations と `seed.sql` を適用したローカルの Supabase に接続するため、本番には触れない。その先の候補として、`useSearchParams`とSuspense境界のケーススタディと、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E対象とした2関数）が残っている。
+  E2E は、Vitest・Deno.test・pgTAP・ESLint とあわせて、PR ごとと main への push ごとに GitHub Actions で実行している（`.github/workflows/test.yml`）。CI の中で `supabase start` を実行し、migrations と `seed.sql` を適用したローカルの Supabase に接続するため、本番には触れない。その先の候補として、`useSearchParams`とSuspense境界のケーススタディと、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E対象とした2関数）が残っている。
 
-- **Next.js側の他のユーティリティ関数**：`src/lib/feedback.ts`と`src/lib/safeRedirect.ts`は着手済み。`src/lib/subscription.ts`の`isSubscribed()`は、判定を DB の関数 `has_active_subscription()` に任せ、呼び出した結果を返すだけになったため、判定の検証は pgTAP で行っている（[有料会員の判定](#有料会員の判定)参照）。他（`account.ts`・`mistakes.ts`・`review.ts`・`progress.ts`）は主にSupabase呼び出しのラッパーで、判定ロジックの比率が低いため優先度は下がる。
+- **Next.js側の他のユーティリティ関数**：`src/lib/feedback.ts`・`src/lib/safeRedirect.ts`・`src/lib/edge-functions.ts`は着手済み。`src/lib/subscription.ts`の`isSubscribed()`は、判定を DB の関数 `has_active_subscription()` に任せ、呼び出した結果を返すだけになったため、判定の検証は pgTAP で行っている（4章「設計判断のハイライト ⑦ 有料会員の判定」参照）。他（`account.ts`・`mistakes.ts`・`review.ts`・`progress.ts`）は主にSupabase呼び出しのラッパーで、判定ロジックの比率が低いため優先度は下がる。
 
 ### 型安全性
 
@@ -882,44 +948,6 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 原因はStripeが2025-03-31のBasil APIバージョンで`Subscription`直下の`current_period_end`を廃止し`items.data[].current_period_end`に移行したこと。当プロジェクトはBasil以前のAPIバージョン（2024-06-20）を使っており実行時には直下のフィールドが存在するが、`esm.sh`経由で読み込む型定義はBasil以降の形を反映しているため、型とランタイムの実態がズレる。
 
 **この対応は完全ではない**。`as unknown as PeriodEndSource`は依然として型アサーション（コンパイラに「この形だと信じてよい」と伝えるだけの記述）であり、実行時にStripeから返る値が本当にこの形をしている保証はコンパイラの外にある。抜本的な解決には、Basil以降のAPIバージョンへの全面移行（`items.data[].current_period_end`だけを正とする設計への作り替え）か、`zod`等によるスキーマ検証を実行時に挟む対応が必要になるが、どちらも決済まわり全体への影響が大きいため今回のスコープ外とした。
-
-### 有料会員の判定
-
-**対応前**：有料会員かどうかの判定が4か所に書かれており、条件は2通りあった。
-
-| 場所 | 参照する表 | 条件 | 用途 |
-|---|---|---|---|
-| RLS の関数 `has_active_subscription` | `user_profiles` | 契約終了日が「現在 − 60秒」より後、または状態が `active`・`trialing`・`past_due` | 有料の問題の読み取り |
-| `src/lib/subscription.ts` の `isSubscribed()` | `user_profiles` | 上と同じ | マイページの表示など |
-| `src/components/SiteHeader.tsx` | `subscriptions` の最新の1行（取れなければ `user_profiles`） | 状態が `active`・`trialing`・`past_due`（契約終了日は見ない） | ヘッダーの「購入」「請求情報」の出し分け |
-| `src/app/mypage/WithdrawalCard.tsx` | `subscriptions` の最新の1行 | 状態が `active`・`trialing`・`past_due`（契約終了日は見ない） | 退会の手続きの出し分け |
-
-- 同じ条件を SQL と TypeScript で別々に書いていたため、片方だけ直すとずれる状態だった
-- `has_active_subscription` は引数でユーザー ID を受け取り、`anon` にも実行を許可していた。ID を知っていれば、他人が有料会員かどうかを確かめられた
-- ヘッダーと退会のカードは契約終了日を見ないため、有料の問題を読めるかどうかと、画面の出し分けが食い違う場合があった
-
-**対応**：
-
-- `has_active_subscription` を、引数を取らずに `auth.uid()` で本人だけを判定する関数に作り直し、`anon` の実行権限を外した（PR #45）
-- 判定の条件を「`subscriptions` の本人の行のどれかの状態が `active`・`trialing`・`past_due`」に一本化し、契約終了日の条件は外した。Stripe は「期間の終わりに解約」を選んだ契約を期間の終わりまで `active` のまま保つため、使える期間は変わらない。一方で、即時に解約された契約（`canceled`）が契約終了日まで有料のまま残る状態はなくなった（PR #51）
-- 画面側の `isSubscribed()` とヘッダーは、この関数を呼ぶだけにした（PR #52）
-- `user_profiles` の契約の情報の列（`subscription_status`・`current_period_end`）は、Edge Functions からの書き込みをやめ、本番で Webhook の書き込みが成功することを確かめてから削除した（PR #53・#54）
-- 切り替えの前後で、本番の全利用者の判定が変わらないことを確かめた
-
-今の使われ方：
-
-| 使う場所 | 用途 |
-|---|---|
-| `questions` の RLS のポリシー `read_paid_questions_with_subscription` | 有料の問題の読み取り |
-| 関数 `add_review_item`・`record_progress`・`record_mistake` | 有料の問題の復習リストへの追加、解答と誤答の記録 |
-| `src/lib/subscription.ts` の `isSubscribed()`（rpc で呼ぶ） | マイページの表示、次の問題の選び方、ヘッダーの「購入」「請求情報」の出し分け |
-
-**退会の流れ**：`src/app/mypage/WithdrawalCard.tsx` と Edge Function `request-account-deletion`・`cancel-account-deletion` は、退会予約の印（`deletion_requested`）を付ける契約の行を決める必要があるため、関数ではなく契約の行そのものを読む。以前は本人の行のうち**一番新しく更新された1行**を見ていたため、解約した古い契約と再契約した新しい契約の2行を持つ利用者で、古い行が後から更新されると（Webhook のイベントが遅れて届いた場合など）、有料会員を無料会員として即時削除しうる作りだった。対象を「状態が `active`・`trialing`・`past_due` の行のうち、一番新しく更新された1行。該当する行がなければ無料会員」に変え、`has_active_subscription` と同じ考え方にそろえた（PR #56）。
-
-**あわせて廃止したもの**：
-
-- ビュー `user_active_subscriptions`（`subscriptions` の状態が `active`、かつ契約終了日が空または未来）は、メールアドレス未確認のユーザーを削除する関数だけが使っていた。関数を廃止して使われなくなったため、削除した（`supabase/migrations/20260928072508_drop_user_active_subscriptions_view.sql`）
-- メールアドレス未確認のユーザーを削除する定期実行（`daily_unverified_cleanup`）は、本番にだけ登録されていた。関数の中で呼んでいた削除の命令（`auth.delete_user`）が存在せず、2025-09-02 の開始から一度も削除できていなかった（2026-02-21 以降は毎日失敗）。登録から確認済みになる今の設計では対象が生まれないため、関数とともに廃止した（`supabase/migrations/20260928061907_remove_unverified_cleanup.sql`）
 
 ### 決済とアカウントの紐付け
 
