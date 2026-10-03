@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
         limit: 10,
       });
 
-      const active = findActiveSubscription(subs.data);
+      const active = findActiveSubscription<Stripe.Subscription>(subs.data);
 
       if (active) {
         // Stripeは2025-03-31のBasil APIバージョンでSubscription直下のcurrent_period_endを廃止し、

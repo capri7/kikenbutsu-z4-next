@@ -8,7 +8,7 @@ const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: "2024-06-20"
 });
 
-function cors(status, body, origin) {
+function cors(status: number, body: unknown, origin: string | null) {
   // この関数だけセッション個人情報を返すためキャッシュ禁止を上乗せ
   const headers = {
     ...corsHeaders(origin),

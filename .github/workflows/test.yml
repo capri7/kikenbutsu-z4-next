@@ -48,6 +48,10 @@ jobs:
       - name: Deno.test
         run: deno test supabase/functions/
 
+      - name: deno check（Edge Functions の index.ts の型の検査）
+        # リポジトリの一番上に package.json があるため、npm の依存を node_modules から探さないよう none を指定する
+        run: deno check --node-modules-dir=none supabase/functions/*/index.ts
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20
