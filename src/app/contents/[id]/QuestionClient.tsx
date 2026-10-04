@@ -20,6 +20,7 @@ import {
   getOrderedFreeQuestionIds,
   type QuestionRow,
 } from '@/lib/dataLoader'
+import { questionImageUrl } from '@/lib/questionImage'
 
 
 function makeNonce(): string {
@@ -254,7 +255,12 @@ useEffect(() => {
     <p className={`${styles.questionBody} mb-6`}>{question.question}</p>
 
       {question.image && (
-        <img src={question.image} alt="問題図" loading="lazy" decoding="async" />
+        <img
+          src={questionImageUrl(question.image, process.env.NEXT_PUBLIC_SUPABASE_URL) ?? undefined}
+          alt="問題図"
+          loading="lazy"
+          decoding="async"
+        />
       )}
 
       <ChoicesTable
