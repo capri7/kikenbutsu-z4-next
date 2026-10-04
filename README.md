@@ -25,7 +25,7 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 - Next.js 16（App Router）＋ Supabase（PostgreSQL・RLS・Edge Functions）＋ Stripe。要件定義・設計・実装・運用を1人で担当
 - データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（[4. 詳細設計](#4-詳細設計-dbスキーマapi設計stripesupabase連携のシーケンス図)）
 - 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（[4. 詳細設計「運用上の学び」](#運用上の学びverify_jwtとwebhook認証の落とし穴)）
-- テスト：分岐ロジックを関数に切り出し、Deno.test 42件・Vitest 28件・Playwright E2E 20件。DB の権限・RLS・関数は pgTAP 102件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[6. テスト・品質保証](#6-テスト品質保証)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
+- テスト：分岐ロジックを関数に切り出し、Deno.test 42件・Vitest 31件・Playwright E2E 20件。DB の権限・RLS・関数は pgTAP 102件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[6. テスト・品質保証](#6-テスト品質保証)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
 
 ## 動かし方
 
@@ -61,7 +61,7 @@ npm run dev                        # http://localhost:3000
 ### テスト
 
 ```bash
-# Next.js の単体テスト（Vitest、28件）
+# Next.js の単体テスト（Vitest、31件）
 npm test -- --run
 
 # Edge Functions の判定ロジック（Deno.test、42件）
@@ -876,7 +876,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `create-checkout-session` | ✅ 7パターン |
 | `_shared/activeSubscription.ts` | ✅ 5パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。呼び出し側の `invokeEdgeFunction` は Vitest で検証） |
-| Next.js側（Vitest） | ✅ 28パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4） |
+| Next.js側（Vitest） | ✅ 31パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3） |
 | DB（pgTAP） | ✅ 62ファイル・102件（ロールの権限・RLS・関数） |
 | E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅・有料会員の画面の出し分け3件 ✅（いずれもローカルの Supabase）・有料転換フロー（決済〜Webhook）未実装・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
 
@@ -919,7 +919,7 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 チェック順序（`priceId`→リダイレクトURL→許可リスト）を意図的にテストで固定した。優先度の低いチェックが先に実行されて誤ったエラーコードを返す、という将来の実装変更によるリグレッションを防ぐため。`checkout-session-info`・`billing-portal`は判定ロジックがほぼ無いので、ユニットテストではなく後述のE2Eでカバーする方針とした。
 
-### Next.js側（Vitest、28パターン）
+### Next.js側（Vitest、31パターン）
 
 クイズの正誤判定ロジック（`src/lib/feedback.ts`）を検証している。既にSupabaseへの呼び出しを含まない純粋関数として実装されていたため、Edge Functionsのような切り出し作業は不要だった。
 
@@ -930,6 +930,8 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 Edge Functionsの呼び出しの共通関数`src/lib/edge-functions.ts`（5パターン）は、`supabase.functions.invoke`を偽物に差し替え、成功時に結果を返すこと、失敗の応答に含まれるエラーの内容を呼び出し側へ渡すこと、エラーの内容を取り出せない場合（JSONでない応答・通信の失敗など）は呼び出し側が渡した既定の文言になることを検証している。
 
 問題の図の URL を組み立てる`src/lib/questionImage.ts`（4パターン）は、DB に保存している Storage の中の場所（`basics_of_chemistry/…svg` など）から公開 URL を作る。Next.js への移行のときにこの組み立てが抜け、有料の問題36問の図が表示されていなかったため、関数に切り出してテストを付けた。
+
+`src/lib/leakedPassword.ts`（3パターン）は、Supabase Auth の「漏えいしたパスワードの使用を防ぐ」設定（HaveIBeenPwned の照合）で登録やパスワードの再設定が拒否されたとき、拒否の理由（`reasons` に `pwned`）を見て、英語のエラー文の代わりに日本語の案内を返す。新規登録と再設定の2つの画面から使う。
 
 **セットアップ**：Next.js公式ドキュメントに沿って、Vitest・React Testing Library・jsdomを導入した。`vitest.config.mts`で`supabase/**`を検索対象から除外している（Edge Functions側は`Deno.test`という別のテストランナーを使っており、混在させるとVitestが誤って実行しようとしてエラーになるため）。
 
