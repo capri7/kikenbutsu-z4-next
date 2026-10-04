@@ -45,5 +45,15 @@ values
      {"name": "5", "description": "選択肢5の本文"}]',
    3, 3, false,
    '["選択肢1の解説", "選択肢2の解説", "選択肢3の解説", "選択肢4の解説", "選択肢5の解説"]',
-   'negation', '["description"]', '[""]')
+      'negation', '["description"]', '[""]'),
+  ('E2E_Test_004', '00000000-0000-4000-8000-000000000101', 'E2Eテスト用の有料の問題',
+   'E2Eテスト用の有料の問題です。正しいものを選んでください。',
+   '[{"name": "1", "description": "選択肢1の本文"},
+     {"name": "2", "description": "選択肢2の本文"},
+     {"name": "3", "description": "選択肢3の本文"},
+     {"name": "4", "description": "選択肢4の本文"},
+     {"name": "5", "description": "選択肢5の本文"}]',
+   1, 4, true,
+   '["選択肢1の解説", "選択肢2の解説", "選択肢3の解説", "選択肢4の解説", "選択肢5の解説"]',
+   'normal', '["description"]', '[""]')
 on conflict (id) do nothing;
