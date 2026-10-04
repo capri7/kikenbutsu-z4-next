@@ -4,11 +4,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { leakedPasswordMessage } from '@/lib/leakedPassword'
 import styles from './reset-password.module.css'
 
 function translateAuthError(err: { code?: string; message?: string } | null): string {
   const code = (err?.code || '').toLowerCase()
   const msg = err?.message || ''
+
+  const leaked = leakedPasswordMessage(err)
+  if (leaked) return leaked
 
   if (code === 'same_password') {
     return '新しいパスワードは以前のパスワードと異なる必要があります。'

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import styles from './signup.module.css'
+import { leakedPasswordMessage } from '@/lib/leakedPassword'
 
 type FeedbackType = 'ok' | 'error'
 
@@ -110,6 +111,13 @@ export default function SignupForm() {
         }
         if (smtpFail) {
           setFeedback('確認メールの送信でエラーが発生しました。数分後に再度お試しください。')
+          setFeedbackType('error')
+          return
+        }
+
+        const leaked = leakedPasswordMessage(error)
+        if (leaked) {
+          setFeedback(leaked)
           setFeedbackType('error')
           return
         }
