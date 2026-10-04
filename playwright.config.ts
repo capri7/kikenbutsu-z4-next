@@ -5,7 +5,7 @@ import { execSync } from 'node:child_process';
  * E2E はローカルの Supabase（supabase start）に対してだけ実行する。
  * 接続先は .env.local（本番）ではなく、supabase status から取得する。
  */
-function loadLocalSupabaseEnv(): { url: string; anonKey: string } {
+function loadLocalSupabaseEnv(): { url: string; anonKey: string; serviceRoleKey: string } {
   let output: string;
   try {
     output = execSync('supabase status -o env', {
@@ -26,8 +26,9 @@ function loadLocalSupabaseEnv(): { url: string; anonKey: string } {
 
   const url = env.API_URL;
   const anonKey = env.ANON_KEY;
-  if (!url || !anonKey) {
-    throw new Error('supabase status から API_URL または ANON_KEY を取得できませんでした。');
+  const serviceRoleKey = env.SERVICE_ROLE_KEY;
+  if (!url || !anonKey || !serviceRoleKey) {
+    throw new Error('supabase status から API_URL・ANON_KEY・SERVICE_ROLE_KEY を取得できませんでした。');
   }
 
   const host = new URL(url).hostname;
@@ -35,10 +36,15 @@ function loadLocalSupabaseEnv(): { url: string; anonKey: string } {
     throw new Error(`E2E の接続先がローカルではありません（${url}）。本番に対しては実行しません。`);
   }
 
-  return { url, anonKey };
+  return { url, anonKey, serviceRoleKey };
 }
 
 const localSupabase = loadLocalSupabaseEnv();
+
+// テストの中から、ローカルの Supabase に service_role で接続するための値（有料会員の契約の行を作る）。
+// 接続先は上でローカルに限定している。アプリ（webServer）には渡さない。
+process.env.E2E_SUPABASE_URL = localSupabase.url;
+process.env.E2E_SUPABASE_SERVICE_ROLE_KEY = localSupabase.serviceRoleKey;
 
 /**
  * Read environment variables from file.
