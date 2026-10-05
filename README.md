@@ -23,9 +23,9 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 
 - 乙4受験者向けの有料学習サービス。誤答リスト・復習リスト・分野別正答率で「弱点を優先して潰す」学習フローを提供（本番稼働中）
 - Next.js 16（App Router）＋ Supabase（PostgreSQL・RLS・Edge Functions）＋ Stripe。要件定義・設計・実装・運用を1人で担当
-- データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（[4. 詳細設計](docs/design.md#4-詳細設計-dbスキーマapi設計stripesupabase連携のシーケンス図)）
+- データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（[詳細設計](docs/design.md)）
 - 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（[運用上の学び：verify_jwt と Webhook 認証の落とし穴](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)）
-- テスト：分岐ロジックを関数に切り出し、Deno.test 45件・Vitest 31件・Playwright E2E 20件。DB の権限・RLS・関数は pgTAP 102件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[6. テスト・品質保証](docs/testing.md#6-テスト品質保証)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
+- テスト：分岐ロジックを関数に切り出し、Deno.test 45件・Vitest 31件・Playwright E2E 20件。DB の権限・RLS・関数は pgTAP 102件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[テスト・品質保証](docs/testing.md)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
 
 ## 全体構成
 
@@ -171,16 +171,15 @@ npm run lint
 
 E2E の接続先は、`.env.local` ではなく `supabase status` から取得する。ローカルの Supabase が起動していない場合や、接続先がローカルでない場合は、テストを始める前に止まる。E2E は本番ビルド（`npm run build && npm run start`）を自動で起動してから実行する。
 
-
-本番の環境変数は [docs/operations.md](docs/operations.md#本番の環境変数) に移した。
+本番の環境変数は [docs/operations.md](docs/operations.md#本番の環境変数) を参照。
 
 ## ドキュメント
 
-- [要件定義・基本設計](docs/requirements.md)：1. プロジェクト概要、2. 機能一覧、3. 画面遷移図・ユーザーフロー
-- [詳細設計（DB・設計判断）](docs/design.md)：4. ER図、シーケンス図、設計判断のハイライト ①〜⑦
+- [要件定義・基本設計](docs/requirements.md)：プロジェクト概要、機能一覧、画面遷移図・ユーザーフロー
+- [詳細設計（DB・設計判断）](docs/design.md)：ER図、シーケンス図、設計判断のハイライト ①〜⑦、型安全性
 - [API 設計](docs/api.md)：Supabase Edge Functions 7つのリクエスト・レスポンス
 - [運用](docs/operations.md)：本番の環境変数、運用上の学び（Webhook の 401 障害、migration の履歴のずれ）
-- [テスト・品質保証](docs/testing.md)：6. ケーススタディ、テスト戦略、カバレッジ
+- [テスト・品質保証](docs/testing.md)：ケーススタディ、テスト戦略、カバレッジ、E2E の構成と方針
 
 ## 技術スタック
 
@@ -190,7 +189,7 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 |---|---|---|
 | Next.js（App Router） | 16.2.10 | Server Components前提の設計で、認証済みユーザー情報の取得をサーバー側に寄せられる。バニラJS版（`dangerous-materials-fe4`）からの移植先として選定し、現在は本番ドメイン`kikenbutsu-z4.com`で稼働中 |
 | React | 19.2.4 | React Compiler の実行時の部品（`react-compiler-runtime`）を追加せずに使うため、19系を採用（18以前は別に追加が必要。コンパイラ本体の `babel-plugin-react-compiler` はバージョンに関係なく必要） |
-| TypeScript | ^5 | `strict: true`。API設計のリクエスト/レスポンス型を明示する運用（[4. 詳細設計の API 設計](docs/api.md#api設計supabase-edge-functions)参照）はTypeScriptの型システムを前提にしている |
+| TypeScript | ^5 | `strict: true`。API設計のリクエスト/レスポンス型を明示する運用（[API 設計](docs/api.md)参照）はTypeScriptの型システムを前提にしている |
 | CSS Modules | - | コンポーネント単位でスタイルを閉じ込める目的で全面採用（92ファイル） |
 | Tailwind CSS | v4 | デザイントークン（`--color-navy`等）の一元管理と、一部コンポーネントのユーティリティクラスに限定利用。CSS Modulesと併用し、レイアウト崩れが起きやすい細かい調整のみTailwindに寄せる方針 |
 | Chart.js | ^4.5.1 | マイページの学習進捗グラフ描画 |
@@ -201,7 +200,7 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 |---|---|
 | Supabase（PostgreSQL） | メインDB。RLSでユーザーごとのデータアクセス制御 |
 | Supabase Auth | 認証（JWT発行、`@supabase/ssr`でサーバー/クライアント両対応のセッション管理） |
-| Supabase Edge Functions（Deno） | Stripe秘密鍵を扱う処理・外部API連携の集約先（[4. 詳細設計の API 設計](docs/api.md#api設計supabase-edge-functions)参照） |
+| Supabase Edge Functions（Deno） | Stripe秘密鍵を扱う処理・外部API連携の集約先（[API 設計](docs/api.md)参照） |
 | Stripe | 決済・サブスクリプション管理 |
 | Vercel | Next.jsアプリのホスティング（本番稼働中） |
 | GitHub Actions | PR ごとのテスト（Vitest・Deno.test・pgTAP・Playwright E2E）・Edge Functions の型の検査（`deno check`）・ESLint・Lighthouse CI の実行。Edge Functionsのデプロイパイプライン（`supabase/functions/**`と`config.toml`の変更を検知して自動デプロイ）。`stripe-webhook`の応答を1時間ごとに確かめる監視 |

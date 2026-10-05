@@ -2,9 +2,7 @@
 
 [← README に戻る](../README.md)
 
-## API設計（Supabase Edge Functions）
-
-Next.js側にはAPI Routesを持たず、Stripe秘密鍵の使用や外部API連携が必要な処理のみをSupabase Edge Functions（Deno）に集約している。誤答リスト・復習リスト等の読み取りは、Row Level Security（RLS）を前提にクライアントから直接PostgRESTへ問い合わせ、書き込みは本人の行だけを書くDBの関数を通す（本章「設計判断のハイライト ⑥ DB の権限の設計」参照）。Edge Functionsの呼び出しは、`supabase.functions.invoke`を包んだ共通の関数`invokeEdgeFunction`（`src/lib/edge-functions.ts`）にまとめ、URLをコードに直接書かない（PR #62）。
+Next.js側にはAPI Routesを持たず、Stripe秘密鍵の使用や外部API連携が必要な処理のみをSupabase Edge Functions（Deno）に集約している。誤答リスト・復習リスト等の読み取りは、Row Level Security（RLS）を前提にクライアントから直接PostgRESTへ問い合わせ、書き込みは本人の行だけを書くDBの関数を通す（[詳細設計](design.md#設計判断のハイライト) の「⑥ DB の権限の設計」参照）。Edge Functionsの呼び出しは、`supabase.functions.invoke`を包んだ共通の関数`invokeEdgeFunction`（`src/lib/edge-functions.ts`）にまとめ、URLをコードに直接書かない（PR #62）。
 
 | エンドポイント | メソッド | 認証 | 用途 |
 |---|---|---|---|
@@ -16,7 +14,7 @@ Next.js側にはAPI Routesを持たず、Stripe秘密鍵の使用や外部API連
 | `cancel-account-deletion` | POST | 必須（Supabase JWT） | 退会予約の取り消し（`deletion_requested`フラグを戻す） |
 | `stripe-webhook` | POST | Stripe署名検証（`verify_jwt: false`） | Stripeからのイベント通知を受信し、サブスク状態をDBに同期 |
 
-### リクエスト/レスポンス型定義
+## リクエスト/レスポンス型定義
 
 全エンドポイント共通のエラー形式を先に定義し、各エンドポイントの型はこれを参照する。
 
@@ -28,7 +26,7 @@ type ErrorResponse = {
 };
 ```
 
-### `create-checkout-session`
+## `create-checkout-session`
 
 Stripe Checkoutセッションを作成する。本人はAuthorizationヘッダーのJWTから確定し、`user_id`・`email`はリクエストボディから受け取らない（他人の`user_id`を指定して決済すると、その人の`user_profiles`の`email`・`stripe_customer_id`が支払った人のものに書き換わるため）。JWTがない、または無効なときは未ログイン状態での購入（ゲスト決済）として扱い、ログイン後に`check-guest-subscription`でメールアドレス突合による紐付けを行う。
 
@@ -57,7 +55,7 @@ type CreateCheckoutSessionResponse = {
 | `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
 | `STRIPE_ERROR` | 500 | Stripe API呼び出し失敗（`message`に詳細） |
 
-### `checkout-session-info`
+## `checkout-session-info`
 
 決済完了後の`/success`ページで、Stripe Checkoutの`session_id`から決済結果を取得する。メールアドレスは`customer_details.email`を優先し、取得できない場合のみ追加でCustomerオブジェクトを取得する（Checkout完了直後は`customer_details`が未確定なケースがあるための保険的フォールバック）。このエンドポイントはセッション個人情報を返すため、`cache-control: no-store`を明示している。
 
@@ -84,7 +82,7 @@ type CheckoutSessionInfoResponse = {
 | `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
 | `STRIPE_ERROR` | 500 | Stripe API呼び出し失敗（`message`に詳細） |
 
-### `request-account-deletion`
+## `request-account-deletion`
 
 退会予約。リクエストボディは持たず、Supabase JWTのみで本人を特定する（`user_id`等をボディから受け取らない設計。フロントから偽装されたIDを信用しない）。
 
@@ -109,7 +107,7 @@ type RequestAccountDeletionResponse =
 | `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
 
 
-### `stripe-webhook`
+## `stripe-webhook`
 
 Stripeからのイベント通知を受信する。**リクエスト/レスポンスとも、他6エンドポイントとは形式が異なる。**
 
@@ -143,7 +141,7 @@ Stripeは同一イベントを複数回配信することがあるため、`stri
 
 署名検証・冪等性チェック・イベント記録は同期的に完了させて`200`を即座に返し、Stripe APIへの追加呼び出しを伴う実同期処理（`user_profiles`/`subscriptions`更新、`auth.users`削除）は`EdgeRuntime.waitUntil()`でバックグラウンドに回している。Stripeの10秒タイムアウト・リトライ設計に対して、処理が重い場合でも安定してレスポンスできるようにするための対応。
 
-### `cancel-account-deletion`
+## `cancel-account-deletion`
 
 `request-account-deletion`で立てた退会予約を取り消す。リクエストボディは持たず、JWTのみで本人を特定する点は`request-account-deletion`と同じ。
 
@@ -165,7 +163,7 @@ type CancelAccountDeletionResponse =
 | `DB_ERROR` | 500 | `subscriptions`テーブルへの問い合わせ・更新失敗（`message`に詳細） |
 | `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
 
-### `check-guest-subscription`
+## `check-guest-subscription`
 
 未ログイン状態で決済したゲストユーザーが、後からログイン（会員登録）した際に、メールアドレス突合でStripeの契約をアカウントに紐付ける。リクエストボディは持たず、JWTから取得したログイン中ユーザーのメールアドレスのみで検索する（`email`をリクエストボディから受け取らない設計。他人のメールアドレスを指定して契約を横取りされないようにするため）。
 
@@ -189,7 +187,7 @@ type CheckGuestSubscriptionResponse =
 | `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
 
 
-### `billing-portal`
+## `billing-portal`
 
 Stripeカスタマーポータル（請求情報の確認・支払い方法の変更・サブスク解約）へのセッションURLを発行する。呼び出し前に、ログイン中ユーザーの`user_profiles.stripe_customer_id`をDBから引いており、リクエストボディからは`return_url`のみを受け取る（`customer_id`をクライアントから信用しない設計は他エンドポイントと共通）。
 
