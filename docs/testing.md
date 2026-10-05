@@ -141,3 +141,13 @@ Edge Functionsの呼び出しの共通関数`src/lib/edge-functions.ts`（5パ�
 `src/lib/leakedPassword.ts`（3パターン）は、Supabase Auth の「漏えいしたパスワードの使用を防ぐ」設定（HaveIBeenPwned の照合）で登録やパスワードの再設定が拒否されたとき、拒否の理由（`reasons` に `pwned`）を見て、英語のエラー文の代わりに日本語の案内を返す。新規登録と再設定の2つの画面から使う。
 
 **セットアップ**：Next.js公式ドキュメントに沿って、Vitest・React Testing Library・jsdomを導入した。`vitest.config.mts`で`supabase/**`を検索対象から除外している（Edge Functions側は`Deno.test`という別のテストランナーを使っており、混在させるとVitestが誤って実行しようとしてエラーになるため）。
+
+### E2E の構成と方針
+
+コアフロー（無料登録〜マイページ〜練習問題への回答〜誤答リストへの遷移）3件を実装し、ローカルの Supabase に対して合格を確認済み（`--repeat-each=10` で30回連続合格）。E2E は本番ビルドを起動して実行する設定（`webServer`）とした。開発サーバーでは、初回のコンパイル待ちで間欠的にタイムアウトするため。次に実装するのは有料転換フロー（ゲスト決済〜Webhook による会員ステータスの反映〜マイページでの有料問題の解放）。Stripe の公式ドキュメントは、Checkout などの Stripe の決済画面には自動操作を防ぐ仕組みがあるため、自動テストでは結果を模擬するよう案内している。そのため E2E では、Checkout のセッション作成（決済画面への移動）までと、決済完了後の Webhook の処理を検証する。決済画面そのものの操作（テストカードでの支払い）は、テストモードで手動で確認する方針とする。
+
+E2E は、Vitest・Deno.test・pgTAP・ESLint とあわせて、PR ごとと main への push ごとに GitHub Actions で実行している（`.github/workflows/test.yml`）。CI の中で `supabase start` を実行し、migrations と `seed.sql` を適用したローカルの Supabase に接続するため、本番には触れない。その先の候補として、`useSearchParams`とSuspense境界のケーススタディと、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E対象とした2関数）が残っている。
+
+### 単体テストの対象の選び方（Next.js 側）
+
+`src/lib/feedback.ts`・`src/lib/safeRedirect.ts`・`src/lib/edge-functions.ts`・`src/lib/questionImage.ts`・`src/lib/leakedPassword.ts`は着手済み。`src/lib/subscription.ts`の`isSubscribed()`は、判定を DB の関数 `has_active_subscription()` に任せ、呼び出した結果を返すだけになったため、判定の検証は pgTAP で行っている（[詳細設計](design.md) の「⑦ 有料会員の判定」参照）。他（`account.ts`・`mistakes.ts`・`review.ts`・`progress.ts`）は主にSupabase呼び出しのラッパーで、判定ロジックの比率が低いため優先度は下がる。

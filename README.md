@@ -24,7 +24,7 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 - 乙4受験者向けの有料学習サービス。誤答リスト・復習リスト・分野別正答率で「弱点を優先して潰す」学習フローを提供（本番稼働中）
 - Next.js 16（App Router）＋ Supabase（PostgreSQL・RLS・Edge Functions）＋ Stripe。要件定義・設計・実装・運用を1人で担当
 - データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（[4. 詳細設計](docs/design.md#4-詳細設計-dbスキーマapi設計stripesupabase連携のシーケンス図)）
-- 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（[4. 詳細設計「運用上の学び」](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)）
+- 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（[運用上の学び：verify_jwt と Webhook 認証の落とし穴](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)）
 - テスト：分岐ロジックを関数に切り出し、Deno.test 45件・Vitest 31件・Playwright E2E 20件。DB の権限・RLS・関数は pgTAP 102件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[6. テスト・品質保証](docs/testing.md#6-テスト品質保証)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
 
 ## 動かし方
@@ -126,23 +126,17 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 
 ## 7. 今後の課題
 
-### テスト関連
+### テスト
 
-- **E2Eテスト（Playwright）**：コアフロー（無料登録〜マイページ〜練習問題への回答〜誤答リストへの遷移）3件を実装し、ローカルの Supabase に対して合格を確認済み（`--repeat-each=10` で30回連続合格）。E2E は本番ビルドを起動して実行する設定（`webServer`）とした。開発サーバーでは、初回のコンパイル待ちで間欠的にタイムアウトするため。次に実装するのは有料転換フロー（ゲスト決済〜Webhook による会員ステータスの反映〜マイページでの有料問題の解放）。Stripe の公式ドキュメントは、Checkout などの Stripe の決済画面には自動操作を防ぐ仕組みがあるため、自動テストでは結果を模擬するよう案内している。そのため E2E では、Checkout のセッション作成（決済画面への移動）までと、決済完了後の Webhook の処理を検証する。決済画面そのものの操作（テストカードでの支払い）は、テストモードで手動で確認する方針とする。
+- E2E の有料転換フロー（Checkout のセッション作成〜決済完了後の Webhook による反映〜有料の問題の解放）。決済画面そのものの操作は、Stripe の公式ドキュメントの案内に従って自動テストの対象外とし、テストモードで手動で確認する
+- `checkout-session-info`・`billing-portal` の E2E と、`useSearchParams` と Suspense 境界のケーススタディの E2E
+- `src/lib` のうち Supabase の呼び出しを包むだけの関数（`account.ts`・`mistakes.ts`・`review.ts`・`progress.ts`）の単体テスト（判定ロジックの比率が低いため優先度は低い）
 
-  E2E は、Vitest・Deno.test・pgTAP・ESLint とあわせて、PR ごとと main への push ごとに GitHub Actions で実行している（`.github/workflows/test.yml`）。CI の中で `supabase start` を実行し、migrations と `seed.sql` を適用したローカルの Supabase に接続するため、本番には触れない。その先の候補として、`useSearchParams`とSuspense境界のケーススタディと、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E対象とした2関数）が残っている。
-
-- **Next.js側の他のユーティリティ関数**：`src/lib/feedback.ts`・`src/lib/safeRedirect.ts`・`src/lib/edge-functions.ts`・`src/lib/questionImage.ts`・`src/lib/leakedPassword.ts`は着手済み。`src/lib/subscription.ts`の`isSubscribed()`は、判定を DB の関数 `has_active_subscription()` に任せ、呼び出した結果を返すだけになったため、判定の検証は pgTAP で行っている（4章「設計判断のハイライト ⑦ 有料会員の判定」参照）。他（`account.ts`・`mistakes.ts`・`review.ts`・`progress.ts`）は主にSupabase呼び出しのラッパーで、判定ロジックの比率が低いため優先度は下がる。
+テストの構成と方針は [docs/testing.md](docs/testing.md) を参照。
 
 ### 型安全性
 
-**対応済み**：`check-guest-subscription`・`stripe-webhook`にあった3箇所の`as any`を解消した。契約終了日の解決部分（2箇所）は、範囲を`PeriodEndSource`型に限定したアサーション（`as unknown as PeriodEndSource`）に変更。顧客のメールアドレス取得部分（`stripe-webhook`）は、`"deleted" in cust`による型の絞り込みに変更し、キャスト自体を排除した。
-
-原因はStripeが2025-03-31のBasil APIバージョンで`Subscription`直下の`current_period_end`を廃止し`items.data[].current_period_end`に移行したこと。当プロジェクトはBasil以前のAPIバージョン（2024-06-20）を使っており実行時には直下のフィールドが存在するが、`esm.sh`経由で読み込む型定義はBasil以降の形を反映しているため、型とランタイムの実態がズレる。
-
-**この対応は完全ではない**。`as unknown as PeriodEndSource`は依然として型アサーション（コンパイラに「この形だと信じてよい」と伝えるだけの記述）であり、実行時にStripeから返る値が本当にこの形をしている保証はコンパイラの外にある。抜本的な解決には、Basil以降のAPIバージョンへの全面移行（`items.data[].current_period_end`だけを正とする設計への作り替え）か、`zod`等によるスキーマ検証を実行時に挟む対応が必要になるが、どちらも決済まわり全体への影響が大きいため今回のスコープ外とした。
-
-**Edge Functions の型の検査**：CI の `Deno.test` が型を検査するのは、テストと、テストが読み込むファイル（判定の関数を切り出した `decision.ts` など）だけで、Stripe の呼び出しや DB への書き込みがある各関数の `index.ts` は型の検査の対象外だった。CI に `deno check` を加え、7つの `index.ts` を PR ごとに検査するようにした。最初の検査で見つかった19件は、引数の型の書き忘れ（15件）、型の推論の失敗（3件。実行時の値は正しく、本番の `subscriptions` に契約の ID が空の行がないことも確認）、`EdgeRuntime` が見つからない（1件）で、いずれも動きを変えずに直した。`EdgeRuntime` は、Supabase の型定義（`edge-runtime.d.ts`）を JSR から読み込むと宣言がグローバルにならないことを、最小の再現で確かめたうえで、型だけを取り出して使う形にした。
+Stripe から返る値の一部（契約終了日）は、範囲を限定した型アサーション（`as unknown as PeriodEndSource`）で扱っており、実行時に値がその形をしている保証はコンパイラの外にある。抜本的な対応は、Basil 以降の API バージョンへの移行か、`zod` 等による実行時のスキーマ検証で、どちらも決済まわり全体への影響が大きいため保留している（経緯と対応済みの部分は [docs/design.md](docs/design.md#型安全性) を参照）。
 
 ### 決済とアカウントの紐付け
 
