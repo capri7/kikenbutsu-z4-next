@@ -10,14 +10,13 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 ## 目次
 
 - [要点](#要点)
+- [全体構成](#全体構成)
+- [主な設計判断](#主な設計判断)
+- [テストの構成](#テストの構成)
 - [動かし方](#動かし方)
-- [1. プロジェクト概要（要件定義）](docs/requirements.md#1-プロジェクト概要要件定義)
-- [2. 機能一覧](docs/requirements.md#2-機能一覧)
-- [3. 基本設計（画面遷移図・ユーザーフロー）](docs/requirements.md#3-基本設計画面遷移図ユーザーフロー)
-- [4. 詳細設計（DBスキーマ、API設計、Stripe/Supabase連携のシーケンス図）](docs/design.md#4-詳細設計-dbスキーマapi設計stripesupabase連携のシーケンス図)
-- [5. 実装・技術スタック](#5-実装技術スタック)
-- [6. テスト・品質保証](docs/testing.md#6-テスト品質保証)
-- [7. 今後の課題](#7-今後の課題)
+- [ドキュメント](#ドキュメント)
+- [技術スタック](#技術スタック)
+- [今後の課題](#今後の課題)
 
 ## 要点
 
@@ -62,6 +61,31 @@ flowchart LR
   deploy --> ef["Supabase Edge Functions"]
   watch["stripe-webhook の監視<br/>（GitHub Actions、1時間ごと）"] -- "応答を確認、異常はメールで通知" --> ef
 ```
+
+## 主な設計判断
+
+| | 判断 | 内容 |
+|---|---|---|
+| ① | 契約の履歴を残す | `subscriptions` の一意の制約を `user_id` から `stripe_subscription_id` に移し、解約・再契約の履歴を行として残す |
+| ② | Webhook の重複を処理しない | 受け取ったイベントの ID を `stripe_events` に主キーで記録し、同じイベントが再び届いても二重に処理しない |
+| ③ | 誤答の記録を書き換えさせない | `BEFORE UPDATE` のトリガーで、`mistakes` の `user_id`・`question_id`・`client_nonce` の書き換えを DB が拒否する |
+| ④ | 退会時の削除を DB の制約にそろえる | 個人の記録のテーブルは `ON DELETE CASCADE`、`subscriptions` だけ `ON DELETE SET NULL` にし、契約の記録は個人と切り離して残す |
+| ⑤ | 問題の公開を3段階に分ける | 無料体験32問（アプリに同梱）・無料会員100問・有料会員1,473問を、ログインの状態と RLS で分ける |
+| ⑥ | DB の権限を絞る | ブラウザには読み取りだけを許し、書き込みは `auth.uid()` で本人を決める6つの関数に限る。権限は pgTAP で確かめる |
+| ⑦ | 有料会員の判定を1か所にする | 4か所・2通りあった判定の条件を、DB の関数 `has_active_subscription()` に一本化する |
+
+それぞれの改善前の状態、理由、確かめ方は [docs/design.md](docs/design.md#設計判断のハイライト) を参照。
+
+## テストの構成
+
+| 対象 | ツール | 件数 | 確かめていること |
+|---|---|---|---|
+| Edge Functions の判定 | Deno.test | 45件 | 決済・退会・Webhook の分岐（判定を `decision.ts` などに切り出して検証） |
+| Next.js の関数 | Vitest | 31件 | 正誤の判定、ログイン後の移動先、Edge Functions の呼び出し、問題の図の URL、漏えいしたパスワードの案内 |
+| DB | pgTAP | 102件（62ファイル） | ロールの権限、RLS、関数が本人の記録だけを使うこと |
+| 画面の流れ | Playwright（E2E） | 20件 | 無料登録〜練習問題〜誤答リスト、有料会員の画面の出し分けなど。ローカルの Supabase で動かし、本番に触れない |
+
+4種類のテストと、Edge Functions の型の検査（`deno check`）・ESLint・Lighthouse CI を、PR ごとに GitHub Actions で実行している。テストの方針とケーススタディは [docs/testing.md](docs/testing.md) を参照。
 
 ## 動かし方
 
@@ -128,7 +152,7 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 - [運用](docs/operations.md)：本番の環境変数、運用上の学び（Webhook の 401 障害、migration の履歴のずれ）
 - [テスト・品質保証](docs/testing.md)：6. ケーススタディ、テスト戦略、カバレッジ
 
-## 5. 実装・技術スタック
+## 技術スタック
 
 ### フロントエンド
 
@@ -160,7 +184,7 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 
 **Cookie によるセッションの更新（`src/proxy.ts`）**：Next.js 16 で middleware が proxy に改名されたため、最初から `proxy.ts` で実装している（ランタイムは Node.js）。ユーザーの確認には、Supabase Auth のサーバーで JWT を確かめる `getUser()` を使う。Cookie は Supabase の公式の手順どおり、`request` と `response` の両方で更新している。
 
-## 7. 今後の課題
+## 今後の課題
 
 ### テスト
 
