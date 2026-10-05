@@ -37,7 +37,7 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 
 ### ローカルで起動する
 
-ローカルの Supabase を起動すると、`supabase/migrations/` のスキーマと、`supabase/seed.sql` の架空の問題データ（3問）が入る。本番の鍵は不要。
+ローカルの Supabase を起動すると、`supabase/migrations/` のスキーマと、`supabase/seed.sql` の架空の問題データ（4問）が入る。本番の鍵は不要。
 
 ```bash
 npm ci
