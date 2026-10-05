@@ -37,7 +37,7 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 
 ### ローカルで起動する
 
-ローカルの Supabase を起動すると、`supabase/migrations/` のスキーマと、`supabase/seed.sql` の架空の問題データ（3問）が入る。本番の鍵は不要。
+ローカルの Supabase を起動すると、`supabase/migrations/` のスキーマと、`supabase/seed.sql` の架空の問題データ（4問）が入る。本番の鍵は不要。
 
 ```bash
 npm ci
@@ -633,7 +633,7 @@ Stripeからのイベント通知を受信する。**リクエスト/レスポ�
 | イベント | 処理内容 |
 |---|---|
 | `checkout.session.completed` | `session.metadata.user_id`または`client_reference_id`から会員を特定し、`user_profiles`を更新。紐づくサブスクリプションがあれば同期 |
-| `customer.subscription.created`/`updated`/`deleted` | `subscriptions`/`user_profiles`をStripeの最新状態に同期。`deleted`の場合、`deletion_requested`フラグが立っていれば`auth.users`を物理削除する（`request-account-deletion`が立てた予約フラグを、実際の契約終了タイミングでここが実行に移す2段階構成） |
+| `customer.subscription.created`/`updated`/`deleted` | Stripeの最新状態に合わせて、`subscriptions`（状態・契約終了日・期間末の解約の予約）と`user_profiles`（メールアドレス・Stripeの顧客ID）を更新。`deleted`の場合、`deletion_requested`フラグが立っていれば`auth.users`を物理削除する（`request-account-deletion`が立てた予約フラグを、実際の契約終了タイミングでここが実行に移す2段階構成） |
 | `invoice.paid`/`invoice.payment_succeeded` | 紐づくサブスクリプションを取得し同期 |
 | それ以外 | 何もしない |
 
@@ -768,7 +768,7 @@ E2E をローカルの Supabase に移す準備として、`supabase db diff --l
 | 技術 | バージョン | 採用理由 |
 |---|---|---|
 | Next.js（App Router） | 16.2.10 | Server Components前提の設計で、認証済みユーザー情報の取得をサーバー側に寄せられる。バニラJS版（`dangerous-materials-fe4`）からの移植先として選定し、現在は本番ドメイン`kikenbutsu-z4.com`で稼働中 |
-| React | 19.2.4 | React Compiler を追加のパッケージなしで使うため、19系を採用 |
+| React | 19.2.4 | React Compiler の実行時の部品（`react-compiler-runtime`）を追加せずに使うため、19系を採用（18以前は別に追加が必要。コンパイラ本体の `babel-plugin-react-compiler` はバージョンに関係なく必要） |
 | TypeScript | ^5 | `strict: true`。API設計のリクエスト/レスポンス型を明示する運用（[4. 詳細設計の API 設計](#api設計supabase-edge-functions)参照）はTypeScriptの型システムを前提にしている |
 | CSS Modules | - | コンポーネント単位でスタイルを閉じ込める目的で全面採用（92ファイル） |
 | Tailwind CSS | v4 | デザイントークン（`--color-navy`等）の一元管理と、一部コンポーネントのユーティリティクラスに限定利用。CSS Modulesと併用し、レイアウト崩れが起きやすい細かい調整のみTailwindに寄せる方針 |
@@ -783,7 +783,7 @@ E2E をローカルの Supabase に移す準備として、`supabase db diff --l
 | Supabase Edge Functions（Deno） | Stripe秘密鍵を扱う処理・外部API連携の集約先（[4. 詳細設計の API 設計](#api設計supabase-edge-functions)参照） |
 | Stripe | 決済・サブスクリプション管理 |
 | Vercel | Next.jsアプリのホスティング（本番稼働中） |
-| GitHub Actions | PR ごとのテスト（Vitest・Deno.test・Playwright E2E）・ESLint・Lighthouse CI の実行。Edge Functionsのデプロイパイプライン（`supabase/functions/**`と`config.toml`の変更を検知して自動デプロイ）。`stripe-webhook`の応答を1時間ごとに確かめる監視 |
+| GitHub Actions | PR ごとのテスト（Vitest・Deno.test・pgTAP・Playwright E2E）・Edge Functions の型の検査（`deno check`）・ESLint・Lighthouse CI の実行。Edge Functionsのデプロイパイプライン（`supabase/functions/**`と`config.toml`の変更を検知して自動デプロイ）。`stripe-webhook`の応答を1時間ごとに確かめる監視 |
 
 ### 技術的なハイライト
 
@@ -915,7 +915,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 
 Stripe Checkoutセッション作成前のリクエストバリデーション（`priceId`必須、`success_url`/`cancel_url`必須、環境変数`PRICE_IDS`による価格許可リスト）と、決済のセッションに載せる本人の決め方（JWTから確定したユーザーだけを使い、未ログインならIDもメールアドレスも載せない、3パターン）を検証している。
 
-チェック順序（`priceId`→リダイレクトURL→許可リスト）を意図的にテストで固定した。優先度の低いチェックが先に実行されて誤ったエラーコードを返す、という将来の実装変更によるリグレッションを防ぐため。`checkout-session-info`・`billing-portal`は判定ロジックがほぼ無いので、ユニットテストではなく後述のE2Eでカバーする方針とした。
+チェック順序（`priceId`→リダイレクトURL→許可リスト）を意図的にテストで固定した。優先度の低いチェックが先に実行されて誤ったエラーコードを返す、という将来の実装変更によるリグレッションを防ぐため。`checkout-session-info`・`billing-portal`は判定ロジックがほぼ無いので、ユニットテストの対象外とし、E2Eで確かめる方針とした（E2Eは未実装。7章「テスト関連」の候補に挙げている）。
 
 ### Next.js側（Vitest、31パターン）
 
@@ -941,7 +941,7 @@ Edge Functionsの呼び出しの共通関数`src/lib/edge-functions.ts`（5パ�
 
   E2E は、Vitest・Deno.test・pgTAP・ESLint とあわせて、PR ごとと main への push ごとに GitHub Actions で実行している（`.github/workflows/test.yml`）。CI の中で `supabase start` を実行し、migrations と `seed.sql` を適用したローカルの Supabase に接続するため、本番には触れない。その先の候補として、`useSearchParams`とSuspense境界のケーススタディと、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E対象とした2関数）が残っている。
 
-- **Next.js側の他のユーティリティ関数**：`src/lib/feedback.ts`・`src/lib/safeRedirect.ts`・`src/lib/edge-functions.ts`は着手済み。`src/lib/subscription.ts`の`isSubscribed()`は、判定を DB の関数 `has_active_subscription()` に任せ、呼び出した結果を返すだけになったため、判定の検証は pgTAP で行っている（4章「設計判断のハイライト ⑦ 有料会員の判定」参照）。他（`account.ts`・`mistakes.ts`・`review.ts`・`progress.ts`）は主にSupabase呼び出しのラッパーで、判定ロジックの比率が低いため優先度は下がる。
+- **Next.js側の他のユーティリティ関数**：`src/lib/feedback.ts`・`src/lib/safeRedirect.ts`・`src/lib/edge-functions.ts`・`src/lib/questionImage.ts`・`src/lib/leakedPassword.ts`は着手済み。`src/lib/subscription.ts`の`isSubscribed()`は、判定を DB の関数 `has_active_subscription()` に任せ、呼び出した結果を返すだけになったため、判定の検証は pgTAP で行っている（4章「設計判断のハイライト ⑦ 有料会員の判定」参照）。他（`account.ts`・`mistakes.ts`・`review.ts`・`progress.ts`）は主にSupabase呼び出しのラッパーで、判定ロジックの比率が低いため優先度は下がる。
 
 ### 型安全性
 
