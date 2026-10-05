@@ -13,6 +13,7 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 - [全体構成](#全体構成)
 - [主な設計判断](#主な設計判断)
 - [テストの構成](#テストの構成)
+- [非機能の要件](#非機能の要件)
 - [動かし方](#動かし方)
 - [ドキュメント](#ドキュメント)
 - [技術スタック](#技術スタック)
@@ -86,6 +87,35 @@ flowchart LR
 | 画面の流れ | Playwright（E2E） | 20件 | 無料登録〜練習問題〜誤答リスト、有料会員の画面の出し分けなど。ローカルの Supabase で動かし、本番に触れない |
 
 4種類のテストと、Edge Functions の型の検査（`deno check`）・ESLint・Lighthouse CI を、PR ごとに GitHub Actions で実行している。テストの方針とケーススタディは [docs/testing.md](docs/testing.md) を参照。
+
+## 非機能の要件
+
+### セキュリティ
+
+- **DB の権限**：ブラウザには読み取りだけを許し、書き込みは `auth.uid()` で本人を決める6つの関数に限る。読める行は RLS で決める。権限は pgTAP で PR ごとに確かめる（[設計判断 ⑥](docs/design.md#設計判断のハイライト)）
+- **本人の確定**：Edge Functions は、リクエストの JWT から本人を決め、本文のユーザー ID を使わない（[API 設計](docs/api.md)）
+- **秘密の情報**：Stripe の秘密鍵・Webhook の署名の鍵は Edge Functions の環境変数だけに置き、Vercel（画面）には公開してよい値だけを置く（[本番の環境変数](docs/operations.md#本番の環境変数)）
+- **Webhook**：Stripe の署名で送り主を確かめ、イベントの ID で重複を処理しない
+- **パスワード**：過去に漏えいしたパスワードでの登録・変更を拒否する（Supabase Auth。HaveIBeenPwned との照合）
+- **ログイン後の移動先**：サイトの中のパスだけを許し、外部のサイトへの誘導（オープンリダイレクト）を防ぐ
+
+### 監視
+
+- `stripe-webhook` の応答を GitHub Actions で1時間ごとに確かめ、異常は GitHub からメールで知らせる
+- Stripe と GitHub の失敗の通知は、メールのフィルタで他のメールと分け、見落とさないようにしている（[運用上の学び](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)）
+
+### バックアップ
+
+- DB は Supabase が毎日バックアップし、7日分を残している（2026-10-05 にダッシュボードで確認）
+- Storage のファイル（問題の図）は、DB のバックアップに含まれず、Storage のほかには保管していない（[今後の課題](#今後の課題)に挙げている）
+
+### 性能
+
+- 主要な4ページを、PR ごとに Lighthouse CI で3回ずつ測っている。直近（PR #75）の中央値は、Performance 98〜99、Accessibility 90〜96、CLS 0
+
+### 運用の環境
+
+- Vercel（Pro）、Supabase（Pro）
 
 ## 動かし方
 
@@ -207,6 +237,7 @@ Stripe から返る値の一部（契約終了日）は、範囲を限定した�
 - Stripe の記録と DB の記録を定期的に突き合わせ、イベントの記録の欠落を見つける仕組みの作成（[運用上の学び](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)の教訓を受けた次の対策。現在は `stripe-webhook` の応答を1時間ごとに確かめる監視までを入れている）
 - `supabase/functions/`を独立したリポジトリへ切り出す作業（優先度は低く、緊急のバグ修正を優先してきたため未着手のまま）
 - 旧バニラJS版（`dangerous-materials-fe4`）の Vercel プロジェクトの削除（Next.js 版への移行は完了済み。プロジェクトは未削除）
+- Storage のファイル（問題の図、SVG 33個）のバックアップ。DB のバックアップに含まれず、今は Supabase の Storage にしかない
 
 ### コンテンツ構造
 
