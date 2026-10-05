@@ -28,3 +28,17 @@ export function validateCheckoutRequest(
 
   return { valid: true };
 }
+
+export type CheckoutIdentity = { userId: string | null; email: string | null };
+
+/**
+ * 決済のセッションに載せる本人の情報を決める。
+ * 本人はリクエストのトークン（JWT）から確定したユーザーだけを使い、本文の user_id・email は使わない。
+ * ログインしていない（ゲストの購入）なら、どちらも null。
+ */
+export function resolveCheckoutIdentity(
+  authUser: { id: string; email?: string | null } | null,
+): CheckoutIdentity {
+  if (!authUser) return { userId: null, email: null };
+  return { userId: authUser.id, email: authUser.email ?? null };
+}

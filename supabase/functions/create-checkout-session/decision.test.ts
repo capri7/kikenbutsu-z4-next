@@ -1,6 +1,6 @@
 // supabase/functions/create-checkout-session/decision.test.ts
 import { assertEquals } from "jsr:@std/assert";
-import { validateCheckoutRequest } from "./decision.ts";
+import { resolveCheckoutIdentity, validateCheckoutRequest } from "./decision.ts";
 
 Deno.test("priceIdが無ければ MISSING_PRICE_ID を返す", () => {
   const result = validateCheckoutRequest(
@@ -65,4 +65,20 @@ Deno.test("許可リストにあるpriceIdは valid を返す", () => {
 Deno.test("priceIdとURL両方が欠けている場合、priceIdのエラーが優先される（チェック順序の確認）", () => {
   const result = validateCheckoutRequest({}, []);
   assertEquals(result, { valid: false, error: "MISSING_PRICE_ID" });
+});
+
+
+Deno.test("ログイン中なら、トークンから確定したユーザーの ID とメールアドレスを使う", () => {
+  const result = resolveCheckoutIdentity({ id: "user-1", email: "a@example.com" });
+  assertEquals(result, { userId: "user-1", email: "a@example.com" });
+});
+
+Deno.test("ログイン中でメールアドレスがなければ、email は null", () => {
+  const result = resolveCheckoutIdentity({ id: "user-1" });
+  assertEquals(result, { userId: "user-1", email: null });
+});
+
+Deno.test("ログインしていない（ゲストの購入）なら、ID もメールアドレスも null", () => {
+  const result = resolveCheckoutIdentity(null);
+  assertEquals(result, { userId: null, email: null });
 });
