@@ -27,6 +27,43 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 - 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（[運用上の学び：verify_jwt と Webhook 認証の落とし穴](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)）
 - テスト：分岐ロジックを関数に切り出し、Deno.test 45件・Vitest 31件・Playwright E2E 20件。DB の権限・RLS・関数は pgTAP 102件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[6. テスト・品質保証](docs/testing.md#6-テスト品質保証)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
 
+## 全体構成
+
+画面は Vercel 上の Next.js、認証・データ・決済まわりの処理は Supabase、決済は Stripe が担う。Stripe の秘密鍵を使う処理は Supabase Edge Functions だけに置いている（[API 設計](docs/api.md)）。
+
+```mermaid
+flowchart LR
+  user["利用者のブラウザ"]
+  subgraph vercel["Vercel"]
+    next["Next.js 16（App Router）"]
+  end
+  subgraph supabase["Supabase"]
+    auth["Auth"]
+    db[("PostgreSQL<br/>RLS・関数")]
+    ef["Edge Functions（7つ）"]
+    storage["Storage（問題の図）"]
+  end
+  stripe["Stripe<br/>Checkout・請求ポータル"]
+  subgraph gh["GitHub Actions"]
+    ci["CI：テスト・lint・型の検査・Lighthouse"]
+    deploy["Edge Functions の自動デプロイ"]
+    watch["stripe-webhook の監視（1時間ごと）"]
+  end
+
+  user --> next
+  user -- "ログイン" --> auth
+  user -- "読み取り（RLS）・書き込みの関数" --> db
+  user -- "supabase.functions.invoke" --> ef
+  user -- "図の表示" --> storage
+  user -- "決済・請求情報" --> stripe
+  next -- "サーバー側の読み取り" --> db
+  ef -- "決済のセッション・契約の確認" --> stripe
+  stripe -- "Webhook（署名つき）" --> ef
+  ef -- "契約の同期" --> db
+  deploy --> ef
+  watch --> ef
+```
+
 ## 動かし方
 
 ### 必要なもの
