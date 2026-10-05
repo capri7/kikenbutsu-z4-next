@@ -2,7 +2,7 @@
 
 [← README に戻る](../README.md)
 
-### 本番の環境変数
+## 本番の環境変数
 
 Next.js（Vercel）
 
@@ -22,7 +22,7 @@ Supabase Edge Functions（`supabase secrets set` で登録）
 
 `SUPABASE_URL` と `SUPABASE_SERVICE_ROLE_KEY` は Supabase が自動で設定する。
 
-#### 運用上の学び：`verify_jwt`とWebhook認証の落とし穴
+## 運用上の学び：`verify_jwt`とWebhook認証の落とし穴
 
 `stripe-webhook`は、SupabaseのJWTではなく、Stripe独自の署名（`stripe-signature`ヘッダー）で認証する。SupabaseのJWT検証（`verify_jwt`）が有効だと、関数のコードに届く前に全リクエストが`401 UNAUTHORIZED_NO_AUTH_HEADER`で拒否されるため、この関数ではJWT検証を無効にする必要がある。開発の初期にこの401を特定し、JWT検証を無効にして解消したが、設定をリポジトリに書いていなかった。そのため、後に本番で再発した。
 
@@ -51,7 +51,7 @@ StripeのWebhookの再送は最大3日で打ち切られるため、7/31に失�
 
 **教訓**：関数の設定は、リポジトリに書かなければ、再デプロイで意図せず元に戻りうる。GitHub Actionsのデプロイが成功（緑）していても、それは「デプロイ処理が成功した」ことの証明であって、「関数が正しく動作している」ことの証明ではない。また、状態を運ぶイベントが後から届けばデータのずれは直るが、欠落した記録は戻らない。外部サービス側の記録（Stripeの請求書一覧）と自システムの記録を定期的に突き合わせる仕組みがないと、この種の欠落は気づかれずに残る。
 
-#### 運用上の学び：migration のファイルと本番の履歴のずれ
+## 運用上の学び：migration のファイルと本番の履歴のずれ
 
 E2E をローカルの Supabase に移す準備として、`supabase db diff --linked` で、リポジトリの migrations から作ったスキーマと本番を比べた。本番にだけ、`subscriptions.cancel_at_period_end` 列と、その列を含む `user_active_subscriptions` ビューがあった。この列は、退会予約の判定（`request-account-deletion` の `SUBSCRIPTION_NOT_CANCELLED`）と `stripe-webhook` が使っている。
 
