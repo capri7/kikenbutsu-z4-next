@@ -783,7 +783,7 @@ E2E をローカルの Supabase に移す準備として、`supabase db diff --l
 | Supabase Edge Functions（Deno） | Stripe秘密鍵を扱う処理・外部API連携の集約先（[4. 詳細設計の API 設計](#api設計supabase-edge-functions)参照） |
 | Stripe | 決済・サブスクリプション管理 |
 | Vercel | Next.jsアプリのホスティング（本番稼働中） |
-| GitHub Actions | PR ごとのテスト（Vitest・Deno.test・Playwright E2E）・ESLint・Lighthouse CI の実行。Edge Functionsのデプロイパイプライン（`supabase/functions/**`と`config.toml`の変更を検知して自動デプロイ）。`stripe-webhook`の応答を1時間ごとに確かめる監視 |
+| GitHub Actions | PR ごとのテスト（Vitest・Deno.test・pgTAP・Playwright E2E）・Edge Functions の型の検査（`deno check`）・ESLint・Lighthouse CI の実行。Edge Functionsのデプロイパイプライン（`supabase/functions/**`と`config.toml`の変更を検知して自動デプロイ）。`stripe-webhook`の応答を1時間ごとに確かめる監視 |
 
 ### 技術的なハイライト
 
