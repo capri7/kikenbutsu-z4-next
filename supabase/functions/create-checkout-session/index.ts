@@ -2,7 +2,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Stripe from "https://esm.sh/stripe@14?target=denonext";
 import { corsHeaders } from "../_shared/cors.ts";
-import { validateCheckoutRequest } from "./decision.ts";
+import { resolveCheckoutIdentity, validateCheckoutRequest } from "./decision.ts";
+import { getAuthenticatedUser } from "../_shared/auth.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
 const ALLOW_LIST = (Deno.env.get("PRICE_IDS") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -31,7 +32,7 @@ Deno.serve(async (req) => {
     return j({ error: "INVALID_JSON" }, 400, headers);
   }
 
-  const { priceId, user_id, email, success_url, cancel_url } = body;
+  const { priceId, success_url, cancel_url } = body;
 
   const validation = validateCheckoutRequest({ priceId, success_url, cancel_url }, ALLOW_LIST);
   if (!validation.valid) {
@@ -41,19 +42,24 @@ Deno.serve(async (req) => {
     return j({ error: validation.error }, 400, headers);
   }
 
+  // 本人はトークン（JWT）から確定する。本文の user_id・email は使わない。
+  // 本文の ID を信じると、他人の ID を指定して決済したときに、その人の user_profiles（email・stripe_customer_id）が
+  // 支払った人のものに書き換わるため。ログインしていなければゲストの購入として扱う。
+  const { user } = await getAuthenticatedUser(req);
+  const { userId, email } = resolveCheckoutIdentity(user);
+
   try {
-    // ここが肝心：user_id を client_reference_id と metadata の両方に載せる
-    // email があれば customer_email として渡す
+    // userId があれば client_reference_id と metadata の両方に載せる（Webhook で本人を特定するため）
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
       allow_promotion_codes: true,
       success_url,
       cancel_url,
-      client_reference_id: user_id ?? undefined,
+      client_reference_id: userId ?? undefined,
       customer_email: email ?? undefined,
-      metadata: user_id ? { user_id } : undefined,
-      subscription_data: user_id ? { metadata: { user_id } } : undefined
+      metadata: userId ? { user_id: userId } : undefined,
+      subscription_data: userId ? { metadata: { user_id: userId } } : undefined
     });
 
     return j({ url: session.url, id: session.id }, 200, headers);

@@ -25,7 +25,7 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 - Next.js 16（App Router）＋ Supabase（PostgreSQL・RLS・Edge Functions）＋ Stripe。要件定義・設計・実装・運用を1人で担当
 - データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（[4. 詳細設計](#4-詳細設計-dbスキーマapi設計stripesupabase連携のシーケンス図)）
 - 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（[4. 詳細設計「運用上の学び」](#運用上の学びverify_jwtとwebhook認証の落とし穴)）
-- テスト：分岐ロジックを関数に切り出し、Deno.test 42件・Vitest 31件・Playwright E2E 20件。DB の権限・RLS・関数は pgTAP 102件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[6. テスト・品質保証](#6-テスト品質保証)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
+- テスト：分岐ロジックを関数に切り出し、Deno.test 45件・Vitest 31件・Playwright E2E 20件。DB の権限・RLS・関数は pgTAP 102件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[6. テスト・品質保証](#6-テスト品質保証)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
 
 ## 動かし方
 
@@ -64,7 +64,7 @@ npm run dev                        # http://localhost:3000
 # Next.js の単体テスト（Vitest、31件）
 npm test -- --run
 
-# Edge Functions の判定ロジック（Deno.test、42件）
+# Edge Functions の判定ロジック（Deno.test、45件）
 deno test supabase/functions/
 
 # E2E（Playwright、20件）。ローカルの Supabase を起動してから実行する
@@ -530,19 +530,17 @@ type ErrorResponse = {
 };
 ```
 
-
 #### `create-checkout-session`
 
-Stripe Checkoutセッションを作成する。`user_id`を任意項目にしているのは、未ログイン状態での購入（ゲスト決済）を許容するためで、ログイン後に`check-guest-subscription`でメールアドレス突合による紐付けを行う設計と対応している。
+Stripe Checkoutセッションを作成する。本人はAuthorizationヘッダーのJWTから確定し、`user_id`・`email`はリクエストボディから受け取らない（他人の`user_id`を指定して決済すると、その人の`user_profiles`の`email`・`stripe_customer_id`が支払った人のものに書き換わるため）。JWTがない、または無効なときは未ログイン状態での購入（ゲスト決済）として扱い、ログイン後に`check-guest-subscription`でメールアドレス突合による紐付けを行う。
 
 ```typescript
 type CreateCheckoutSessionRequest = {
   priceId: string;
-  user_id?: string;       // 未ログイン購入（ゲスト決済）時は省略可
-  email?: string;
   success_url: string;
   cancel_url: string;
 };
+// 本人：AuthorizationヘッダーのJWT（なければゲスト決済）
 
 type CreateCheckoutSessionResponse = {
   url: string;  // Stripe Checkoutへのリダイレクト先
@@ -873,7 +871,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `_shared/periodEnd.ts`（`stripe-webhook`・`check-guest-subscription`共通） | ✅ 7パターン |
 | `stripe-webhook` | ✅ 6パターン |
 | `check-guest-subscription` | ✅ 6パターン |
-| `create-checkout-session` | ✅ 7パターン |
+| `create-checkout-session` | ✅ 10パターン |
 | `_shared/activeSubscription.ts` | ✅ 5パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。呼び出し側の `invokeEdgeFunction` は Vitest で検証） |
 | Next.js側（Vitest） | ✅ 31パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3） |
@@ -913,9 +911,9 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 
 このテストを書く過程で、契約終了日の解決ロジックが`stripe-webhook`と重複していることに気づき、`_shared/periodEnd.ts`への共通化につながった（詳細は前項）。
 
-### `create-checkout-session`（7パターン）
+### `create-checkout-session`（10パターン）
 
-Stripe Checkoutセッション作成前のリクエストバリデーション（`priceId`必須、`success_url`/`cancel_url`必須、環境変数`PRICE_IDS`による価格許可リスト）を検証している。
+Stripe Checkoutセッション作成前のリクエストバリデーション（`priceId`必須、`success_url`/`cancel_url`必須、環境変数`PRICE_IDS`による価格許可リスト）と、決済のセッションに載せる本人の決め方（JWTから確定したユーザーだけを使い、未ログインならIDもメールアドレスも載せない、3パターン）を検証している。
 
 チェック順序（`priceId`→リダイレクトURL→許可リスト）を意図的にテストで固定した。優先度の低いチェックが先に実行されて誤ったエラーコードを返す、という将来の実装変更によるリグレッションを防ぐため。`checkout-session-info`・`billing-portal`は判定ロジックがほぼ無いので、ユニットテストではなく後述のE2Eでカバーする方針とした。
 
