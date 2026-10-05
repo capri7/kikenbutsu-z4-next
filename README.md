@@ -31,37 +31,36 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 
 画面は Vercel 上の Next.js、認証・データ・決済まわりの処理は Supabase、決済は Stripe が担う。Stripe の秘密鍵を使う処理は Supabase Edge Functions だけに置いている（[API 設計](docs/api.md)）。
 
+### 実行時の流れ
+
 ```mermaid
 flowchart LR
   user["利用者のブラウザ"]
-  subgraph vercel["Vercel"]
-    next["Next.js 16（App Router）"]
-  end
-  subgraph supabase["Supabase"]
-    auth["Auth"]
-    db[("PostgreSQL<br/>RLS・関数")]
-    ef["Edge Functions（7つ）"]
-    storage["Storage（問題の図）"]
-  end
+  next["Next.js 16（Vercel）<br/>画面"]
+  ef["Edge Functions（Supabase）<br/>決済・退会の処理 7つ"]
+  supa[("Supabase<br/>Auth・PostgreSQL（RLS・関数）・Storage")]
   stripe["Stripe<br/>Checkout・請求ポータル"]
-  subgraph gh["GitHub Actions"]
-    ci["CI：テスト・lint・型の検査・Lighthouse"]
-    deploy["Edge Functions の自動デプロイ"]
-    watch["stripe-webhook の監視（1時間ごと）"]
-  end
 
-  user --> next
-  user -- "ログイン" --> auth
-  user -- "読み取り（RLS）・書き込みの関数" --> db
-  user -- "supabase.functions.invoke" --> ef
-  user -- "図の表示" --> storage
+  user -- "画面の表示" --> next
+  user -- "関数の呼び出し" --> ef
+  user -- "ログイン・データの読み書き・図" --> supa
   user -- "決済・請求情報" --> stripe
-  next -- "サーバー側の読み取り" --> db
-  ef -- "決済のセッション・契約の確認" --> stripe
-  stripe -- "Webhook（署名つき）" --> ef
-  ef -- "契約の同期" --> db
-  deploy --> ef
-  watch --> ef
+  next -- "サーバー側の読み取り" --> supa
+  ef -- "契約の同期" --> supa
+  ef <-->|"決済のセッション作成・契約の確認／Webhook（署名つき）"| stripe
+  supa ~~~ stripe
+```
+
+### 開発・デプロイの流れ
+
+```mermaid
+flowchart LR
+  dev["開発者"] -- "PR・main へのマージ" --> repo["GitHub リポジトリ"]
+  repo -- "PR ごと<br/>（テストは main への push でも実行）" --> ci["CI（GitHub Actions）<br/>Vitest・Deno.test・deno check<br/>pgTAP・Playwright E2E・ESLint・Lighthouse"]
+  repo -- "main への push<br/>（supabase/functions/・config.toml の変更）" --> deploy["Edge Functions のデプロイ<br/>（GitHub Actions）"]
+  repo -- "PR はプレビュー、main は本番" --> vercel["Vercel"]
+  deploy --> ef["Supabase Edge Functions"]
+  watch["stripe-webhook の監視<br/>（GitHub Actions、1時間ごと）"] -- "応答を確認、異常はメールで通知" --> ef
 ```
 
 ## 動かし方
