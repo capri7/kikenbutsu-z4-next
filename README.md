@@ -36,25 +36,19 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 ```mermaid
 flowchart LR
   user["利用者のブラウザ"]
-  subgraph app["アプリ（Vercel）"]
-    next["Next.js 16<br/>App Router"]
-  end
-  subgraph supa["Supabase"]
-    direction TB
-    auth["Auth"]
-    ef["Edge Functions（7つ）"]
-    db[("PostgreSQL<br/>RLS・関数")]
-    storage["Storage<br/>問題の図"]
-  end
+  next["Next.js 16（Vercel）<br/>画面"]
+  ef["Edge Functions（Supabase）<br/>決済・退会の処理 7つ"]
+  supa[("Supabase<br/>Auth・PostgreSQL（RLS・関数）・Storage")]
   stripe["Stripe<br/>Checkout・請求ポータル"]
 
-  user -- "画面" --> next
-  user -- "ログイン・データ・関数の呼び出し・図" --> supa
-  next -- "サーバー側の読み取り" --> db
-  ef -- "契約の同期" --> db
-  ef -- "決済のセッション・契約の確認" --> stripe
-  stripe -- "Webhook（署名つき）" --> ef
+  user -- "画面の表示" --> next
+  user -- "関数の呼び出し" --> ef
+  user -- "ログイン・データの読み書き・図" --> supa
   user -- "決済・請求情報" --> stripe
+  next -- "サーバー側の読み取り" --> supa
+  ef -- "契約の同期" --> supa
+  ef <-->|"決済のセッション作成・契約の確認／Webhook（署名つき）"| stripe
+  supa ~~~ stripe
 ```
 
 ### 開発・デプロイの流れ
