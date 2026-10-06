@@ -2,7 +2,7 @@
 
 [← README に戻る](../README.md)
 
-Next.js側にはAPI Routesを持たず、Stripe秘密鍵の使用や外部API連携が必要な処理のみをSupabase Edge Functions（Deno）に集約している。誤答リスト・復習リスト等の読み取りは、Row Level Security（RLS）を前提にクライアントから直接PostgRESTへ問い合わせ、書き込みは本人の行だけを書くDBの関数を通す（[詳細設計](design.md#設計判断のハイライト) の「⑥ DB の権限の設計」参照）。Edge Functionsの呼び出しは、`supabase.functions.invoke`を包んだ共通の関数`invokeEdgeFunction`（`src/lib/edge-functions.ts`）にまとめ、URLをコードに直接書かない（PR #62）。
+Next.js側にはAPI Routesを持たず、Stripe秘密鍵の使用や外部API連携が必要な処理のみをSupabase Edge Functions（Deno）に集約している。誤答リスト・復習リスト等の読み取りは、Row Level Security（RLS）を前提にクライアントから直接PostgRESTへ問い合わせ、書き込みは本人の行だけを書くDBの関数を通す（[詳細設計](design.md#設計判断のハイライト) の「⑥ DB の権限の設計」参照）。Edge Functionsは`supabase.functions.invoke`で呼び出し、URLをコードに直接書かない。退会・退会の取り消し・請求ポータルの3つは、エラーの取り出しをまとめた共通の関数`invokeEdgeFunction`（`src/lib/edge-functions.ts`、PR #62）を通し、購入（`CheckoutClient`）・決済完了（`SuccessClient`）・新規登録（`SignupForm`）は`supabase.functions.invoke`を直接呼ぶ。
 
 | エンドポイント | メソッド | 認証 | 用途 |
 |---|---|---|---|
@@ -28,7 +28,7 @@ type ErrorResponse = {
 
 ## `create-checkout-session`
 
-Stripe Checkoutセッションを作成する。本人はAuthorizationヘッダーのJWTから確定し、`user_id`・`email`はリクエストボディから受け取らない（他人の`user_id`を指定して決済すると、その人の`user_profiles`の`email`・`stripe_customer_id`が支払った人のものに書き換わるため）。JWTがない、または無効なときは未ログイン状態での購入（ゲスト決済）として扱い、ログイン後に`check-guest-subscription`でメールアドレス突合による紐付けを行う。
+Stripe Checkoutセッションを作成する。本人はAuthorizationヘッダーのJWTから確定し、`user_id`・`email`はリクエストボディから受け取らない（他人の`user_id`を指定して決済すると、その人の`user_profiles`の`email`・`stripe_customer_id`が支払った人のものに書き換わるため）。JWTがない、または無効なときは未ログイン状態での購入（ゲスト決済）として扱い、新規登録の直後に`check-guest-subscription`でメールアドレス突合による紐付けを行う。
 
 ```typescript
 type CreateCheckoutSessionRequest = {
@@ -50,14 +50,14 @@ type CreateCheckoutSessionResponse = {
 |---|---|---|
 | `MISSING_PRICE_ID` | 400 | `priceId`が未指定 |
 | `MISSING_REDIRECT_URL` | 400 | `success_url`/`cancel_url`のいずれかが未指定 |
-| `PRICE_NOT_ALLOWED` | 400 | 環境変数`PRICE_IDS`の許可リストに含まれない`priceId`（`priceId`を含めて返却） |
+| `PRICE_NOT_ALLOWED` | 400 | 環境変数`PRICE_IDS`の許可リストに含まれない`priceId`（`priceId`を含めて返却。`PRICE_IDS`が空のときは検査しない） |
 | `INVALID_JSON` | 400 | リクエストボディがJSONとしてパース不能 |
 | `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
 | `STRIPE_ERROR` | 500 | Stripe API呼び出し失敗（`message`に詳細） |
 
 ## `checkout-session-info`
 
-決済完了後の`/success`ページで、Stripe Checkoutの`session_id`から決済結果を取得する。メールアドレスは`customer_details.email`を優先し、取得できない場合のみ追加でCustomerオブジェクトを取得する（Checkout完了直後は`customer_details`が未確定なケースがあるための保険的フォールバック）。このエンドポイントはセッション個人情報を返すため、`cache-control: no-store`を明示している。
+決済完了後の`/success`ページで、Stripe Checkoutの`session_id`から決済結果を取得する。メールアドレスは`customer_details.email`、`customer_email`の順に使い、どちらも取得できない場合のみ追加でCustomerオブジェクトを取得する（Checkout完了直後は`customer_details`が未確定なケースがあるための保険的フォールバック）。このエンドポイントはセッション個人情報を返すため、`cache-control: no-store`を明示している。
 
 ```typescript
 type CheckoutSessionInfoRequest = {
@@ -102,7 +102,7 @@ type RequestAccountDeletionResponse =
 |---|---|---|
 | `UNAUTHORIZED` | 401 | JWTが無い、または無効 |
 | `DB_ERROR` | 500 | `subscriptions`テーブルへの問い合わせ・更新失敗（`message`に詳細） |
-| `SUBSCRIPTION_NOT_CANCELLED` | 400 | 有料会員かつStripe側で`cancel_at_period_end`が未設定（フロントのボタン制御がバイパスされても、Stripe側で解約手続きが完了していない退会予約を拒否する保険） |
+| `SUBSCRIPTION_NOT_CANCELLED` | 400 | 有料会員かつ`subscriptions`の`cancel_at_period_end`（Stripeから`stripe-webhook`で同期した値）が`true`でない（フロントのボタン制御がバイパスされても、Stripe側で解約手続きが完了していない退会予約を拒否する保険） |
 | `DELETE_FAILED` | 500 | `auth.users`削除失敗（`message`に詳細） |
 | `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
 
@@ -121,7 +121,7 @@ Stripeからのイベント通知を受信する。**リクエスト/レスポ�
 // 200 "ok"              : 正常受理（実処理はバックグラウンドで継続）
 // 200 "ok (duplicate)"  : stripe_eventsテーブルに同一event.idが既存（Stripeのリトライによる重複配信を無視）
 // 400 "invalid signature" : 署名検証失敗
-// 400 "handler error: ${message}" : 署名検証〜冪等性チェックまでの間の未捕捉例外
+// 400 "handler error: ${message}" : 署名検証の失敗以外で、応答を返すまでに起きた未捕捉例外
 ```
 
 **処理するイベント種別**
@@ -145,7 +145,7 @@ Stripeは同一イベントを複数回配信することがあるため、`stri
 
 `request-account-deletion`で立てた退会予約を取り消す。リクエストボディは持たず、JWTのみで本人を特定する点は`request-account-deletion`と同じ。
 
-`request-account-deletion`との非対称性が1点ある：`request-account-deletion`は「サブスクリプション未登録＝無料会員」として即時削除に倒すが、`cancel-account-deletion`は行が無ければ`NO_SUBSCRIPTION`（404）で明示的に拒否する。これは「取り消す対象の予約が存在しない」ことを黙って200で返すと、フロントが誤操作に気づけなくなるための設計。既に取り消し済み（`deletion_requested`が既に`false`）の場合はエラーにせず、`already: true`を付けて200で返す（二重送信・多重クリックを異常系として扱わないため）。
+`request-account-deletion`との非対称性が1点ある：`request-account-deletion`は「有効な契約（`active`/`trialing`/`past_due`）の行がない＝無料会員」として即時削除に倒すが、`cancel-account-deletion`は有効な契約の行が無ければ`NO_SUBSCRIPTION`（404）で明示的に拒否する。これは「取り消す対象の予約が存在しない」ことを黙って200で返すと、フロントが誤操作に気づけなくなるための設計。既に取り消し済み（`deletion_requested`が既に`false`）の場合はエラーにせず、`already: true`を付けて200で返す（二重送信・多重クリックを異常系として扱わないため）。
 
 ```typescript
 // リクエストボディなし（Authorizationヘッダーのみ）
@@ -159,13 +159,13 @@ type CancelAccountDeletionResponse =
 | コード | ステータス | 発生条件 |
 |---|---|---|
 | `UNAUTHORIZED` | 401 | JWTが無い、または無効 |
-| `NO_SUBSCRIPTION` | 404 | `subscriptions`テーブルに該当ユーザーの行が存在しない |
+| `NO_SUBSCRIPTION` | 404 | `subscriptions`テーブルに該当ユーザーの有効な契約（`active`/`trialing`/`past_due`）の行が存在しない |
 | `DB_ERROR` | 500 | `subscriptions`テーブルへの問い合わせ・更新失敗（`message`に詳細） |
 | `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
 
 ## `check-guest-subscription`
 
-未ログイン状態で決済したゲストユーザーが、後からログイン（会員登録）した際に、メールアドレス突合でStripeの契約をアカウントに紐付ける。リクエストボディは持たず、JWTから取得したログイン中ユーザーのメールアドレスのみで検索する（`email`をリクエストボディから受け取らない設計。他人のメールアドレスを指定して契約を横取りされないようにするため）。
+未ログイン状態で決済したゲストユーザーが、後から新規登録した直後に（`SignupForm`から呼ぶ。ログインのときは呼ばない）、メールアドレス突合でStripeの契約をアカウントに紐付ける。リクエストボディは持たず、JWTから取得したログイン中ユーザーのメールアドレスのみで検索する（`email`をリクエストボディから受け取らない設計。他人のメールアドレスを指定して契約を横取りされないようにするため）。
 
 Stripe Customer検索→該当顧客ごとにサブスクリプション検索、という2段階のStripe API呼び出しを行い、`active`/`trialing`状態の契約が見つかった時点で`user_profiles`/`subscriptions`に同期して返す。複数のStripe顧客が同じメールアドレスを持つケース（ゲスト決済を複数回行った等）を想定し、ループで全顧客を走査している。
 
