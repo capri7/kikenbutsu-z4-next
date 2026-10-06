@@ -142,7 +142,49 @@ erDiagram
 
 ## シーケンス図（決済〜Webhook同期）
 
-![Stripe/Supabase連携シーケンス図](../public/diagrams/sequence-diagram-stripe-webhook.svg)
+```mermaid
+sequenceDiagram
+  autonumber
+  participant B as ブラウザ
+  participant CCS as create-checkout-session
+  participant CSI as checkout-session-info
+  participant S as Stripe
+  participant WH as stripe-webhook
+  participant DB as Supabase DB
+
+  B->>CCS: POST { priceId, success_url, cancel_url }<br/>Authorization ヘッダー（未ログインならゲストの購入）
+  Note over CCS: 本人は JWT から決める<br/>（本文の user_id・email は使わない）
+  CCS->>S: checkout.sessions.create()<br/>client_reference_id・metadata に user_id
+  S-->>CCS: Checkout Session
+  CCS-->>B: { url, id }
+  B->>S: 決済ページへ移動・カード情報の入力
+
+  par 決済の完了後（どちらが先に起きるかは決まらない）
+    S-->>B: success_url へ戻す（/success?session_id=...）
+    B->>CSI: POST { session_id }
+    CSI->>S: checkout.sessions.retrieve()
+    CSI-->>B: { email, status, payment_status, ... }
+  and
+    S->>WH: POST イベント（stripe-signature ヘッダー）<br/>checkout.session.completed・customer.subscription.*・invoice.paid など
+    Note over WH: verify_jwt = false<br/>（JWT の検証が有効だと、<br/>関数に届く前に 401 で拒否される）
+    WH->>WH: 署名を検証<br/>（失敗なら 400 "invalid signature"）
+    WH->>DB: stripe_events で event.id を探す
+    alt 記録がある（重複配信）
+      WH-->>S: 200 "ok (duplicate)"
+    else 記録がない
+      WH->>DB: stripe_events にイベントを記録
+      WH-->>S: 200 "ok"
+      Note over WH: 応答のあとも<br/>EdgeRuntime.waitUntil で処理を続ける<br/>（Stripe の10秒の時間切れ対策）
+      WH->>S: 契約・顧客の情報を取得（必要なとき）
+      WH->>DB: upsert user_profiles・subscriptions<br/>（状態・契約終了日・cancel_at_period_end）
+    end
+  end
+
+  B->>DB: マイページ：rpc has_active_subscription()（有料会員の判定）
+  DB-->>B: true / false
+  B->>DB: マイページ：SELECT subscriptions（本人の有効な契約の行。退会のカード）
+  DB-->>B: status・current_period_end・cancel_at_period_end・deletion_requested
+```
 
 
 ## 設計判断のハイライト
@@ -164,10 +206,10 @@ UNIQUE制約を`user_id`から`stripe_subscription_id`に変更。1ユーザー�
 Stripeから送信されるWebhookイベントを受信する`stripe-webhook`関数側に、イベントの重複処理を防ぐ仕組みがなかった。
 
 **改善後**
-`stripe_events`テーブルを追加し、受信したイベントIDを主キーとして記録。Webhook処理の冒頭でこのテーブルに`INSERT`を試み、既に同じイベントIDが存在する場合（重複配信）は後続の更新処理をスキップするようにした。
+`stripe_events`テーブルを追加し、受信したイベントIDを主キーとして記録。署名検証の後にこのテーブルで同じイベントIDを探し、既にある場合（重複配信）は後続の更新処理をスキップする。ない場合はイベントを記録してから、更新処理をバックグラウンドで実行する。
 
 **理由**
-Stripeの公式仕様では、Webhookは「少なくとも1回」配信されることが保証されているが、「ちょうど1回」は保証されていない。ネットワーク遅延やタイムアウトにより、同一イベントが複数回配信されるケースが実際に発生しうる。冪等性チェックがない場合、サブスクリプションの状態更新処理が同じイベントに対して複数回走り、`current_period_end`の不整合といった実害につながる。`stripe_events`テーブルをイベントIDでのUNIQUE制約付きの記録台帳として使うことで、二重処理を構造的に防いだ。
+Stripeの公式仕様では、Webhookは「少なくとも1回」配信されることが保証されているが、「ちょうど1回」は保証されていない。ネットワーク遅延やタイムアウトにより、同一イベントが複数回配信されるケースが実際に発生しうる。冪等性チェックがない場合、サブスクリプションの状態更新処理が同じイベントに対して複数回走り、`current_period_end`の不整合といった実害につながる。`stripe_events`テーブルをイベントIDの記録台帳として使うことで、Stripeの再送による二重処理を防いだ。ただし、確認と記録は別の命令で、記録に失敗しても処理を続けるため、同じイベントがほぼ同時に2回届いた場合は両方が処理されうる（主キーの制約で弾く作りではない）。
 
 ### ③ mistakesテーブルの不変性保護
 
