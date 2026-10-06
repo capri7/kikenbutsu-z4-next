@@ -35,8 +35,8 @@ export default function PaidUpsellSection({ userId }: { userId: string }) {
 
   return (
     <section className={styles.paidUpsell}>
-      <h3>🔓 残り1,472問で苦手を完全制覇</h3>
-      <p>苦手な節だけ繰り返せる1,453問が解放されます。誤答リスト・復習リストをフル活用して、本番までに弱点をゼロにしましょう。</p>
+      <h3>🔓 残り1,473問で苦手を完全制覇</h3>
+      <p>苦手な節だけ繰り返せる1,473問が解放されます。誤答リスト・復習リストをフル活用して、本番までに弱点をゼロにしましょう。</p>
       <a className={`${styles.btn} ${styles.btnSecondary}`} href="/checkout">
         今すぐ全問解放する（¥1,280/月）
       </a>
