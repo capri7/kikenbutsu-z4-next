@@ -63,7 +63,7 @@ Edge Functions（Deno）・Next.js（Node/Vite）・DB（PostgreSQL）で実行�
 | 層 | 対象 | ツール |
 |---|---|---|
 | Edge Functions | 分岐ロジック（判定関数として切り出したもの） | `Deno.test` |
-| Next.js単体テスト | ユーティリティ関数・同期Client Components | Vitest + React Testing Library |
+| Next.js単体テスト | ユーティリティ関数（`src/lib`）。Client Components のテストは未作成 | Vitest（React Testing Library・jsdom は導入済み） |
 | DB | ロールの権限・RLS・関数が本人の記録だけを使うこと | pgTAP（`supabase test db`） |
 | E2Eテスト | 無料登録〜マイページ〜練習問題〜誤答リストの一連の動作（コアフロー、ローカルの Supabase で実装・合格確認済み）、有料会員の画面の出し分け（有料の問題・ヘッダー・退会のカード。契約の行はテストの中で作り、決済は通さない）、ゲスト決済〜Webhook〜マイページ解放（有料転換フロー、未実装）、非同期Server Components | Playwright |
 
@@ -80,7 +80,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `check-guest-subscription` | ✅ 6パターン |
 | `create-checkout-session` | ✅ 10パターン |
 | `_shared/activeSubscription.ts` | ✅ 5パターン |
-| `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。呼び出し側の `invokeEdgeFunction` は Vitest で検証） |
+| `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。`billing-portal` を呼ぶ共通の関数 `invokeEdgeFunction` は Vitest で検証） |
 | Next.js側（Vitest） | ✅ 31パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3） |
 | DB（pgTAP） | ✅ 62ファイル・102件（ロールの権限・RLS・関数） |
 | E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅・有料会員の画面の出し分け3件 ✅（いずれもローカルの Supabase）・有料転換フロー（決済〜Webhook）未実装・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
@@ -112,7 +112,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 
 ## `check-guest-subscription`（6パターン）
 
-未ログイン状態で決済したゲストユーザーが、後からログインした際にメールアドレス突合でStripeの契約を紐付ける機能。複数のStripe顧客の契約一覧から、`active`/`trialing`状態の契約を探す選択ロジックを検証している。
+未ログイン状態で決済したゲストユーザーが、後から新規登録した直後にメールアドレス突合でStripeの契約を紐付ける機能（新規登録の画面から呼ぶ。ログインのときは呼ばない）。複数のStripe顧客の契約一覧から、`active`/`trialing`状態の契約を探す選択ロジックを検証している。
 
 判定対象を1顧客分のサブスクリプション配列に絞ることで、複数顧客をループする実際のAPI呼び出しから選択ロジックだけを独立してテストできる形にした。ジェネリクス（`<T extends { status: string }>`）を使い、渡した配列の要素の型をそのまま返す設計にしたことで、呼び出し側で契約IDによる再検索が発生しない。
 
