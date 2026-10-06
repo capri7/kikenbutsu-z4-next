@@ -37,15 +37,12 @@ export default function CheckoutClient({ isLoggedIn, userEmail }: Props) {
 
     try {
       const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      // 呼び出しの前にログイン状態を最新にする（期限切れのトークンの更新を含む）
+      await supabase.auth.getUser()
 
       const { data, error } = await supabase.functions.invoke('create-checkout-session', {
         body: {
           priceId: PRICE_ID,
-          user_id: user?.id ?? null,
-          email: user?.email ?? null,
           success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${window.location.origin}/checkout?canceled=1`,
         },
