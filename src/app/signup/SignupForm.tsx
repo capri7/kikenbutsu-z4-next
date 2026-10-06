@@ -130,9 +130,7 @@ export default function SignupForm() {
       signupSucceeded = true
 
       try {
-        await supabase.functions.invoke('check-guest-subscription', {
-          body: { email: trimmedEmail, user_id: data.user!.id },
-        })
+        await supabase.functions.invoke('check-guest-subscription')
       } catch (e) {
         console.error('[guest-subscription-check] failed', e)
         // ここで失敗しても、サインアップ自体は成功として続行する
