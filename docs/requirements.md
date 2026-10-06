@@ -140,7 +140,17 @@ flowchart LR
 
 **検索流入からメール登録まで**
 
-![ユーザーフロー1](../public/diagrams/user-flow-part1-signup.svg)
+```mermaid
+flowchart TD
+  A["基礎知識の節のページ<br/>/basics/...<br/>検索から流入・認証不要"]
+  B["節を読む<br/>ミニクイズで理解を確認"]
+  C["メール登録<br/>/signup<br/>節のページ内の導線から"]
+  D["マイページ<br/>/mypage<br/>登録と同時にログイン状態"]
+
+  A --> B
+  B -->|登録へ| C
+  C -->|登録完了| D
+```
 
 **マイページ利用開始から有料転換まで**
 
