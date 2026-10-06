@@ -154,4 +154,31 @@ flowchart TD
 
 **マイページ利用開始から有料転換まで**
 
-![ユーザーフロー2](../public/diagrams/user-flow-part2-conversion.svg)
+```mermaid
+flowchart TD
+  START(["メール登録の完了<br/>マイページ /mypage"])
+  Q["無料100問を解く<br/>/contents/[id]"]
+  J{"正解？"}
+  MADD["誤答リストに追加<br/>/mistakes"]
+  MDEL["誤答リストにあれば外す"]
+  REV["復習リストに追加<br/>/review"]
+  MY["マイページで弱点を確認<br/>分野別の正答率のグラフ"]
+  BUY["購入<br/>/checkout → Stripe の決済"]
+  GOAL(["有料会員<br/>全1,573問が使える"])
+
+  START --> Q --> J
+  J -->|不正解| MADD
+  J -->|正解| MDEL
+  Q -.->|自分で選んだ問題| REV
+  MADD --> MY
+  MDEL --> MY
+  REV --> MY
+  MY -->|誤答リスト・復習リスト・<br/>苦手な分野から解き直す| Q
+  MY -->|さらに学習を続けたい<br/>（マイページの案内から）| BUY
+  BUY --> GOAL
+
+  classDef auto fill:#f2f2f2,stroke:#888,color:#333
+  class MADD,MDEL auto
+```
+
+灰色の箱はシステムが自動で行う処理、点線は利用者が任意で行う操作。
