@@ -60,7 +60,7 @@ flowchart LR
   repo -- "main への push<br/>（supabase/functions/・config.toml の変更）" --> deploy["Edge Functions のデプロイ<br/>（GitHub Actions）"]
   repo -- "PR はプレビュー、main は本番" --> vercel["Vercel"]
   deploy --> ef["Supabase Edge Functions"]
-  watch["stripe-webhook の監視<br/>（GitHub Actions、1時間ごと）"] -- "応答を確認、異常はメールで通知" --> ef
+  watch["stripe-webhook の監視<br/>（GitHub Actions、1時間ごとの時刻指定）"] -- "応答を確認、異常はメールで通知" --> ef
 ```
 
 ## 主な設計判断
@@ -101,7 +101,7 @@ flowchart LR
 
 ### 監視
 
-- `stripe-webhook` の応答を GitHub Actions で1時間ごとに確かめ、異常は GitHub からメールで知らせる
+- `stripe-webhook` の応答を GitHub Actions の1時間ごとの時刻指定で確かめ（実際の間隔は、GitHub の遅れ・飛ばしで3〜9時間）、異常は GitHub からメールで知らせる
 - Stripe と GitHub の失敗の通知は、メールのフィルタで他のメールと分け、見落とさないようにしている（[運用上の学び](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)）
 
 ### バックアップ
@@ -203,7 +203,7 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 | Supabase Edge Functions（Deno） | Stripe秘密鍵を扱う処理・外部API連携の集約先（[API 設計](docs/api.md)参照） |
 | Stripe | 決済・サブスクリプション管理 |
 | Vercel | Next.jsアプリのホスティング（本番稼働中） |
-| GitHub Actions | PR ごとのテスト（Vitest・Deno.test・pgTAP・Playwright E2E）・Edge Functions の型の検査（`deno check`）・ESLint・Lighthouse CI の実行。Edge Functionsのデプロイパイプライン（`supabase/functions/**`と`config.toml`の変更を検知して自動デプロイ）。`stripe-webhook`の応答を1時間ごとに確かめる監視 |
+| GitHub Actions | PR ごとのテスト（Vitest・Deno.test・pgTAP・Playwright E2E）・Edge Functions の型の検査（`deno check`）・ESLint・Lighthouse CI の実行。Edge Functionsのデプロイパイプライン（`supabase/functions/**`と`config.toml`の変更を検知して自動デプロイ）。`stripe-webhook`の応答を1時間ごとの時刻指定で確かめる監視 |
 
 ### 技術的なハイライト
 
@@ -233,7 +233,7 @@ Stripe から返る値の一部（契約終了日）は、範囲を限定した�
 
 ### 運用タスク
 
-- Stripe の記録と DB の記録を定期的に突き合わせ、イベントの記録の欠落を見つける仕組みの作成（[運用上の学び](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)の教訓を受けた次の対策。現在は `stripe-webhook` の応答を1時間ごとに確かめる監視までを入れている）
+- Stripe の記録と DB の記録を定期的に突き合わせ、イベントの記録の欠落を見つける仕組みの作成（[運用上の学び](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)の教訓を受けた次の対策。現在は `stripe-webhook` の応答を1時間ごとの時刻指定で確かめる監視までを入れている）
 - `supabase/functions/`を独立したリポジトリへ切り出す作業（優先度は低く、緊急のバグ修正を優先してきたため未着手のまま）
 - 旧バニラJS版（`dangerous-materials-fe4`）の Vercel プロジェクトの削除（Next.js 版への移行は完了済み。プロジェクトは未削除）
 - Storage のファイル（問題の図、SVG 33個）のバックアップ。DB のバックアップに含まれず、今は Supabase の Storage にしかない
