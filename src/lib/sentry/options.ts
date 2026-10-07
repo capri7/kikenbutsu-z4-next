@@ -9,7 +9,8 @@ const stripQuery = <T>(url: T): T =>
   typeof url === "string" ? (url.split("?")[0] as T) : url;
 
 // ブラウザ・サーバー・Edge の3か所で共通の設定。
-// 目的はエラーの記録だけに限る。利用者を特定できる情報は送らない。
+// 目的はエラーの記録と、セッション（ページを開いたことの記録）の集計に限る。
+// 利用者を特定できる情報は送らない。
 export const sentryOptions: SentryInitOptions = {
   // 未設定の環境（ローカル・CI）では DSN が空になり、何も送らない
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
