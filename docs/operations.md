@@ -11,6 +11,7 @@ Next.js（Vercel）
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase のプロジェクト URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 公開用の anon キー（RLS でアクセスを制御する前提でクライアントに渡す） |
 | `NEXT_PUBLIC_STRIPE_PRICE_ID` | 購入ページで使う Stripe の Price ID。Edge Functions 側の `PRICE_IDS` に含まれていること |
+| `NEXT_PUBLIC_SENTRY_DSN` | Better Stack の Error tracking の送り先（DSN）。ブラウザに渡すための値で、秘密の鍵ではない。Production と Preview にだけ入れ、開発の機械からは送らない |
 
 Supabase Edge Functions（`supabase secrets set` で登録）
 
@@ -21,6 +22,38 @@ Supabase Edge Functions（`supabase secrets set` で登録）
 | `PRICE_IDS` | `create-checkout-session` で許可する Price ID の一覧 |
 
 `SUPABASE_URL` と `SUPABASE_SERVICE_ROLE_KEY` は Supabase が自動で設定する。
+
+## 監視
+
+| 対象 | 仕組み | 間隔 | 異常とみなす条件 |
+|---|---|---|---|
+| `stripe-webhook`（主） | Better Stack（Free） | 3分ごと | 署名のない POST に 400 以外を返す、または応答がない |
+| `stripe-webhook`（補助） | GitHub Actions（`.github/workflows/webhook-health-check.yml`） | 1時間ごとの時刻指定 | 400 以外を返す、または本文に `invalid signature` がない |
+| トップのページ | Better Stack（Free） | 3分ごと | 応答がない、または 2xx・3xx 以外を返す |
+| 画面とサーバーのエラー | Better Stack の Error tracking（`@sentry/nextjs`） | エラーが起きたとき | 捕まえられなかったエラーが起きる |
+| 5xx の急増・関数の使用量の異常 | Vercel の Alerts（既定のルール） | Vercel が判定する | Vercel の既定のルールによる |
+
+通知はすべてメールで受け取る。Better Stack の通知は、メールのフィルタでラベルを付けている。Vercel の通知は、件数が少ないうちはフィルタを作らずに確認する。
+
+**`stripe-webhook` の役割の分け方**：`stripe-webhook` は、署名のないリクエストに 400 と `invalid signature` を返すのが正常である。Better Stack の Free は状態コードしか確かめられないため、Better Stack で応答の停止・401（`verify_jwt` が有効に戻った場合）・5xx を3分ごとに検知し、本文の確認（リクエストが関数のコードまで届いていること）は GitHub Actions が補う。
+
+**GitHub Actions を主にしない理由**：時刻指定の実行は、GitHub の混雑で遅れたり飛ばされたりする。このリポジトリでも、1時間ごとの指定に対して、実際の間隔は3〜9時間だった。また、公開リポジトリでは、60日間リポジトリに動きがないと、時刻指定のワークフローが自動で止まる。
+
+**エラーの記録で送らない情報**：SDK 11 は、既定で利用者の情報や通信の中身を集める。次の方法で送らないようにしている（`src/lib/sentry/options.ts`）。
+
+| 送らない情報 | 方法 |
+|---|---|
+| 利用者の情報・Cookie・HTTP のヘッダーと本文・変数の値 | `dataCollection` で無効にする |
+| IP アドレス（受け取る側の推定を含む） | `beforeSend` で `infer_ip: never` を付け、`user.ip_address` を消す |
+| URL のクエリ（画面の URL・リクエストの経路） | `beforeSend` で `?` 以降を消す（`urlQueryParams: false` だけでは残った） |
+| サーバーの機械の名前 | `beforeSend` で `server_name` を消す |
+| コンソールの出力 | `beforeBreadcrumb` で捨てる |
+| 通信と画面の移動の記録の URL のクエリ | `beforeBreadcrumb` で `?` 以降を消す |
+| ログ・計測 | `beforeSendLog`・`beforeSendMetric` で捨てる。性能の計測は無効のまま |
+
+**エラーの文の決まり**：エラーの文（`Error("…")` の中身）は、設定にかかわらずそのまま送られる。エラーの文に、メールアドレスなど利用者の情報を入れない。
+
+**セッションの記録**：ページを開いたことの記録（セッション）は、SDK の既定どおり送る。エラーなしで終わったセッションの割合を出すための分母になる。
 
 ## 運用上の学び：`verify_jwt`とWebhook認証の落とし穴
 
@@ -37,7 +70,7 @@ Supabase Edge Functions（`supabase secrets set` で登録）
 | 影響（決済） | なし。決済は Stripe 側で正常に完了していた |
 | 原因 | JWT 検証を無効にする設定がリポジトリに書かれておらず、再デプロイ（関数の版 59 → 61）で有効に戻ったと考えられる |
 | 対処 | 2026-08-27、設定を `config.toml` に書き、自動デプロイの対象に追加した（コミット `1ae39a5`）。直後から200を返すようになった |
-| 再発防止 | 設定をリポジトリで管理し、デプロイのたびに同じ設定が適用されるようにした。GitHub Actions の1時間ごとの時刻指定で `stripe-webhook` の応答を確かめ（GitHub の時刻指定の実行は遅れたり飛ばされたりするため、実際の間隔は3〜9時間）、期待どおりでなければ GitHub からメールで知らせるようにした（`.github/workflows/webhook-health-check.yml`）。Stripe と GitHub の失敗の通知は、メールのフィルタで他のメールと分け、見落とさないようにした |
+| 再発防止 | 設定をリポジトリで管理し、デプロイのたびに同じ設定が適用されるようにした。GitHub Actions の1時間ごとの時刻指定で `stripe-webhook` の応答を確かめ（GitHub の時刻指定の実行は遅れたり飛ばされたりするため、実際の間隔は3〜9時間）、期待どおりでなければ GitHub からメールで知らせるようにした（`.github/workflows/webhook-health-check.yml`）。Stripe と GitHub の失敗の通知は、メールのフィルタで他のメールと分け、見落とさないようにした。2026-10-07 に、主の監視を Better Stack に移した（[監視](#監視)） |
 
 **詳細**
 
