@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 // 旧バニラJS版（dangerous-materials-fe4）で使われていた静的HTMLのURLから、
 // Next.js版の新URLへの301リダイレクト一覧。
@@ -84,4 +85,10 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // ソースマップは送らない（送るには別の認証の鍵が要るため、別の PR で扱う）
+  sourcemaps: { disable: true },
+  // Sentry への利用状況の送信を止める
+  telemetry: false,
+  silent: !process.env.CI,
+});
