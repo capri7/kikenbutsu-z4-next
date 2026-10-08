@@ -69,6 +69,11 @@ jobs:
         with:
           version: 2.115.0
 
+      # stripe-webhook の E2E（paid-conversion.spec.ts）で使う、テスト専用の値（本物の鍵ではない）。
+      # supabase start が supabase/functions/.env を読み込む
+      - name: Edge Functions のテスト用の環境変数
+        run: printf 'STRIPE_WEBHOOK_SECRET=whsec_e2e_local_only\nSTRIPE_SECRET_KEY=sk_test_e2e_dummy\n' > supabase/functions/.env
+
       # migrations と seed.sql を適用したローカルの Supabase を起動する
       - name: Start local Supabase
         run: supabase start
