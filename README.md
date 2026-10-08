@@ -190,7 +190,7 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 
 | 技術 | バージョン | 採用理由 |
 |---|---|---|
-| Next.js（App Router） | 16.2.10 | Server Components前提の設計で、認証済みユーザー情報の取得をサーバー側に寄せられる。バニラJS版（`dangerous-materials-fe4`）からの移植先として選定し、現在は本番ドメイン`kikenbutsu-z4.com`で稼働中 |
+| Next.js（App Router） | 16.3.8 | Server Components前提の設計で、認証済みユーザー情報の取得をサーバー側に寄せられる。バニラJS版（`dangerous-materials-fe4`）からの移植先として選定し、現在は本番ドメイン`kikenbutsu-z4.com`で稼働中 |
 | React | 19.2.4 | React Compiler の実行時の部品（`react-compiler-runtime`）を追加せずに使うため、19系を採用（18以前は別に追加が必要。コンパイラ本体の `babel-plugin-react-compiler` はバージョンに関係なく必要） |
 | TypeScript | ^5 | `strict: true`。API設計のリクエスト/レスポンス型を明示する運用（[API 設計](docs/api.md)参照）はTypeScriptの型システムを前提にしている |
 | CSS Modules | - | コンポーネント単位でスタイルを閉じ込める目的で全面採用（92ファイル） |
