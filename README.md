@@ -178,7 +178,7 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 
 ## ドキュメント
 
-- [要件定義・基本設計](docs/requirements.md)：プロジェクト概要、機能一覧、画面遷移図・ユーザーフロー
+- [要件定義・基本設計](docs/requirements.md)：プロジェクト概要、機能一覧、機能要件（受け入れ基準）、非機能要件、画面遷移図・ユーザーフロー
 - [詳細設計（DB・設計判断）](docs/design.md)：ER図、シーケンス図、設計判断のハイライト ①〜⑦、型安全性
 - [API 設計](docs/api.md)：Supabase Edge Functions 7つのリクエスト・レスポンス
 - [運用](docs/operations.md)：本番の環境変数、運用上の学び（Webhook の 401 障害、migration の履歴のずれ）
