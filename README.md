@@ -21,6 +21,7 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 
 ## 要点
 
+- 解く課題：独学の受験者が、弱点の分野をつかめないまま同じ範囲を繰り返し、再受験を重ねること。乙4以外の試験、スマートフォンのアプリ、人による指導は扱わない（[要件定義](docs/requirements.md#プロジェクト概要要件定義)）
 - 乙4受験者向けの有料学習サービス。誤答リスト・復習リスト・分野別正答率で「弱点を優先して潰す」学習フローを提供（本番稼働中）
 - Next.js 16（App Router）＋ Supabase（PostgreSQL・RLS・Edge Functions）＋ Stripe。要件定義・設計・実装・運用を1人で担当
 - データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（[詳細設計](docs/design.md)）
@@ -90,35 +91,45 @@ flowchart LR
 
 ## 非機能の要件
 
+目標の値と番号（NFR-…）の正本は [docs/requirements.md](docs/requirements.md#非機能要件)。ここでは IPA の非機能要求グレードの大項目ごとに、要点と実現の手段を示す。
+
+### 可用性
+
+- 稼働率の目標は月 99.5%（保証ではなく目標）。対応する時間帯は毎日 7:00〜19:00（NFR-AV-01・NFR-OM-01）
+- 復旧の目標（RTO）は、アプリと Edge Functions が30分（直前の版に戻す）、DB が3時間（バックアップから復元。未計測）。データの戻り幅（RPO）は24時間（NFR-AV-02〜05）
+- DB は Supabase が毎日バックアップし、7日分を残している（2026-10-05 にダッシュボードで確認）
+- Storage のファイル（問題の図）は、DB のバックアップに含まれず、Storage のほかには保管していない（[今後の課題](#今後の課題)に挙げている。NFR-AV-06）
+
+### 性能・拡張性
+
+- 主要な4ページを、PR ごとに Lighthouse CI で3回ずつ測り、中央値を LCP 2,500ms・CLS 0.1 などの閾値で判定する（NFR-PE-01〜03）。PR #78〜#86 の中央値は、Performance 95〜99、Accessibility 90〜96、CLS 0
+
+### 運用・保守性
+
+- `stripe-webhook` は、Better Stack（主、3分ごと）と GitHub Actions（補助、1時間ごとの時刻指定）の2つで確かめる。Better Stack の Free は状態コードしか確かめられないため、本文の確認は GitHub Actions が補う（[役割の分け方](docs/operations.md#監視)。NFR-OM-03）
+- トップのページの応答を、Better Stack で3分ごとに確かめる（NFR-OM-03）
+- 画面（ブラウザ）とサーバーのエラーを、`@sentry/nextjs` で Better Stack に記録する。利用者を特定できる情報は送らない（NFR-OM-04）
+- Vercel の Alerts（既定のルール）で、5xx の急増と関数の使用量の異常を知らせる
+- 異常はすべてメールで知らせる。Stripe・GitHub・Better Stack の通知は、メールのフィルタで他のメールと分け、見落とさないようにしている（[運用上の学び](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)。NFR-OM-05）
+- 本番への変更（マージ・デプロイ・migration）は対応する時間帯の中で行い、18:00 以降は行わない（NFR-OM-02）
+- main への変更は PR を通し、CI が成功してからマージする。main のルールセットで強制しているのは、削除と force push の禁止だけ（NFR-OM-06）
+
+### 移行性
+
+- バニラ JS 版からの移行は完了している（2026年8月に本番デプロイ・ドメイン移行）。旧 URL は 308 リダイレクトで引き継いだ（[技術的なハイライト](#技術的なハイライト)）。今後の移行の予定はない（NFR-MG-01）
+
 ### セキュリティ
 
-- **DB の権限**：ブラウザには読み取りだけを許し、書き込みは `auth.uid()` で本人を決める6つの関数に限る。読める行は RLS で決める。権限は pgTAP で PR ごとに確かめる（[設計判断 ⑥](docs/design.md#設計判断のハイライト)）
-- **本人の確定**：Edge Functions は、リクエストの JWT から本人を決め、本文のユーザー ID を使わない（[API 設計](docs/api.md)）
-- **秘密の情報**：Stripe の秘密鍵・Webhook の署名の鍵は Edge Functions の環境変数だけに置き、Vercel（画面）には公開してよい値だけを置く（[本番の環境変数](docs/operations.md#本番の環境変数)）
-- **Webhook**：Stripe の署名で送り主を確かめ、イベントの ID で重複を処理しない
-- **パスワード**：過去に漏えいしたパスワードでの登録・変更を拒否する（Supabase Auth。HaveIBeenPwned との照合）
-- **ログイン後の移動先**：サイトの中のパスだけを許し、外部のサイトへの誘導（オープンリダイレクト）を防ぐ
+- **DB の権限**：ブラウザには読み取りだけを許し、書き込みは `auth.uid()` で本人を決める6つの関数に限る。読める行は RLS で決める。権限は pgTAP で PR ごとに確かめる（[設計判断 ⑥](docs/design.md#設計判断のハイライト)。NFR-SE-01）
+- **本人の確定**：Edge Functions は、リクエストの JWT から本人を決め、本文のユーザー ID を使わない（[API 設計](docs/api.md)。NFR-SE-02）
+- **秘密の情報**：Stripe の秘密鍵・Webhook の署名の鍵は Edge Functions の環境変数だけに置き、Vercel（画面）には公開してよい値だけを置く（[本番の環境変数](docs/operations.md#本番の環境変数)。NFR-SE-03）
+- **Webhook**：Stripe の署名で送り主を確かめ、イベントの ID で重複を処理しない（FR-11-1・FR-11-2）
+- **パスワード**：過去に漏えいしたパスワードでの登録・変更を拒否する（Supabase Auth。HaveIBeenPwned との照合。NFR-SE-04）
+- **ログイン後の移動先**：サイトの中のパスだけを許し、外部のサイトへの誘導（オープンリダイレクト）を防ぐ（FR-03-3）
 
-### 監視
+### システム環境・エコロジー
 
-- `stripe-webhook` は、Better Stack（主、3分ごと）と GitHub Actions（補助、1時間ごとの時刻指定）の2つで確かめる。Better Stack の Free は状態コードしか確かめられないため、本文の確認は GitHub Actions が補う（[役割の分け方](docs/operations.md#監視)）
-- トップのページの応答を、Better Stack で3分ごとに確かめる
-- 画面（ブラウザ）とサーバーのエラーを、`@sentry/nextjs` で Better Stack に記録する。利用者を特定できる情報は送らない
-- Vercel の Alerts（既定のルール）で、5xx の急増と関数の使用量の異常を知らせる
-- 異常はすべてメールで知らせる。Stripe・GitHub・Better Stack の通知は、メールのフィルタで他のメールと分け、見落とさないようにしている（[運用上の学び](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)）
-
-### バックアップ
-
-- DB は Supabase が毎日バックアップし、7日分を残している（2026-10-05 にダッシュボードで確認）
-- Storage のファイル（問題の図）は、DB のバックアップに含まれず、Storage のほかには保管していない（[今後の課題](#今後の課題)に挙げている）
-
-### 性能
-
-- 主要な4ページを、PR ごとに Lighthouse CI で3回ずつ測っている。PR #78〜#86 の中央値は、Performance 95〜99、Accessibility 90〜96、CLS 0
-
-### 運用の環境
-
-- Vercel（Pro）、Supabase（Pro）
+- Vercel（Pro）、Supabase（Pro）、Stripe。動作を確かめているブラウザは Chromium（E2E・Lighthouse CI。NFR-EN-01・NFR-EN-02）
 
 ## 動かし方
 
