@@ -65,7 +65,7 @@ Edge Functions（Deno）・Next.js（Node/Vite）・DB（PostgreSQL）で実行�
 | Edge Functions | 分岐ロジック（判定関数として切り出したもの） | `Deno.test` |
 | Next.js単体テスト | ユーティリティ関数（`src/lib`）。Client Components のテストは未作成 | Vitest（React Testing Library・jsdom は導入済み） |
 | DB | ロールの権限・RLS・関数が本人の記録だけを使うこと | pgTAP（`supabase test db`） |
-| E2Eテスト | 無料登録〜マイページ〜練習問題〜誤答リストの一連の動作（コアフロー、ローカルの Supabase で実装・合格確認済み）、有料会員の画面の出し分け（有料の問題・ヘッダー・退会のカード。契約の行はテストの中で作り、決済は通さない）、Stripe の通知（Webhook）による有料転換（署名した通知を本物の `stripe-webhook` に送り、契約の反映〜有料の問題の解放までを確かめる）、非同期Server Components | Playwright |
+| E2Eテスト | 無料登録〜マイページ〜練習問題〜誤答リストの一連の動作（コアフロー、ローカルの Supabase で実装・合格確認済み）、有料会員の画面の出し分け（有料の問題・ヘッダー・退会のカード。契約の行はテストの中で作り、決済は通さない）、Stripe の通知（Webhook）による有料転換（署名した通知を本物の `stripe-webhook` に送り、契約の反映〜有料の問題の解放までを確かめる）、退会（無料会員の即時削除、有料会員の退会の予約と取り消し、契約終了の通知による削除。削除で個人の記録が消え、契約の記録は残ることも確かめる）、非同期Server Components | Playwright |
 
 Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密結合しており、そのままではDB・外部APIに接続しないとテストできない。そこで各関数の分岐ロジックだけを`decision.ts`として切り出し、実際の接続を挟まず全パターンを検証できる形にした。全関数を同じ密度でテストするのではなく、金銭・個人情報の削除が絡み誤りの影響が大きい関数（`request-account-deletion`・`cancel-account-deletion`・`stripe-webhook`）から優先的に着手している。
 
@@ -83,7 +83,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。`billing-portal` を呼ぶ共通の関数 `invokeEdgeFunction` は Vitest で検証） |
 | Next.js側（Vitest） | ✅ 31パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3） |
 | DB（pgTAP） | ✅ 62ファイル・102件（ロールの権限・RLS・関数） |
-| E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅・有料会員の画面の出し分け3件 ✅・有料転換（Webhook〜有料の問題の解放）3件 ✅（いずれもローカルの Supabase）・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
+| E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅・有料会員の画面の出し分け3件 ✅・有料転換（Webhook〜有料の問題の解放）3件 ✅・退会3件 ✅（いずれもローカルの Supabase）・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
 
 ## `request-account-deletion`（7パターン）
 

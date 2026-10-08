@@ -26,7 +26,7 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 - Next.js 16（App Router）＋ Supabase（PostgreSQL・RLS・Edge Functions）＋ Stripe。要件定義・設計・実装・運用を1人で担当
 - データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（[詳細設計](docs/design.md)）
 - 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（[運用上の学び：verify_jwt と Webhook 認証の落とし穴](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)）
-- テスト：分岐ロジックを関数に切り出し、Deno.test 45件・Vitest 31件・Playwright E2E 23件。DB の権限・RLS・関数は pgTAP 102件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[テスト・品質保証](docs/testing.md)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
+- テスト：分岐ロジックを関数に切り出し、Deno.test 45件・Vitest 31件・Playwright E2E 26件。DB の権限・RLS・関数は pgTAP 102件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[テスト・品質保証](docs/testing.md)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
 
 ## 全体構成
 
@@ -85,7 +85,7 @@ flowchart LR
 | Edge Functions の判定 | Deno.test | 45件 | 決済・退会・Webhook の分岐（判定を `decision.ts` などに切り出して検証） |
 | Next.js の関数 | Vitest | 31件 | 正誤の判定、ログイン後の移動先、Edge Functions の呼び出し、問題の図の URL、漏えいしたパスワードの案内 |
 | DB | pgTAP | 102件（62ファイル） | ロールの権限、RLS、関数が本人の記録だけを使うこと |
-| 画面の流れ | Playwright（E2E） | 23件 | 無料登録〜練習問題〜誤答リスト、Stripe の通知（Webhook）による有料転換、有料会員の画面の出し分けなど。ローカルの Supabase で動かし、本番に触れない |
+| 画面の流れ | Playwright（E2E） | 26件 | 無料登録〜練習問題〜誤答リスト、Stripe の通知（Webhook）による有料転換、退会（即時削除・予約・取り消し・契約終了の通知による削除）、有料会員の画面の出し分けなど。ローカルの Supabase で動かし、本番に触れない |
 
 4種類のテストと、Edge Functions の型の検査（`deno check`）・ESLint・Lighthouse CI を、PR ごとに GitHub Actions で実行している。テストの方針とケーススタディは [docs/testing.md](docs/testing.md) を参照。
 
@@ -171,11 +171,13 @@ npm test -- --run
 # Edge Functions の判定ロジック（Deno.test、45件）
 deno test supabase/functions/
 
-# E2E（Playwright、23件）。ローカルの Supabase を起動してから実行する
+# E2E（Playwright、26件）。ローカルの Supabase を起動してから実行する
 # stripe-webhook の E2E 用に、テスト専用の値（本物の鍵ではない）を置いてから起動する
 npx playwright install chromium    # 初回のみ
 printf 'STRIPE_WEBHOOK_SECRET=whsec_e2e_local_only\nSTRIPE_SECRET_KEY=sk_test_e2e_dummy\n' > supabase/functions/.env
 supabase start
+# Mac や Docker を起動し直すと、Edge Functions のコンテナは自動では戻らない（再起動の設定が no）。
+# そのときは supabase stop と supabase start で起動し直す
 npx playwright test
 
 # DB の権限・RLS・関数のテスト（pgTAP、62ファイル・102件）。E2E と同じく、ローカルの Supabase に対して実行する
