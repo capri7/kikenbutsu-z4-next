@@ -130,6 +130,7 @@ export default function SiteHeader() {
       if (error) {
         alert('ログアウトに失敗しました: ' + error.message)
       } else {
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- ログアウトしたあとは、ページ全体を読み込み直して、前の会員の情報をブラウザの中から確実に消すため
         window.location.href = '/login'
       }
     } finally {

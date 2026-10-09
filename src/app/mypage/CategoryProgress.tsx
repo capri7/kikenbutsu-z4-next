@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Chart from 'chart.js/auto'
 import { isSubscribed } from '@/lib/subscription'
 import {
@@ -39,6 +40,7 @@ function useCategoryColors() {
 }
 
 export default function CategoryProgress({ userId }: { userId: string }) {
+  const router = useRouter()
   const [view, setView] = useState<'graph' | 'list'>('graph')
   const [chapterMap, setChapterMap] = useState<ChapterMap>({})
   const [categoryData, setCategoryData] = useState<CategoryData>({})
@@ -98,9 +100,9 @@ export default function CategoryProgress({ userId }: { userId: string }) {
       qs.set('mode', nowPaid ? 'all' : 'free')
       qs.set('scope', 'cat')
       qs.set('cid', String(categoryId))
-      window.location.href = `${QUESTIONS_BASE}/${qid}?${qs.toString()}`
+      router.push(`${QUESTIONS_BASE}/${qid}?${qs.toString()}`)
     },
-    [categoryNameToId, chapterMap, userId]
+    [categoryNameToId, chapterMap, router, userId]
   )
 
   // グラフ描画
@@ -183,7 +185,7 @@ export default function CategoryProgress({ userId }: { userId: string }) {
     qs.set('mode', nowPaid ? 'all' : 'free')
     qs.set('scope', 'sub')
     qs.set('sid', subId)
-    window.location.assign(`${QUESTIONS_BASE}/${qid}?${qs.toString()}`)
+    router.push(`${QUESTIONS_BASE}/${qid}?${qs.toString()}`)
   }
 
   async function fetchQuestionIdsBySubHelper(subId: string, nowPaid: boolean): Promise<string[]> {

@@ -8,6 +8,7 @@ export async function openBillingPortal(returnPath: string = '/mypage'): Promise
   } = await supabase.auth.getSession()
   const user = session?.user
   if (!user) {
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- 画面の部品の外の関数で router を使えないため。ログインが切れているので、ページ全体を読み込み直して、画面に残った会員の情報も消す
     window.location.href = '/login'
     return
   }
@@ -19,6 +20,7 @@ export async function openBillingPortal(returnPath: string = '/mypage'): Promise
     .maybeSingle()
 
   if (!profile?.stripe_customer_id) {
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- 画面の部品の外の関数で router を使えないため（ログインの状態は変わらない。呼び出す側の画面が router.push で移る形に直す予定）
     window.location.href = '/checkout'
     return
   }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useHydrated } from '@/lib/useHydrated'
 import { isSubscribed } from '@/lib/subscription'
@@ -75,6 +76,7 @@ async function loadSummary(userId: string) {
 }
 
 export default function PracticeSection({ userId }: { userId: string }) {
+  const router = useRouter()
   const [summary, setSummary] = useState({ total: 0, answered: 0, correct: 0 })
   const [busy, setBusy] = useState(false)
   const hydrated = useHydrated()
@@ -93,6 +95,8 @@ export default function PracticeSection({ userId }: { userId: string }) {
   async function handlePractice() {
     if (busy) return
     setBusy(true)
+    // 問題のページへ移ると決まったら、表示が切り替わるまでボタンを押せないままにする（2回押しを防ぐ）
+    let navigating = false
     try {
       const nowPaid = await isSubscribed()
 
@@ -102,7 +106,8 @@ export default function PracticeSection({ userId }: { userId: string }) {
           alert('問題が見つかりませんでした。')
           return
         }
-        window.location.href = `${QUESTIONS_BASE}/${qid}?mode=all&scope=all`
+        navigating = true
+        router.push(`${QUESTIONS_BASE}/${qid}?mode=all&scope=all`)
         return
       }
 
@@ -131,12 +136,13 @@ export default function PracticeSection({ userId }: { userId: string }) {
       }
 
       const candidate = ordered[Math.floor(Math.random() * ordered.length)]
-      window.location.href = `${QUESTIONS_BASE}/${candidate}?mode=free&scope=free`
+      navigating = true
+      router.push(`${QUESTIONS_BASE}/${candidate}?mode=free&scope=free`)
     } catch (e) {
       console.error(e)
       alert('読み込みに失敗しました。')
     } finally {
-      setBusy(false)
+      if (!navigating) setBusy(false)
     }
   }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import styles from './signup.module.css'
 import { leakedPasswordMessage } from '@/lib/leakedPassword'
@@ -13,6 +14,7 @@ function normalizeEmail(v: string): string {
 }
 
 export default function SignupForm() {
+  const router = useRouter()
   const supabase = createClient()
 
   const [email, setEmail] = useState('')
@@ -136,7 +138,7 @@ export default function SignupForm() {
         // ここで失敗しても、サインアップ自体は成功として続行する
       }
 
-      window.location.href = '/mypage'
+      router.push('/mypage')
 
 
     } catch (err) {
