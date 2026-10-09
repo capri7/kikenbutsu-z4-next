@@ -80,10 +80,11 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `check-guest-subscription` | ✅ 6パターン |
 | `create-checkout-session` | ✅ 11パターン |
 | `_shared/activeSubscription.ts` | ✅ 5パターン |
+| `_shared/userProfilePayload.ts`（`stripe-webhook`・`check-guest-subscription`共通） | ✅ 4パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。`billing-portal` を呼ぶ共通の関数 `invokeEdgeFunction` は Vitest で検証） |
 | Next.js側（Vitest） | ✅ 53パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3・`examCountdown.ts` 9・`categoryProgress.ts` 13） |
 | DB（pgTAP） | ✅ 63ファイル・104件（ロールの権限・RLS・関数） |
-| E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅・有料会員の画面の出し分け3件 ✅・有料転換と契約の更新・終了（Webhook）5件 ✅・退会3件 ✅・ログインしていない状態のマイページ2件 ✅（いずれもローカルの Supabase）・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
+| E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅・有料会員の画面の出し分け3件 ✅・有料転換と契約の更新・終了（Webhook）6件 ✅・退会3件 ✅・ログインしていない状態のマイページ2件 ✅（いずれもローカルの Supabase）・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
 
 ## `request-account-deletion`（7パターン）
 
@@ -146,7 +147,7 @@ Edge Functionsの呼び出しの共通関数`src/lib/edge-functions.ts`（5パ�
 
 ## E2E の構成と方針
 
-コアフロー（無料登録〜マイページ〜練習問題への回答〜誤答リストへの遷移）3件を実装し、ローカルの Supabase に対して合格を確認済み（`--repeat-each=10` で30回連続合格）。E2E は本番ビルドを起動して実行する設定（`webServer`）とした。開発サーバーでは、初回のコンパイル待ちで間欠的にタイムアウトするため。有料転換は、Stripe の公式ドキュメントの案内（Checkout などの決済画面には自動操作を防ぐ仕組みがあるため、自動テストでは出力を模擬する）と、Stripe の公式ライブラリの README の「Testing Webhook signing」の方法に従い、Stripe と同じ方式で署名した `customer.subscription.created` の通知を、ローカルで動く本物の `stripe-webhook` に送って確かめている（`e2e/paid-conversion.spec.ts`、5件）。契約の反映（`subscriptions` の行）、有料の問題の解放とヘッダーの切り替え、同じ通知の重複の処理、署名が正しくない通知の拒否に加え、契約の更新（`customer.subscription.updated` による解約の予約）と終了（`customer.subscription.deleted` で無料会員に戻る）を検証する。署名の鍵はテスト専用の値で、CI では `supabase start` の前に `supabase/functions/.env` に置く。`stripe-webhook` は応答を返したあとに裏の処理（`EdgeRuntime.waitUntil`）で契約を反映するため、ローカルの Edge Functions を `policy = "per_worker"` で動かしている（Supabase の公式ドキュメントの案内どおり。`oneshot` では応答のあとに関数が終了し、裏の処理が最後まで動かない）。Checkout のセッション作成、`checkout.session.completed` の経路、ゲスト決済の紐付けは、中で Stripe の API を呼ぶため E2E の対象外とし、決済画面の操作とあわせてテストモードで手動で確認する。
+コアフロー（無料登録〜マイページ〜練習問題への回答〜誤答リストへの遷移）3件を実装し、ローカルの Supabase に対して合格を確認済み（`--repeat-each=10` で30回連続合格）。E2E は本番ビルドを起動して実行する設定（`webServer`）とした。開発サーバーでは、初回のコンパイル待ちで間欠的にタイムアウトするため。有料転換は、Stripe の公式ドキュメントの案内（Checkout などの決済画面には自動操作を防ぐ仕組みがあるため、自動テストでは出力を模擬する）と、Stripe の公式ライブラリの README の「Testing Webhook signing」の方法に従い、Stripe と同じ方式で署名した `customer.subscription.created` の通知を、ローカルで動く本物の `stripe-webhook` に送って確かめている（`e2e/paid-conversion.spec.ts`、6件）。契約の反映（`subscriptions` の行）、有料の問題の解放とヘッダーの切り替え、同じ通知の重複の処理、署名が正しくない通知の拒否に加え、契約の更新（`customer.subscription.updated` による解約の予約）と終了（`customer.subscription.deleted` で無料会員に戻る）、Stripe からメールアドレスを取れなかったときに会員のメールアドレスを消さないことを検証する。署名の鍵はテスト専用の値で、CI では `supabase start` の前に `supabase/functions/.env` に置く。`stripe-webhook` は応答を返したあとに裏の処理（`EdgeRuntime.waitUntil`）で契約を反映するため、ローカルの Edge Functions を `policy = "per_worker"` で動かしている（Supabase の公式ドキュメントの案内どおり。`oneshot` では応答のあとに関数が終了し、裏の処理が最後まで動かない）。Checkout のセッション作成、`checkout.session.completed` の経路、ゲスト決済の紐付けは、中で Stripe の API を呼ぶため E2E の対象外とし、決済画面の操作とあわせてテストモードで手動で確認する。
 
 E2E は、Vitest・Deno.test・pgTAP・ESLint とあわせて、PR ごとと main への push ごとに GitHub Actions で実行している（`.github/workflows/test.yml`）。CI の中で `supabase start` を実行し、migrations と `seed.sql` を適用したローカルの Supabase に接続するため、本番には触れない。その先の候補として、`useSearchParams`とSuspense境界のケーススタディと、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E対象とした2関数）が残っている。
 
