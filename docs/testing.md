@@ -81,7 +81,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `create-checkout-session` | ✅ 10パターン |
 | `_shared/activeSubscription.ts` | ✅ 5パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。`billing-portal` を呼ぶ共通の関数 `invokeEdgeFunction` は Vitest で検証） |
-| Next.js側（Vitest） | ✅ 31パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3） |
+| Next.js側（Vitest） | ✅ 40パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3・`examCountdown.ts` 9） |
 | DB（pgTAP） | ✅ 63ファイル・104件（ロールの権限・RLS・関数） |
 | E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅・有料会員の画面の出し分け3件 ✅・有料転換と契約の更新・終了（Webhook）5件 ✅・退会3件 ✅・ログインしていない状態のマイページ2件 ✅（いずれもローカルの Supabase）・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
 
@@ -124,7 +124,7 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 チェック順序（`priceId`→リダイレクトURL→許可リスト）を意図的にテストで固定した。優先度の低いチェックが先に実行されて誤ったエラーコードを返す、という将来の実装変更によるリグレッションを防ぐため。`checkout-session-info`・`billing-portal`は判定ロジックがほぼ無いので、ユニットテストの対象外とし、E2Eで確かめる方針とした（E2Eは未実装。README の「今後の課題」に挙げている）。
 
-## Next.js側（Vitest、31パターン）
+## Next.js側（Vitest、40パターン）
 
 クイズの正誤判定ロジック（`src/lib/feedback.ts`）を検証している。既にSupabaseへの呼び出しを含まない純粋関数として実装されていたため、Edge Functionsのような切り出し作業は不要だった。
 
@@ -137,6 +137,8 @@ Edge Functionsの呼び出しの共通関数`src/lib/edge-functions.ts`（5パ�
 問題の図の URL を組み立てる`src/lib/questionImage.ts`（4パターン）は、DB に保存している Storage の中の場所（`basics_of_chemistry/…svg` など）から公開 URL を作る。Next.js への移行のときにこの組み立てが抜け、有料の問題36問の図が表示されていなかったため、関数に切り出してテストを付けた。
 
 `src/lib/leakedPassword.ts`（3パターン）は、Supabase Auth の「漏えいしたパスワードの使用を防ぐ」設定（HaveIBeenPwned の照合）で登録やパスワードの再設定が拒否されたとき、拒否の理由（`reasons` に `pwned`）を見て、英語のエラー文の代わりに日本語の案内を返す。新規登録と再設定の2つの画面から使う。
+
+マイページの試験日カウントダウンの日付の計算`src/lib/examCountdown.ts`（9パターン）は、画面（`ExamCountdown.tsx`）の中にあった関数を、中身を変えずに切り出したもの。「今」をテストの中で日本時間の日時に固定し、残り日数・当日・経過の表示の文と、日本時間の日付の境目（日本時間の0時〜9時は世界標準時ではまだ前日）、月と年をまたぐ日数、表示を切り替える時刻までの時間を確かめる。テストを動かす環境の時間帯（UTC など）に左右されない。
 
 **セットアップ**：Next.js公式ドキュメントに沿って、Vitest・React Testing Library・jsdomを導入した。`vitest.config.mts`で`supabase/**`を検索対象から除外している（Edge Functions側は`Deno.test`という別のテストランナーを使っており、混在させるとVitestが誤って実行しようとしてエラーになるため）。
 

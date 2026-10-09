@@ -36,8 +36,8 @@
 | FR-06-2 | △ | `mark_review_item_mastered()`、`src/lib/review.ts`（`status = 'active'` だけ表示） | pgTAP：review_items_master_own（状態が mastered になる） | 手動：一覧で「復習済みにする」を押し、一覧から外れることを確かめる |
 | FR-06-3 | ✅ | `mark_review_item_mastered()`（`user_id = auth.uid()`） | pgTAP：review_items_cannot_master_others | ― |
 | FR-07-1 | △ | `get_study_days()`（日本時間の日付）、`StudyCalendar.tsx` | pgTAP：study_days_own_only（本人の学習日だけを返す） | 手動：回答した日にカレンダーの印が付くことを確かめる |
-| FR-08-1 | △ | `src/app/mypage/ExamCountdown.tsx`（`daysLeftJST`・`formatDisplay`）、`set_exam_date()` | pgTAP：exam_date_save（保存の側だけ） | 残り日数の計算と表示の文は、自動テストを足す予定（計算を切り出して Vitest。日本時間の日付の境目を含む） |
-| FR-08-2 | △ | `set_exam_date(null)`、`ExamCountdown.tsx` | pgTAP：exam_date_clear（受験日が消える） | 消したあとの表示は、FR-08-1 と同じ Vitest で確かめる予定 |
+| FR-08-1 | ✅ | `src/lib/examCountdown.ts`（`daysLeftJST`・`formatDisplay`）、`ExamCountdown.tsx`、`set_exam_date()` | Vitest：examCountdown.test.ts（残り日数・当日・経過の表示の文、日本時間の日付の境目）。pgTAP：exam_date_save（保存） | ― |
+| FR-08-2 | ✅ | `set_exam_date(null)`、`src/lib/examCountdown.ts`（`formatDisplay`） | pgTAP：exam_date_clear（受験日が消える）。Vitest：examCountdown.test.ts「試験日が未設定なら…」（消したあとの表示） | ― |
 | FR-09-1 | 未 | `src/lib/dataLoader.ts`（`fetchUserProgress`）、`CategoryProgress.tsx` | ― | 自動テストを足す予定（計算を切り出して Vitest） |
 | FR-09-2 | 未 | `CategoryProgress.tsx`、`dataLoader.ts`（`pickOnePreferNotCorrect`・`areAllCorrect`） | ― | 自動テストを足す予定（Vitest） |
 | FR-10-1 | △ | `create-checkout-session`（JWT から本人を決め、`metadata.user_id` に載せる） | Deno.test：create-checkout-session/decision.test.ts「ログイン中なら、トークンから確定したユーザーの ID…」 | 手動：決済のセッション作成は Stripe の API を呼ぶため、Stripe のテストモードで、ログインして購入し、契約がそのアカウントに付くことを確かめる |
