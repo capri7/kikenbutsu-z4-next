@@ -1,9 +1,8 @@
 # 危険物乙4試験対策 — 弱点特化型学習プラットフォーム
 
-危険物取扱者乙種第4類（乙4）の受験者向けに、誤答・復習リストと分野別進捗の可視化により
-「弱点を優先的に潰す」学習フローを実現したWebサービスです。
-Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進捗管理を含む
-フルスタックの個人開発として、要件定義から実装・運用まで単独で担当しました。
+危険物取扱者乙種第4類（乙4）の受験者向けの、有料の学習サービスです（本番稼働中）。
+誤答リスト・復習リスト・分野別の正答率で、弱点を優先して潰す学習の流れを提供します。
+Next.js 16（App Router）・Supabase・Stripe を使い、認証・決済・進捗の管理を含めて、要件定義から設計・実装・運用までを1人で担当しました。
 
 **公開サイト**: [https://kikenbutsu-z4.com](https://kikenbutsu-z4.com)（本リポジトリを2026年8月にVercelへ本番デプロイ・ドメイン移行済み）
 
@@ -22,8 +21,6 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 ## 要点
 
 - 解く課題：独学の受験者が、弱点の分野をつかめないまま同じ範囲を繰り返し、再受験を重ねること。乙4以外の試験、スマートフォンのアプリ、人による指導は扱わない（[要件定義](docs/requirements.md#プロジェクト概要要件定義)）
-- 乙4受験者向けの有料学習サービス。誤答リスト・復習リスト・分野別正答率で「弱点を優先して潰す」学習フローを提供（本番稼働中）
-- Next.js 16（App Router）＋ Supabase（PostgreSQL・RLS・Edge Functions）＋ Stripe。要件定義・設計・実装・運用を1人で担当
 - データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（[詳細設計](docs/design.md)）
 - 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（[運用上の学び：verify_jwt と Webhook 認証の落とし穴](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)）
 - テスト：分岐ロジックを関数に切り出し、Deno.test 45件・Vitest 53件・Playwright E2E 30件。DB の権限・RLS・関数は pgTAP 104件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[テスト・品質保証](docs/testing.md)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
@@ -31,6 +28,17 @@ Next.js（App Router）・Supabase・Stripeを用いて、認証・決済・進�
 ## 全体構成
 
 画面は Vercel 上の Next.js、認証・データ・決済まわりの処理は Supabase、決済は Stripe が担う。Stripe の秘密鍵を使う処理は Supabase Edge Functions だけに置いている（[API 設計](docs/api.md)）。
+
+この README で使う Supabase の用語は、次のとおり。
+
+| 用語 | 意味 |
+|---|---|
+| Supabase | PostgreSQL のデータベースに、認証・ファイルの置き場・サーバーの関数をまとめて提供するサービス |
+| Supabase Auth | 会員登録・ログインの機能。ログインすると、本人を示す署名つきのトークン（JWT）を発行する |
+| RLS（Row Level Security） | PostgreSQL の機能。テーブルの行ごとに、読み書きできる人を DB の側で決める |
+| `auth.uid()` | ログイン中の本人の ID を JWT から取り出す、DB の関数 |
+| Edge Functions | Supabase の上で動くサーバーの関数（Deno）。秘密の鍵を使う処理を、ブラウザから切り離して置く |
+| Storage | ファイルの置き場。このサービスでは問題の図（SVG）を置いている |
 
 ### 実行時の流れ
 
@@ -202,6 +210,8 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 
 ## 技術スタック
 
+技術は、利用者にとって使いやすいこと、チームで開発するときに分かりやすいこと、1人でも運用できることを基準に選んだ。
+
 ### フロントエンド
 
 | 技術 | バージョン | 採用理由 |
@@ -211,19 +221,19 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 | TypeScript | ^5 | `strict: true`。API設計のリクエスト/レスポンス型を明示する運用（[API 設計](docs/api.md)参照）はTypeScriptの型システムを前提にしている |
 | CSS Modules | - | コンポーネント単位でスタイルを閉じ込める目的で全面採用（92ファイル） |
 | Tailwind CSS | v4 | デザイントークン（`--color-navy`等）の一元管理と、一部コンポーネントのユーティリティクラスに限定利用。CSS Modulesと併用し、レイアウト崩れが起きやすい細かい調整のみTailwindに寄せる方針 |
-| Chart.js | ^4.5.1 | マイページの学習進捗グラフ描画 |
+| Chart.js | ^4.5.1 | マイページで分野ごとの正答率を棒グラフで並べ、利用者が苦手な分野を一目で見つけられる。棒を押すとその分野の出題に移る処理も、グラフの機能で書ける |
 
 ### バックエンド・インフラ
 
-| 技術 | 役割 |
-|---|---|
-| Supabase（PostgreSQL） | メインDB。RLSでユーザーごとのデータアクセス制御 |
-| Supabase Auth | 認証（JWT発行、`@supabase/ssr`でサーバー/クライアント両対応のセッション管理） |
-| Supabase Edge Functions（Deno） | Stripe秘密鍵を扱う処理・外部API連携の集約先（[API 設計](docs/api.md)参照） |
-| Stripe | 決済・サブスクリプション管理 |
-| Vercel | Next.jsアプリのホスティング（本番稼働中） |
-| GitHub Actions | PR ごとのテスト（Vitest・Deno.test・pgTAP・Playwright E2E）・Edge Functions の型の検査（`deno check`）・ESLint・Lighthouse CI の実行。Edge Functionsのデプロイパイプライン（`supabase/functions/**`と`config.toml`の変更を検知して自動デプロイ）。`stripe-webhook`の応答の本文を1時間ごとの時刻指定で確かめる補助の監視 |
-| Better Stack（Free） | 監視（`stripe-webhook` とトップのページの応答、3分ごと）と、画面・サーバーのエラーの記録（`@sentry/nextjs` で送信） |
+| 技術 | 役割 | 採用理由 |
+|---|---|---|
+| Supabase（PostgreSQL） | メインDB。RLSでユーザーごとのデータアクセス制御 | DB・認証・ファイルの置き場・サーバーの関数を1つの管理画面で扱え、サーバーの保守も要らないため、1人でも管理しやすい。DB の構成は `supabase/migrations/` の SQL で管理し、PR で差分を確かめられる |
+| Supabase Auth | 認証（JWT発行、`@supabase/ssr`でサーバー/クライアント両対応のセッション管理） | 登録・ログイン・パスワードの再設定・漏えいしたパスワードの拒否を、自前で作らずに使える。発行する JWT を、RLS と Edge Functions の本人の確認にそのまま使える |
+| Supabase Edge Functions（Deno） | Stripe秘密鍵を扱う処理・外部API連携の集約先（[API 設計](docs/api.md)参照） | 秘密の鍵を、ブラウザと Vercel から切り離して置ける。DB と同じ Supabase の中にあり、管理する場所が増えない |
+| Stripe | 決済・サブスクリプション管理 | 月額の自動更新・解約の予約・請求の画面（ポータル）を自前で作らずに使え、カードの情報をこちらのサーバーで扱わない |
+| Vercel | Next.jsアプリのホスティング（本番稼働中） | PR ごとのプレビューで、利用者に出す前に画面を確かめられる。問題があれば直前の版にすぐ戻せる（Instant Rollback。アプリの復旧の目標30分の手段） |
+| GitHub Actions | PR ごとのテスト（Vitest・Deno.test・pgTAP・Playwright E2E）・Edge Functions の型の検査（`deno check`）・ESLint・Lighthouse CI の実行。Edge Functionsのデプロイパイプライン（`supabase/functions/**`と`config.toml`の変更を検知して自動デプロイ）。`stripe-webhook`の応答の本文を1時間ごとの時刻指定で確かめる補助の監視 | テストとデプロイの設定がリポジトリの中にあり、チームの誰でも PR の上で中身と結果を確かめられる |
+| Better Stack（Free） | 監視（`stripe-webhook` とトップのページの応答、3分ごと）と、画面・サーバーのエラーの記録（`@sentry/nextjs` で送信） | 3分ごとの監視とエラーの記録を、Free のプランの1つのサービスで行える |
 
 ### 技術的なハイライト
 
