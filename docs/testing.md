@@ -78,7 +78,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `_shared/periodEnd.ts`（`stripe-webhook`・`check-guest-subscription`共通） | ✅ 7パターン |
 | `stripe-webhook` | ✅ 6パターン |
 | `check-guest-subscription` | ✅ 6パターン |
-| `create-checkout-session` | ✅ 10パターン |
+| `create-checkout-session` | ✅ 11パターン |
 | `_shared/activeSubscription.ts` | ✅ 5パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。`billing-portal` を呼ぶ共通の関数 `invokeEdgeFunction` は Vitest で検証） |
 | Next.js側（Vitest） | ✅ 53パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3・`examCountdown.ts` 9・`categoryProgress.ts` 13） |
@@ -118,9 +118,9 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 
 このテストを書く過程で、契約終了日の解決ロジックが`stripe-webhook`と重複していることに気づき、`_shared/periodEnd.ts`への共通化につながった（詳細は「共通ロジックの抽出とテストの重複排除」の節）。
 
-## `create-checkout-session`（10パターン）
+## `create-checkout-session`（11パターン）
 
-Stripe Checkoutセッション作成前のリクエストバリデーション（`priceId`必須、`success_url`/`cancel_url`必須、環境変数`PRICE_IDS`による価格許可リスト）と、決済のセッションに載せる本人の決め方（JWTから確定したユーザーだけを使い、未ログインならIDもメールアドレスも載せない、3パターン）を検証している。
+Stripe Checkoutセッション作成前のリクエストバリデーション（`priceId`必須、`success_url`/`cancel_url`必須、環境変数`PRICE_IDS`による価格許可リスト。`PRICE_IDS` が空のとき（設定漏れ）は、どの価格も許可しない）と、決済のセッションに載せる本人の決め方（JWTから確定したユーザーだけを使い、未ログインならIDもメールアドレスも載せない、3パターン）を検証している。
 
 チェック順序（`priceId`→リダイレクトURL→許可リスト）を意図的にテストで固定した。優先度の低いチェックが先に実行されて誤ったエラーコードを返す、という将来の実装変更によるリグレッションを防ぐため。`checkout-session-info`・`billing-portal`は判定ロジックがほぼ無いので、ユニットテストの対象外とし、E2Eで確かめる方針とした（E2Eは未実装。README の「今後の課題」に挙げている）。
 

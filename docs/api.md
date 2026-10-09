@@ -50,7 +50,8 @@ type CreateCheckoutSessionResponse = {
 |---|---|---|
 | `MISSING_PRICE_ID` | 400 | `priceId`が未指定 |
 | `MISSING_REDIRECT_URL` | 400 | `success_url`/`cancel_url`のいずれかが未指定 |
-| `PRICE_NOT_ALLOWED` | 400 | 環境変数`PRICE_IDS`の許可リストに含まれない`priceId`（`priceId`を含めて返却。`PRICE_IDS`が空のときは検査しない） |
+| `PRICE_NOT_ALLOWED` | 400 | 環境変数`PRICE_IDS`の許可リストに含まれない`priceId`（`priceId`を含めて返却） |
+| `PRICE_IDS_NOT_CONFIGURED` | 500 | 環境変数`PRICE_IDS`が空（設定漏れ）。どの`priceId`も許可せず、ログに残す |
 | `INVALID_JSON` | 400 | リクエストボディがJSONとしてパース不能 |
 | `METHOD_NOT_ALLOWED` | 405 | POST以外のメソッド |
 | `STRIPE_ERROR` | 500 | Stripe API呼び出し失敗（`message`に詳細） |

@@ -2,13 +2,20 @@
 
 export type ValidationResult =
   | { valid: true }
-  | { valid: false; error: "MISSING_PRICE_ID" | "MISSING_REDIRECT_URL" }
+  | { valid: false; error: "MISSING_PRICE_ID" | "MISSING_REDIRECT_URL" | "PRICE_IDS_NOT_CONFIGURED" }
   | { valid: false; error: "PRICE_NOT_ALLOWED"; priceId: string };
 
 /**
+ * 環境変数 PRICE_IDS（カンマ区切り）を、許可する Price ID の一覧にする。前後の空白と空の要素は除く。
+ */
+export function parseAllowList(raw: string | undefined): string[] {
+  return (raw ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+/**
  * create-checkout-sessionのリクエストボディを検証する。
- * チェック順序: priceId必須 → success_url/cancel_url必須 → 価格許可リスト
- * （元のコードの分岐順序をそのまま維持している）
+ * チェック順序: priceId必須 → success_url/cancel_url必須 → 許可リストの設定 → 価格許可リスト
+ * 許可リストが空（PRICE_IDS の設定漏れ）なら、どの価格も許可しない（フェイルクローズ）。
  */
 export function validateCheckoutRequest(
   body: { priceId?: string; success_url?: string; cancel_url?: string },
@@ -22,7 +29,11 @@ export function validateCheckoutRequest(
     return { valid: false, error: "MISSING_REDIRECT_URL" };
   }
 
-  if (allowList.length && !allowList.includes(body.priceId)) {
+  if (!allowList.length) {
+    return { valid: false, error: "PRICE_IDS_NOT_CONFIGURED" };
+  }
+
+  if (!allowList.includes(body.priceId)) {
     return { valid: false, error: "PRICE_NOT_ALLOWED", priceId: body.priceId };
   }
 

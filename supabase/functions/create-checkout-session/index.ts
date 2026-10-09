@@ -2,11 +2,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import Stripe from "https://esm.sh/stripe@14?target=denonext";
 import { corsHeaders } from "../_shared/cors.ts";
-import { resolveCheckoutIdentity, validateCheckoutRequest } from "./decision.ts";
+import { parseAllowList, resolveCheckoutIdentity, validateCheckoutRequest } from "./decision.ts";
 import { getAuthenticatedUser } from "../_shared/auth.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
-const ALLOW_LIST = (Deno.env.get("PRICE_IDS") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+const ALLOW_LIST = parseAllowList(Deno.env.get("PRICE_IDS"));
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: "2024-06-20"
@@ -36,6 +36,11 @@ Deno.serve(async (req) => {
 
   const validation = validateCheckoutRequest({ priceId, success_url, cancel_url }, ALLOW_LIST);
   if (!validation.valid) {
+    if (validation.error === "PRICE_IDS_NOT_CONFIGURED") {
+      // 設定の誤りなので、利用者の入力の誤り（400）ではなく 500 を返し、ログに残す
+      console.error("[create-checkout-session] PRICE_IDS が設定されていないため、決済の開始を拒否しました");
+      return j({ error: validation.error }, 500, headers);
+    }
     if (validation.error === "PRICE_NOT_ALLOWED") {
       return j({ error: validation.error, priceId: validation.priceId }, 400, headers);
     }
