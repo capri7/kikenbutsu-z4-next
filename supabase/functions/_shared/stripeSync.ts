@@ -1,5 +1,6 @@
 // supabase/functions/_shared/stripeSync.ts
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildUserProfilePayload } from "./userProfilePayload.ts";
 
 const SUPABASE_URL     = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -14,17 +15,8 @@ export const toIsoOrNull = (sec?: number | string | null) =>
 export async function upsertUserProfiles(args: {
   user_id: string; email?: string | null; stripe_customer_id?: string | null;
 }) {
-  const payload: {
-    user_id: string;
-    email: string | null;
-    stripe_customer_id: string | null;
-    updated_at: string;
-  } = {
-    user_id: args.user_id,
-    email: args.email ?? null,
-    stripe_customer_id: args.stripe_customer_id ?? null,
-    updated_at: new Date().toISOString(),
-  };
+  // メールアドレスと顧客 ID は、値があるときだけ書き込む（取れなかったときに今の値を null で消さない）
+  const payload = buildUserProfilePayload(args, new Date());
   const { error } = await admin.from("user_profiles").upsert(payload, { onConflict: "user_id" });
   if (error) throw error;
 }

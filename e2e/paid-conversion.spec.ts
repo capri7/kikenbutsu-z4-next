@@ -89,6 +89,16 @@ async function sendWebhook(payload: string, signatureHeader: string) {
   return { status: res.status, body: await res.text() };
 }
 
+async function profileOf(userId: string) {
+  const { data, error } = await adminClient()
+    .from('user_profiles')
+    .select('email, stripe_customer_id')
+    .eq('user_id', userId)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 async function subscriptionRows(subscriptionId: string) {
   const { data, error } = await adminClient()
     .from('subscriptions')
@@ -151,6 +161,21 @@ test.describe('有料転換（Webhook から有料の問題の解放まで）', 
     expect(await subscriptionRows(event.data.object.id)).toHaveLength(0);
     await page.goto(`/contents/${PAID_QUESTION_ID}`);
     await expect(page.getByText('This page could not be found')).toBeVisible();
+  });
+
+  test('Stripe からメールアドレスを取れなくても、会員のメールアドレスを消さない（FR-11-4）', async ({ page }) => {
+    const email = await signUp(page);
+    const userId = await userIdOf(email);
+
+    // テストの Stripe の鍵は本物ではないため、stripe-webhook は Stripe からメールアドレスを取得できない（null になる）
+    const event = subscriptionCreatedEvent(userId);
+    expect(await sendSigned(event)).toEqual({ status: 200, body: 'ok' });
+    await expect
+      .poll(() => subscriptionRows(event.data.object.id), { timeout: 15000 })
+      .toEqual([{ status: 'active', user_id: userId }]);
+
+    // user_profiles は subscriptions より先に書き込まれる。登録時のメールアドレスは残り、顧客 ID は反映される
+    expect(await profileOf(userId)).toEqual({ email, stripe_customer_id: event.data.object.customer });
   });
 });
 
