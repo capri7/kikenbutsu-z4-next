@@ -3,7 +3,8 @@ import { createHmac, randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
 /**
- * 有料転換：Stripe の通知（Webhook）を受けて、契約が DB に入り、有料の問題が開けるようになるまで
+ * 有料転換：Stripe の通知（Webhook）を受けて、契約が DB に入り、有料の問題が開けるようになるまで。
+ * あわせて、契約の更新（解約の予約）と終了の通知が反映されること
  *
  * 本物の stripe-webhook（ローカルの Supabase の Edge Functions）に、Stripe と同じ方式で署名した
  * customer.subscription.created の通知を送る。Stripe の決済画面は、Stripe の案内に従い自動テストの
@@ -150,5 +151,93 @@ test.describe('有料転換（Webhook から有料の問題の解放まで）', 
     expect(await subscriptionRows(event.data.object.id)).toHaveLength(0);
     await page.goto(`/contents/${PAID_QUESTION_ID}`);
     await expect(page.getByText('This page could not be found')).toBeVisible();
+  });
+});
+
+// 同じ契約について、あとから届く通知（更新・終了）を作る。イベントの ID は通知ごとに新しくする
+function followUpEvent(
+  created: ReturnType<typeof subscriptionCreatedEvent>,
+  type: 'customer.subscription.updated' | 'customer.subscription.deleted',
+  changes: { status: string; cancel_at_period_end: boolean },
+) {
+  return {
+    ...created,
+    id: `evt_e2e_${randomUUID()}`,
+    type,
+    created: Math.floor(Date.now() / 1000),
+    data: { object: { ...created.data.object, ...changes } },
+  };
+}
+
+async function sendSigned(event: object) {
+  const payload = JSON.stringify(event);
+  return sendWebhook(payload, stripeSignature(payload, WEBHOOK_SECRET));
+}
+
+async function subscriptionState(subscriptionId: string) {
+  const { data, error } = await adminClient()
+    .from('subscriptions')
+    .select('status, cancel_at_period_end')
+    .eq('stripe_subscription_id', subscriptionId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+test.describe('契約の更新・終了（Webhook）', () => {
+  test('解約の予約の通知を受けると反映され、期間の終わりまでは有料会員のまま（FR-11-3）', async ({ page }) => {
+    const email = await signUp(page);
+    const userId = await userIdOf(email);
+    const created = subscriptionCreatedEvent(userId);
+    const subscriptionId = created.data.object.id;
+
+    expect(await sendSigned(created)).toEqual({ status: 200, body: 'ok' });
+    await expect
+      .poll(() => subscriptionState(subscriptionId), { timeout: 15000 })
+      .toEqual({ status: 'active', cancel_at_period_end: false });
+
+    const updated = followUpEvent(created, 'customer.subscription.updated', {
+      status: 'active',
+      cancel_at_period_end: true,
+    });
+    expect(await sendSigned(updated)).toEqual({ status: 200, body: 'ok' });
+    await expect
+      .poll(() => subscriptionState(subscriptionId), { timeout: 15000 })
+      .toEqual({ status: 'active', cancel_at_period_end: true });
+
+    // 期間の終わりまでは有料の問題を開け、退会のカードは退会の予約の案内に変わる
+    await page.goto(`/contents/${PAID_QUESTION_ID}`);
+    await expect(page.getByText('E2Eテスト用の有料の問題です。')).toBeVisible();
+    await page.goto('/mypage');
+    await expect(page.getByRole('button', { name: '退会予約に進む', exact: true })).toBeVisible({ timeout: 15000 });
+  });
+
+  test('契約終了の通知を受けると無料会員に戻り、有料の問題を開けなくなる（FR-11-3）', async ({ page }) => {
+    const email = await signUp(page);
+    const userId = await userIdOf(email);
+    const created = subscriptionCreatedEvent(userId);
+    const subscriptionId = created.data.object.id;
+
+    expect(await sendSigned(created)).toEqual({ status: 200, body: 'ok' });
+    await expect
+      .poll(() => subscriptionState(subscriptionId), { timeout: 15000 })
+      .toEqual({ status: 'active', cancel_at_period_end: false });
+    await page.goto(`/contents/${PAID_QUESTION_ID}`);
+    await expect(page.getByText('E2Eテスト用の有料の問題です。')).toBeVisible();
+
+    const deleted = followUpEvent(created, 'customer.subscription.deleted', {
+      status: 'canceled',
+      cancel_at_period_end: false,
+    });
+    expect(await sendSigned(deleted)).toEqual({ status: 200, body: 'ok' });
+    await expect
+      .poll(() => subscriptionState(subscriptionId), { timeout: 15000 })
+      .toEqual({ status: 'canceled', cancel_at_period_end: false });
+
+    await page.goto(`/contents/${PAID_QUESTION_ID}`);
+    await expect(page.getByText('This page could not be found')).toBeVisible();
+    await expect(page.getByRole('link', { name: '購入', exact: true })).toBeVisible();
+    // 退会の予約がないので、アカウントは残る
+    expect(await userIdOf(email)).toBe(userId);
   });
 });

@@ -46,7 +46,7 @@
 | FR-10-4 | ✅ | `create-checkout-session`（`PRICE_IDS`） | Deno.test：create-checkout-session/decision.test.ts「許可リストに無いpriceIdは PRICE_NOT_ALLOWED…」 | 本番の `PRICE_IDS` は 2026-10-08 にダッシュボードで設定を確認。許可の一覧が空のときは検査を飛ばす作りで、拒否する作りに直す予定 |
 | FR-11-1 | ✅ | `stripe-webhook`（署名の確認） | E2E：paid-conversion.spec.ts「署名が正しくない通知は拒否し…」 | ― |
 | FR-11-2 | ✅ | `stripe-webhook`（`stripe_events`） | E2E：paid-conversion.spec.ts「同じ通知が2回届いても…」。Deno.test：stripe-webhook/decision.test.ts（重複のとき 200 `ok (duplicate)`） | ― |
-| FR-11-3 | △ | `stripe-webhook`（`syncFromSubscription`）、`_shared/periodEnd.ts` | E2E：paid-conversion.spec.ts（契約の作成）。Deno.test：periodEnd.test.ts（契約終了日の選び方） | 契約の更新・終了の通知は、自動テストを足す予定（E2E） |
+| FR-11-3 | ✅ | `stripe-webhook`（`syncFromSubscription`）、`_shared/periodEnd.ts` | E2E：paid-conversion.spec.ts「契約の通知を受けると有料会員になり…」（作成）・「解約の予約の通知を受けると反映され…」（更新）・「契約終了の通知を受けると無料会員に戻り…」（終了）。Deno.test：periodEnd.test.ts（契約終了日の選び方） | ― |
 | FR-12-1 | 未 | `billing-portal`、`src/lib/billing.ts`（戻り先 `/mypage`） | ― | 呼び出しの共通の関数は Vitest：edge-functions.test.ts で確かめている。手動：ポータルの作成は Stripe の API を呼ぶため、Stripe のテストモードで、有料会員として請求情報を開き、ポータルに移って戻るとマイページに移ることを確かめる |
 | FR-13-1 | ✅ | `request-account-deletion`、外部キーの `ON DELETE CASCADE` | E2E：account-deletion.spec.ts「無料会員が退会すると…」（アカウントと `user_profiles` の行が消える）。Deno.test：request-account-deletion/decision.test.ts（契約がなければ即時削除の判定） | ― |
 | FR-13-2 | ✅ | `request-account-deletion`、`stripe-webhook`（契約終了の通知で削除）、`subscriptions` の外部キーの `ON DELETE SET NULL` | E2E：account-deletion.spec.ts「解約の手続きを済ませた有料会員は…」「退会を予約した有料会員は、契約終了の通知で…」（予約ではアカウントが残り、通知で削除され、契約の行は残る）・paid-member.spec.ts（未解約の有料会員には解約の案内を表示）。Deno.test：request-account-deletion/decision.test.ts（解約済みなら予約、未解約なら拒否）・stripe-webhook/decision.test.ts（予約があれば削除） | ― |
