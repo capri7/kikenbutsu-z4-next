@@ -12,6 +12,7 @@ import {
   type ChapterMap,
   type CategoryData,
 } from '@/lib/dataLoader'
+import { progressPercent } from '@/lib/categoryProgress'
 
 import styles from './mypage.module.css'
 
@@ -109,7 +110,7 @@ export default function CategoryProgress({ userId }: { userId: string }) {
     const labels = Object.keys(categoryData)
     const values = labels.map((l) => {
       const { correct, total } = categoryData[l]
-      return total > 0 ? Math.round((correct / total) * 100) : 0
+      return progressPercent(correct, total)
     })
     const barColors = labels.map((l) => colors.get(l))
 
@@ -237,7 +238,7 @@ export default function CategoryProgress({ userId }: { userId: string }) {
       {view === 'list' && (
         <ul className={styles.categoryList}>
           {Object.entries(categoryData).map(([catName, catData]) => {
-            const pct = catData.total ? Math.round((catData.correct / catData.total) * 100) : 0
+            const pct = progressPercent(catData.correct, catData.total)
             const isOpen = !!expanded[catName]
             return (
               <li key={catName}>
@@ -259,9 +260,7 @@ export default function CategoryProgress({ userId }: { userId: string }) {
                 {isOpen && (
                   <ul className={styles.categoryPanel}>
                     {Object.entries(catData.chapters).map(([subId, chapData]) => {
-                      const cPct = chapData.total
-                        ? Math.round((chapData.correct / chapData.total) * 100)
-                        : 0
+                      const cPct = progressPercent(chapData.correct, chapData.total)
                       return (
                         <li key={subId}>
                           {chapData.name}（{chapData.correct}/{chapData.total}問）

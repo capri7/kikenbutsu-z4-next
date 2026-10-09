@@ -1,5 +1,12 @@
 import { createClient } from '@/lib/supabase/client'
 import { isSubscribed } from '@/lib/subscription'
+import {
+  allCorrect,
+  buildCategoryData,
+  latestCorrectByQuestion,
+  pickPreferNotCorrect,
+  type ProgressLogRow,
+} from '@/lib/categoryProgress'
 
 export async function getRandomAnyQuestionId(): Promise<string | null> {
   const supabase = createClient()
@@ -152,23 +159,6 @@ export async function fetchUserProgress(
     return {}
   }
 
-  const totalsBySub: Record<string, number> = {}
-  for (const q of qrows) {
-    if (!q.subcategory_id) continue
-    totalsBySub[q.subcategory_id] = (totalsBySub[q.subcategory_id] || 0) + 1
-  }
-
-  const categoryData: CategoryData = {}
-  for (const [subId, info] of Object.entries(chapterMap)) {
-    const { categoryName, name: chapterName } = info
-    if (!categoryData[categoryName]) {
-      categoryData[categoryName] = { correct: 0, total: 0, chapters: {} }
-    }
-    const subTotal = totalsBySub[subId] || 0
-    categoryData[categoryName].chapters[subId] = { name: chapterName, correct: 0, total: subTotal }
-    categoryData[categoryName].total += subTotal
-  }
-
   let q2 = supabase
     .from('user_progress')
     .select(`
@@ -182,37 +172,9 @@ export async function fetchUserProgress(
   if (!paid) q2 = q2.eq('questions.is_paid', false)
 
   const { data: logs, error: lerr } = await q2
-  if (lerr || !logs) return categoryData
+  if (lerr || !logs) return buildCategoryData(chapterMap, qrows, [])
 
-  type LogRow = {
-    question_id: string
-    is_correct: boolean
-    questions: { subcategory_id: string } | { subcategory_id: string }[] | null
-  }
-
-  const lastByQuestion = new Map<string, LogRow>()
-  for (const row of logs as LogRow[]) {
-    if (!lastByQuestion.has(row.question_id)) {
-      lastByQuestion.set(row.question_id, row)
-    }
-  }
-
-  for (const row of lastByQuestion.values()) {
-    const qObj = Array.isArray(row.questions) ? row.questions[0] : row.questions
-    const subId = qObj?.subcategory_id
-    const chap = subId ? chapterMap[subId] : undefined
-    if (!chap || !subId) continue
-    if (row.is_correct) {
-      const cat = categoryData[chap.categoryName]
-      if (!cat.chapters[subId]) {
-        cat.chapters[subId] = { name: chap.name, correct: 0, total: 0 }
-      }
-      cat.correct += 1
-      cat.chapters[subId].correct += 1
-    }
-  }
-
-  return categoryData
+  return buildCategoryData(chapterMap, qrows, logs as ProgressLogRow[])
 }
 
 export async function fetchQuestionIdsByCategory(
@@ -254,25 +216,18 @@ export async function getLatestCorrectMap(
     console.error(error)
     return new Map()
   }
-  const m = new Map<string, boolean>()
-  for (const r of (data ?? []) as { question_id: string; is_correct: boolean }[]) {
-    const qid = String(r.question_id)
-    if (!m.has(qid)) m.set(qid, r.is_correct)
-  }
-  return m
+  return latestCorrectByQuestion((data ?? []) as { question_id: string; is_correct: boolean }[])
 }
 
 export async function pickOnePreferNotCorrect(userId: string, ids: string[]): Promise<string> {
   const latest = await getLatestCorrectMap(userId, ids)
-  const notYetCorrect = ids.filter((id) => latest.get(String(id)) !== true)
-  const pool = notYetCorrect.length ? notYetCorrect : ids
-  return pool[Math.floor(Math.random() * pool.length)]
+  return pickPreferNotCorrect(ids, latest)
 }
 
 export async function areAllCorrect(userId: string, ids: string[]): Promise<boolean> {
   if (!ids.length) return false
   const latest = await getLatestCorrectMap(userId, ids)
-  return ids.every((id) => latest.get(String(id)) === true)
+  return allCorrect(ids, latest)
 }
 
 export async function fetchWrongCountGlobal(userId: string, paid: boolean): Promise<number> {
