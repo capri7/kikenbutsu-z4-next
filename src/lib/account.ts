@@ -11,6 +11,7 @@ export async function requestAccountDeletion(): Promise<AccountDeletionResult> {
     data: { session },
   } = await supabase.auth.getSession()
   if (!session) {
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- 画面の部品の外の関数で router を使えないため。ログインが切れているので、ページ全体を読み込み直して、画面に残った会員の情報も消す
     window.location.href = '/login'
     throw new Error('not logged in')
   }
@@ -30,6 +31,7 @@ export async function cancelAccountDeletion(): Promise<CancelAccountDeletionResu
     data: { session },
   } = await supabase.auth.getSession()
   if (!session) {
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- 画面の部品の外の関数で router を使えないため。ログインが切れているので、ページ全体を読み込み直して、画面に残った会員の情報も消す
     window.location.href = '/login'
     throw new Error('not logged in')
   }

@@ -77,6 +77,7 @@ export default function WithdrawalCard({ userId }: { userId: string }) {
       if ('deleted' in res && res.deleted) {
         const supabase = createClient()
         await supabase.auth.signOut()
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- 退会してログアウトしたあとは、ページ全体を読み込み直して、退会した人の情報をブラウザの中から確実に消すため
         window.location.href = '/account-deleted'
         return
       }
