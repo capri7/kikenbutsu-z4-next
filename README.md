@@ -4,7 +4,7 @@
 誤答リスト・復習リスト・分野別の正答率で、弱点を優先して潰す学習の流れを提供します。
 Next.js 16（App Router）・Supabase・Stripe を使い、認証・決済・進捗の管理を含めて、要件定義から設計・実装・運用までを1人で担当しました。
 
-**公開サイト**: [https://kikenbutsu-z4.com](https://kikenbutsu-z4.com)（本リポジトリを2026年8月にVercelへ本番デプロイ・ドメイン移行済み）
+**公開サイト**: [https://kikenbutsu-z4.com](https://kikenbutsu-z4.com)（本リポジトリを2026年8月に Vercel へ本番デプロイ・ドメイン移行済み）
 
 ## 目次
 
@@ -203,7 +203,7 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 
 - [要件定義・基本設計](docs/requirements.md)：プロジェクト概要、機能一覧、機能要件（受け入れ基準）、非機能要件、画面遷移図・ユーザーフロー
 - [トレーサビリティ](docs/traceability.md)：要件ごとの実現している場所と、自動テスト・手動の確かめ方
-- [詳細設計（DB・設計判断）](docs/design.md)：ER図、シーケンス図、設計判断のハイライト ①〜⑦、型安全性
+- [詳細設計（DB・設計判断）](docs/design.md)：ER 図、シーケンス図、設計判断のハイライト ①〜⑦、型安全性
 - [API 設計](docs/api.md)：Supabase Edge Functions 7つのリクエスト・レスポンス
 - [運用](docs/operations.md)：本番の環境変数、運用上の学び（Webhook の 401 障害、migration の履歴のずれ）
 - [テスト・品質保証](docs/testing.md)：ケーススタディ、テスト戦略、カバレッジ、E2E の構成と方針
@@ -216,30 +216,30 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 
 | 技術 | バージョン | 採用理由 |
 |---|---|---|
-| Next.js（App Router） | 16.3.8 | Server Components前提の設計で、認証済みユーザー情報の取得をサーバー側に寄せられる。バニラJS版（`dangerous-materials-fe4`）からの移植先として選定し、現在は本番ドメイン`kikenbutsu-z4.com`で稼働中 |
+| Next.js（App Router） | 16.3.8 | Server Components 前提の設計で、認証済みユーザー情報の取得をサーバー側に寄せられる。バニラ JS 版（`dangerous-materials-fe4`）からの移植先として選定し、現在は本番ドメイン `kikenbutsu-z4.com` で稼働中 |
 | React | 19.2.4 | React Compiler の実行時の部品（`react-compiler-runtime`）を追加せずに使うため、19系を採用（18以前は別に追加が必要。コンパイラ本体の `babel-plugin-react-compiler` はバージョンに関係なく必要） |
-| TypeScript | ^5 | `strict: true`。API設計のリクエスト/レスポンス型を明示する運用（[API 設計](docs/api.md)参照）はTypeScriptの型システムを前提にしている |
+| TypeScript | ^5 | `strict: true`。API 設計のリクエスト/レスポンス型を明示する運用（[API 設計](docs/api.md)参照）は TypeScript の型システムを前提にしている |
 | CSS Modules | - | コンポーネント単位でスタイルを閉じ込める目的で全面採用（92ファイル） |
-| Tailwind CSS | v4 | デザイントークン（`--color-navy`等）の一元管理と、一部コンポーネントのユーティリティクラスに限定利用。CSS Modulesと併用し、レイアウト崩れが起きやすい細かい調整のみTailwindに寄せる方針 |
+| Tailwind CSS | v4 | デザイントークン（`--color-navy` 等）の一元管理と、一部コンポーネントのユーティリティクラスに限定利用。CSS Modules と併用し、レイアウト崩れが起きやすい細かい調整のみ Tailwind に寄せる方針 |
 | Chart.js | ^4.5.1 | マイページで分野ごとの正答率を棒グラフで並べ、利用者が苦手な分野を一目で見つけられる。棒を押すとその分野の出題に移る処理も、グラフの機能で書ける |
 
 ### バックエンド・インフラ
 
 | 技術 | 役割 | 採用理由 |
 |---|---|---|
-| Supabase（PostgreSQL） | メインDB。RLSでユーザーごとのデータアクセス制御 | DB・認証・ファイルの置き場・サーバーの関数を1つの管理画面で扱え、サーバーの保守も要らないため、1人でも管理しやすい。DB の構成は `supabase/migrations/` の SQL で管理し、PR で差分を確かめられる |
-| Supabase Auth | 認証（JWT発行、`@supabase/ssr`でサーバー/クライアント両対応のセッション管理） | 登録・ログイン・パスワードの再設定・漏えいしたパスワードの拒否を、自前で作らずに使える。発行する JWT を、RLS と Edge Functions の本人の確認にそのまま使える |
-| Supabase Edge Functions（Deno） | Stripe秘密鍵を扱う処理・外部API連携の集約先（[API 設計](docs/api.md)参照） | 秘密の鍵を、ブラウザと Vercel から切り離して置ける。DB と同じ Supabase の中にあり、管理する場所が増えない |
+| Supabase（PostgreSQL） | メイン DB。RLS でユーザーごとのデータアクセス制御 | DB・認証・ファイルの置き場・サーバーの関数を1つの管理画面で扱え、サーバーの保守も要らないため、1人でも管理しやすい。DB の構成は `supabase/migrations/` の SQL で管理し、PR で差分を確かめられる |
+| Supabase Auth | 認証（JWT 発行、`@supabase/ssr` でサーバー/クライアント両対応のセッション管理） | 登録・ログイン・パスワードの再設定・漏えいしたパスワードの拒否を、自前で作らずに使える。発行する JWT を、RLS と Edge Functions の本人の確認にそのまま使える |
+| Supabase Edge Functions（Deno） | Stripe 秘密鍵を扱う処理・外部 API 連携の集約先（[API 設計](docs/api.md)参照） | 秘密の鍵を、ブラウザと Vercel から切り離して置ける。DB と同じ Supabase の中にあり、管理する場所が増えない |
 | Stripe | 決済・サブスクリプション管理 | 月額の自動更新・解約の予約・請求の画面（ポータル）を自前で作らずに使え、カードの情報をこちらのサーバーで扱わない |
-| Vercel | Next.jsアプリのホスティング（本番稼働中） | PR ごとのプレビューで、利用者に出す前に画面を確かめられる。問題があれば直前の版にすぐ戻せる（Instant Rollback。アプリの復旧の目標30分の手段） |
-| GitHub Actions | PR ごとのテスト（Vitest・Deno.test・pgTAP・Playwright E2E）・Edge Functions の型の検査（`deno check`）・ESLint・Lighthouse CI の実行。Edge Functionsのデプロイパイプライン（`supabase/functions/**`と`config.toml`の変更を検知して自動デプロイ）。`stripe-webhook`の応答の本文を1時間ごとの時刻指定で確かめる補助の監視 | テストとデプロイの設定がリポジトリの中にあり、チームの誰でも PR の上で中身と結果を確かめられる |
+| Vercel | Next.js アプリのホスティング（本番稼働中） | PR ごとのプレビューで、利用者に出す前に画面を確かめられる。問題があれば直前の版にすぐ戻せる（Instant Rollback。アプリの復旧の目標30分の手段） |
+| GitHub Actions | PR ごとのテスト（Vitest・Deno.test・pgTAP・Playwright E2E）・Edge Functions の型の検査（`deno check`）・ESLint・Lighthouse CI の実行。Edge Functions のデプロイパイプライン（`supabase/functions/**` と `config.toml` の変更を検知して自動デプロイ）。`stripe-webhook` の応答の本文を1時間ごとの時刻指定で確かめる補助の監視 | テストとデプロイの設定がリポジトリの中にあり、チームの誰でも PR の上で中身と結果を確かめられる |
 | Better Stack（Free） | 監視（`stripe-webhook` とトップのページの応答、3分ごと）と、画面・サーバーのエラーの記録（`@sentry/nextjs` で送信） | 3分ごとの監視とエラーの記録を、Free のプランの1つのサービスで行える |
 
 ### 技術的なハイライト
 
 **React Compiler の有効化**：`next.config.ts` で `reactCompiler: true` を設定し、`babel-plugin-react-compiler` を組み込んでいる。メモ化はコンパイラに任せる方針にした。依存配列の書き漏れは表に出にくく、レビューする人がいない個人開発では本番に残りやすいため。
 
-**308リダイレクトによる旧URLの引き継ぎ**：バニラJS版からの移行でURLの構造が変わり、Google Search Console でインデックス済みのURLが404を返していた。まず64件を設定し、その後 `/index.html`、設定漏れの3件（`defined_substances` など）、`/checkout.html` を順に追加して、現在は69件。`next.config.ts` の `redirects()` で `permanent: true` を指定し、308を返す。`source` に重複がないこと、本番で全件が308を返すことを `scripts/check_redirects.sh` で確かめた。
+**308 リダイレクトによる旧 URL の引き継ぎ**：バニラ JS 版からの移行で URL の構造が変わり、Google Search Console でインデックス済みの URL が 404 を返していた。まず64件を設定し、その後 `/index.html`、設定漏れの3件（`defined_substances` など）、`/checkout.html` を順に追加して、現在は69件。`next.config.ts` の `redirects()` で `permanent: true` を指定し、308 を返す。`source` に重複がないこと、本番で全件が 308 を返すことを `scripts/check_redirects.sh` で確かめた。
 
 **Cookie によるセッションの更新（`src/proxy.ts`）**：Next.js 16 で middleware が proxy に改名されたため、最初から `proxy.ts` で実装している（ランタイムは Node.js）。ユーザーの確認には、Supabase Auth のサーバーで JWT を確かめる `getUser()` を使う。Cookie は Supabase の公式の手順どおり、`request` と `response` の両方で更新している。
 
@@ -264,10 +264,10 @@ Stripe から返る値の一部（契約終了日）は、範囲を限定した�
 ### 運用タスク
 
 - Stripe の記録と DB の記録を定期的に突き合わせ、イベントの記録の欠落を見つける仕組みの作成（[運用上の学び](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)の教訓を受けた次の対策。現在は `stripe-webhook` の応答を確かめる監視（Better Stack と GitHub Actions）までを入れている）
-- `supabase/functions/`を独立したリポジトリへ切り出す作業（優先度は低く、緊急のバグ修正を優先してきたため未着手のまま）
-- 旧バニラJS版（`dangerous-materials-fe4`）の Vercel プロジェクトの削除（Next.js 版への移行は完了済み。プロジェクトは未削除）
+- `supabase/functions/` を独立したリポジトリへ切り出す作業（優先度は低く、緊急のバグ修正を優先してきたため未着手のまま）
+- 旧バニラ JS 版（`dangerous-materials-fe4`）の Vercel プロジェクトの削除（Next.js 版への移行は完了済み。プロジェクトは未削除）
 - Storage のファイル（問題の図、SVG 33個）のバックアップ。DB のバックアップに含まれず、今は Supabase の Storage にしかない
 
 ### コンテンツ構造
 
-現状、`/basics`配下の解説ページは、本文（日本語の説明文）と定義・対比表のマークアップがJSXに直書きされている。ページ数が少ない段階では問題ないが、乙4は章・節数が多く、同型の「定義＋対比表」パターンが繰り返し出現するため、ページ数が増えるとJSXのコピペが増加する。対応候補は、①本文をMDXまたはJSONに分離してレイアウトと切り離す、②`ComparisonTable`のような型付き共通コンポーネントに繰り返しパターンを切り出す、の2つ。現段階では規模に対して過剰な対応（MDX導入等）はオーバーエンジニアリングと判断し、優先度は保留としている。
+現状、`/basics` 配下の解説ページは、本文（日本語の説明文）と定義・対比表のマークアップが JSX に直書きされている。ページ数が少ない段階では問題ないが、乙4は章・節数が多く、同型の「定義＋対比表」パターンが繰り返し出現するため、ページ数が増えると JSX のコピペが増加する。対応候補は、①本文を MDX または JSON に分離してレイアウトと切り離す、②`ComparisonTable` のような型付き共通コンポーネントに繰り返しパターンを切り出す、の2つ。現段階では規模に対して過剰な対応（MDX 導入等）はオーバーエンジニアリングと判断し、優先度は保留としている。
