@@ -31,7 +31,7 @@
 | FR-04-5 | ✅ | `record_progress()`・`record_mistake()`・`add_review_item()` | pgTAP：progress_free_cannot_record_paid・mistake_free_cannot_record_paid・review_items_free_cannot_add_paid | ― |
 | FR-05-1 | ✅ | `record_mistake()` | pgTAP：mistakes_progress_normal_flow（誤答の数は送り直しを数えずに2になる） | ― |
 | FR-05-2 | ✅ | `clear_mistake()` | pgTAP：mistakes_progress_normal_flow（自分の誤答が消え、他人の誤答は消えない） | ― |
-| FR-05-3 | △ | RLS：`mk_sel`（`user_id = auth.uid()`） | pgTAP：mk_sel_authenticated（対象が authenticated だけ） | 他人の誤答が読めないことは、自動テストを足す予定（pgTAP） |
+| FR-05-3 | ✅ | RLS：`mk_sel`（`user_id = auth.uid()`） | pgTAP：mistakes_select_own_only（絞らずに読んでも本人の誤答だけが返り、他人の user_id を指定しても読めない）・mk_sel_authenticated（対象が authenticated だけ） | ― |
 | FR-06-1 | ✅ | `add_review_item()` | pgTAP：review_items_add（追加できる、2回追加しても行は1つ） | ― |
 | FR-06-2 | △ | `mark_review_item_mastered()`、`src/lib/review.ts`（`status = 'active'` だけ表示） | pgTAP：review_items_master_own（状態が mastered になる） | 手動：一覧で「復習済みにする」を押し、一覧から外れることを確かめる |
 | FR-06-3 | ✅ | `mark_review_item_mastered()`（`user_id = auth.uid()`） | pgTAP：review_items_cannot_master_others | ― |
@@ -74,7 +74,7 @@
 | NFR-OM-05 | ― | Better Stack・Vercel Alerts・GitHub・Stripe の通知 | ― | 通知のメールが届くことを確認済み |
 | NFR-OM-06 | △ | GitHub のルールセット `main-protection`、CI | CI（PR ごと） | PR と CI の成功は運用の決まり（ルールセットで強制しているのは削除と force push の禁止だけ） |
 | NFR-MG-01 | ― | ― | ― | 対象外 |
-| NFR-SE-01 | ✅ | RLS・6つの書き込みの関数・権限 | pgTAP（62ファイル・102件） | ― |
+| NFR-SE-01 | ✅ | RLS・6つの書き込みの関数・権限 | pgTAP（63ファイル・104件） | ― |
 | NFR-SE-02 | △ | 各 Edge Functions（JWT から本人を決める） | Deno.test：create-checkout-session/decision.test.ts（トークンから確定した ID を使う） | ほかの4つの関数（退会・予約の取り消し・ゲスト決済・請求情報）は、共通の関数 `getAuthenticatedUser` で JWT から本人を決め、本文のユーザー ID を使っていないことを、コードで確認（2026-10-09） |
 | NFR-SE-03 | ― | Edge Functions の環境変数 | ― | [本番の環境変数](operations.md#本番の環境変数)の表で管理 |
 | NFR-SE-04 | △ | Supabase Auth（漏えいしたパスワードの拒否） | Vitest：leakedPassword.test.ts（拒否されたときの案内） | 拒否の設定そのものは Supabase のダッシュボードの設定 |
