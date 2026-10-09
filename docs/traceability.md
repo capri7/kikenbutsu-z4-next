@@ -38,8 +38,8 @@
 | FR-07-1 | △ | `get_study_days()`（日本時間の日付）、`StudyCalendar.tsx` | pgTAP：study_days_own_only（本人の学習日だけを返す） | 手動：回答した日にカレンダーの印が付くことを確かめる |
 | FR-08-1 | ✅ | `src/lib/examCountdown.ts`（`daysLeftJST`・`formatDisplay`）、`ExamCountdown.tsx`、`set_exam_date()` | Vitest：examCountdown.test.ts（残り日数・当日・経過の表示の文、日本時間の日付の境目）。pgTAP：exam_date_save（保存） | ― |
 | FR-08-2 | ✅ | `set_exam_date(null)`、`src/lib/examCountdown.ts`（`formatDisplay`） | pgTAP：exam_date_clear（受験日が消える）。Vitest：examCountdown.test.ts「試験日が未設定なら…」（消したあとの表示） | ― |
-| FR-09-1 | 未 | `src/lib/dataLoader.ts`（`fetchUserProgress`）、`CategoryProgress.tsx` | ― | 自動テストを足す予定（計算を切り出して Vitest） |
-| FR-09-2 | 未 | `CategoryProgress.tsx`、`dataLoader.ts`（`pickOnePreferNotCorrect`・`areAllCorrect`） | ― | 自動テストを足す予定（Vitest） |
+| FR-09-1 | △ | `src/lib/categoryProgress.ts`（`buildCategoryData`・`progressPercent`）、`dataLoader.ts`（`fetchUserProgress`）、`CategoryProgress.tsx` | Vitest：categoryProgress.test.ts（最新の回答が正解の問題だけを数える、同じ問題は1問と数える、大分野は小分野の合計、割合の四捨五入） | 手動：回答の記録を新しい順に並べるのは DB の問い合わせのため、マイページで、正解していた問題に不正解で答え直し、その分野の正答率が下がることを確かめる |
+| FR-09-2 | △ | `src/lib/categoryProgress.ts`（`pickPreferNotCorrect`・`allCorrect`）、`dataLoader.ts`（`pickOnePreferNotCorrect`・`areAllCorrect`）、`CategoryProgress.tsx` | Vitest：categoryProgress.test.ts（まだ正解していない問題から選ぶ、すべて正解済みなら全体から選ぶ、「すべて完了」の判定） | 手動：マイページでグラフの大分野を押し、その分野の問題が開くこと、すべて正解済みの分野では再挑戦するかを確かめる表示が出ることを確かめる |
 | FR-10-1 | △ | `create-checkout-session`（JWT から本人を決め、`metadata.user_id` に載せる） | Deno.test：create-checkout-session/decision.test.ts「ログイン中なら、トークンから確定したユーザーの ID…」 | 手動：決済のセッション作成は Stripe の API を呼ぶため、Stripe のテストモードで、ログインして購入し、契約がそのアカウントに付くことを確かめる |
 | FR-10-2 | 未 | `src/app/checkout/CheckoutClient.tsx` | ― | 手動：ログインせずに購入画面を開き、案内の表示と、ログイン後に購入画面へ戻ることを確かめる（直近の確認：2026-09-29、本番、PR #43・#44） |
 | FR-10-3 | △ | `check-guest-subscription` | Deno.test：check-guest-subscription/decision.test.ts（有効な契約を選ぶ判定） | 手動：Stripe の顧客の検索は Stripe の API を呼ぶため、Stripe のテストモードで、ログインせずに購入してから同じメールアドレスで登録し、契約が付くことを確かめる |
