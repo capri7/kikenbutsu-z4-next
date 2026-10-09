@@ -21,7 +21,7 @@
 | FR-02-3 | ✅ | `FreeQuizClient.tsx`（`clearUnsolved`） | E2E：free-quiz-answer.spec.ts「正解していない問題は、再読み込みすると…」「…戻る・次へで表示し直すと…」 | ― |
 | FR-02-4 | ✅ | `FreeQuizClient.tsx`（`reset=1`） | E2E：free-quiz-answer.spec.ts「reset=1 で開くと…」 | ― |
 | FR-03-1 | ✅ | `src/app/signup/SignupForm.tsx`、Supabase Auth（メール確認なし） | E2E：core-flow.spec.ts「新規登録すると、認証確認なしでマイページに到達できる」 | ― |
-| FR-03-2 | 未 | `src/app/mypage/page.tsx`（`redirect('/login')`） | ― | 自動テストを足す予定（E2E） |
+| FR-03-2 | ✅ | `src/app/mypage/page.tsx`（`redirect('/login')`） | E2E：mypage-auth-guard.spec.ts「一度もログインしていなければ…」「ログアウトしたあとに…」 | ― |
 | FR-03-3 | ✅ | `src/lib/safeRedirect.ts` | Vitest：safeRedirect.test.ts（10件） | ― |
 | FR-03-4 | 未 | `SignupForm.tsx`・`LoginClient.tsx`（依頼）、`src/app/reset-password/` | ― | 手動：ローカルの Supabase の受信箱（Mailpit）に届いたメールのリンクから、新しいパスワードを設定できることを確かめる |
 | FR-04-1 | ✅ | RLS：`questions_read_free`・`read_paid_questions_with_subscription` | pgTAP：free_cannot_read_paid。E2E：paid-member.spec.ts・paid-conversion.spec.ts（契約の前は 404） | ― |
