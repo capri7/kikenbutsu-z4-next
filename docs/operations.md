@@ -19,7 +19,7 @@ Supabase Edge Functions（`supabase secrets set` で登録）
 |---|---|
 | `STRIPE_SECRET_KEY` | Stripe API の呼び出し |
 | `STRIPE_WEBHOOK_SECRET` | `stripe-webhook` の署名検証 |
-| `PRICE_IDS` | `create-checkout-session` で許可する Price ID の一覧 |
+| `PRICE_IDS` | `create-checkout-session` で許可する Price ID の一覧（カンマ区切り）。空のときは、どの価格でも決済を始められない |
 
 `SUPABASE_URL` と `SUPABASE_SERVICE_ROLE_KEY` は Supabase が自動で設定する。
 

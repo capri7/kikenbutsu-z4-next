@@ -43,7 +43,8 @@
 | FR-10-1 | △ | `create-checkout-session`（JWT から本人を決め、`metadata.user_id` に載せる） | Deno.test：create-checkout-session/decision.test.ts「ログイン中なら、トークンから確定したユーザーの ID…」 | 手動：決済のセッション作成は Stripe の API を呼ぶため、Stripe のテストモードで、ログインして購入し、契約がそのアカウントに付くことを確かめる |
 | FR-10-2 | 未 | `src/app/checkout/CheckoutClient.tsx` | ― | 手動：ログインせずに購入画面を開き、案内の表示と、ログイン後に購入画面へ戻ることを確かめる（直近の確認：2026-09-29、本番、PR #43・#44） |
 | FR-10-3 | △ | `check-guest-subscription` | Deno.test：check-guest-subscription/decision.test.ts（有効な契約を選ぶ判定） | 手動：Stripe の顧客の検索は Stripe の API を呼ぶため、Stripe のテストモードで、ログインせずに購入してから同じメールアドレスで登録し、契約が付くことを確かめる |
-| FR-10-4 | ✅ | `create-checkout-session`（`PRICE_IDS`） | Deno.test：create-checkout-session/decision.test.ts「許可リストに無いpriceIdは PRICE_NOT_ALLOWED…」 | 本番の `PRICE_IDS` は 2026-10-08 にダッシュボードで設定を確認。許可の一覧が空のときは検査を飛ばす作りで、拒否する作りに直す予定 |
+| FR-10-4 | ✅ | `create-checkout-session`（`PRICE_IDS`） | Deno.test：create-checkout-session/decision.test.ts「許可リストに無いpriceIdは PRICE_NOT_ALLOWED…」 | ― |
+| FR-10-5 | ✅ | `create-checkout-session`（`PRICE_IDS` が空なら `PRICE_IDS_NOT_CONFIGURED`、500） | Deno.test：create-checkout-session/decision.test.ts「許可リストが空（PRICE_IDS の設定漏れ）なら…」・「PRICE_IDS をカンマで分け…」 | 本番の `PRICE_IDS` が設定されていることは、ダッシュボードで確かめる（直近の確認：2026-10-08） |
 | FR-11-1 | ✅ | `stripe-webhook`（署名の確認） | E2E：paid-conversion.spec.ts「署名が正しくない通知は拒否し…」 | ― |
 | FR-11-2 | ✅ | `stripe-webhook`（`stripe_events`） | E2E：paid-conversion.spec.ts「同じ通知が2回届いても…」。Deno.test：stripe-webhook/decision.test.ts（重複のとき 200 `ok (duplicate)`） | ― |
 | FR-11-3 | ✅ | `stripe-webhook`（`syncFromSubscription`）、`_shared/periodEnd.ts` | E2E：paid-conversion.spec.ts「契約の通知を受けると有料会員になり…」（作成）・「解約の予約の通知を受けると反映され…」（更新）・「契約終了の通知を受けると無料会員に戻り…」（終了）。Deno.test：periodEnd.test.ts（契約終了日の選び方） | ― |

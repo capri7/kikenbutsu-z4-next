@@ -1,6 +1,6 @@
 // supabase/functions/create-checkout-session/decision.test.ts
 import { assertEquals } from "jsr:@std/assert";
-import { resolveCheckoutIdentity, validateCheckoutRequest } from "./decision.ts";
+import { parseAllowList, resolveCheckoutIdentity, validateCheckoutRequest } from "./decision.ts";
 
 Deno.test("priceIdが無ければ MISSING_PRICE_ID を返す", () => {
   const result = validateCheckoutRequest(
@@ -26,7 +26,7 @@ Deno.test("cancel_urlが無ければ MISSING_REDIRECT_URL を返す", () => {
   assertEquals(result, { valid: false, error: "MISSING_REDIRECT_URL" });
 });
 
-Deno.test("許可リストが空（未設定）なら、priceIdの中身を問わず許可する", () => {
+Deno.test("許可リストが空（PRICE_IDS の設定漏れ）なら PRICE_IDS_NOT_CONFIGURED を返し、どの priceId も許可しない", () => {
   const result = validateCheckoutRequest(
     {
       priceId: "price_anything",
@@ -35,7 +35,13 @@ Deno.test("許可リストが空（未設定）なら、priceIdの中身を問�
     },
     [],
   );
-  assertEquals(result, { valid: true });
+  assertEquals(result, { valid: false, error: "PRICE_IDS_NOT_CONFIGURED" });
+});
+
+Deno.test("PRICE_IDS をカンマで分け、前後の空白と空の要素を除く。未設定なら空の一覧", () => {
+  assertEquals(parseAllowList(" price_a , ,price_b "), ["price_a", "price_b"]);
+  assertEquals(parseAllowList(""), []);
+  assertEquals(parseAllowList(undefined), []);
 });
 
 Deno.test("許可リストに無いpriceIdは PRICE_NOT_ALLOWED を返し、priceIdを含める", () => {
