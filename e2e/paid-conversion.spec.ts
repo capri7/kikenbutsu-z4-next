@@ -143,10 +143,13 @@ test.describe('有料転換（Webhook から有料の問題の解放まで）', 
     await expect
       .poll(() => subscriptionRows(event.data.object.id), { timeout: 15000 })
       .toHaveLength(1);
+    // 重複として飛ばすのは、処理済みになった通知だけ。処理済みになるまで待つ
+    await expect.poll(() => eventState(event.id), { timeout: 15000 }).toMatchObject({ processed: true, attempts: 1 });
 
     const second = await sendWebhook(payload, stripeSignature(payload, WEBHOOK_SECRET));
     expect(second).toEqual({ status: 200, body: 'ok (duplicate)' });
     expect(await subscriptionRows(event.data.object.id)).toHaveLength(1);
+    expect((await eventState(event.id)).attempts).toBe(1); // 2回目は処理していない
   });
 
   test('署名が正しくない通知は拒否し、有料会員にしない（FR-11-1）', async ({ page }) => {
@@ -264,5 +267,52 @@ test.describe('契約の更新・終了（Webhook）', () => {
     await expect(page.getByRole('link', { name: '購入', exact: true })).toBeVisible();
     // 退会の予約がないので、アカウントは残る
     expect(await userIdOf(email)).toBe(userId);
+  });
+});
+
+// 通知の処理の状態（stripe_events）
+async function eventState(eventId: string) {
+  const { data, error } = await adminClient()
+    .from('stripe_events')
+    .select('processed_at, attempts, last_error')
+    .eq('id', eventId)
+    .single();
+  if (error) throw error;
+  return { processed: data.processed_at !== null, attempts: data.attempts, last_error: data.last_error };
+}
+
+test.describe('通知の処理が失敗したとき（Webhook）', () => {
+  test('処理に失敗した通知は未処理として残り、再送されると処理し直される（FR-11-5）', async () => {
+    // まだ存在しない会員の契約の通知を送る。user_profiles への書き込みが外部キーの制約で失敗する
+    // （DB への書き込みの一時的な失敗と同じく、処理の途中で失敗する場合を再現する）
+    const userId = randomUUID();
+    const email = `e2e-test+${randomUUID()}@example.com`;
+    const event = subscriptionCreatedEvent(userId);
+
+    expect(await sendSigned(event)).toEqual({ status: 200, body: 'ok' });
+    await expect.poll(() => eventState(event.id), { timeout: 15000 }).toMatchObject({ processed: false, attempts: 1 });
+    expect((await eventState(event.id)).last_error).toContain('23503'); // 外部キーの制約の違反
+    expect(await subscriptionRows(event.data.object.id)).toEqual([]);
+
+    // 会員ができてから、Stripe が同じ通知を再送する。未処理なので、重複として飛ばさずに処理し直す
+    const { error } = await adminClient().auth.admin.createUser({
+      id: userId,
+      email,
+      password: 'test-password-e2e',
+      email_confirm: true,
+    });
+    if (error) throw error;
+
+    expect(await sendSigned(event)).toEqual({ status: 200, body: 'ok' });
+    await expect
+      .poll(() => subscriptionRows(event.data.object.id), { timeout: 15000 })
+      .toEqual([{ status: 'active', user_id: userId }]);
+    await expect
+      .poll(() => eventState(event.id), { timeout: 15000 })
+      .toEqual({ processed: true, attempts: 2, last_error: null });
+
+    // 処理済みになった通知がもう一度届いたら、重複として飛ばす
+    expect(await sendSigned(event)).toEqual({ status: 200, body: 'ok (duplicate)' });
+    expect((await eventState(event.id)).attempts).toBe(2);
   });
 });

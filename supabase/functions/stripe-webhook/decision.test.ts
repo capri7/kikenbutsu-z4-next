@@ -1,21 +1,11 @@
 // supabase/functions/stripe-webhook/decision.test.ts
 import { assertEquals } from "jsr:@std/assert";
 import {
-  decideWebhookResponse,
+  isUserDeletionFailure,
   shouldPhysicallyDeleteUser,
 } from "./decision.ts";
 
-// --- decideWebhookResponse ---
-
-Deno.test("重複イベントの場合、200/ok (duplicate)を返し、後続処理はしない", () => {
-  const result = decideWebhookResponse(true);
-  assertEquals(result, { status: 200, body: "ok (duplicate)", shouldProcess: false });
-});
-
-Deno.test("新規イベントの場合、200/okを返し、後続処理を行う", () => {
-  const result = decideWebhookResponse(false);
-  assertEquals(result, { status: 200, body: "ok", shouldProcess: true });
-});
+// 受け取りと重複の判定は receive.test.ts で確かめる
 
 // --- shouldPhysicallyDeleteUser ---
 
@@ -33,4 +23,18 @@ Deno.test("deletion_requestedがtrueでも、user_idが解決できていなけ�
 
 Deno.test("deletion_requestedがnull（未設定）の場合は削除しない", () => {
   assertEquals(shouldPhysicallyDeleteUser("user_1", null), false);
+});
+// --- isUserDeletionFailure ---
+
+Deno.test("アカウントの削除にエラーがなければ、失敗としない", () => {
+  assertEquals(isUserDeletionFailure(null), false);
+});
+
+Deno.test("アカウントがすでに削除されていた（user_not_found）なら、削除は済んでいるので失敗としない", () => {
+  assertEquals(isUserDeletionFailure({ code: "user_not_found" }), false);
+});
+
+Deno.test("それ以外のエラーは失敗とし、通知を未処理のまま残して処理し直す", () => {
+  assertEquals(isUserDeletionFailure({ code: "unexpected_failure" }), true);
+  assertEquals(isUserDeletionFailure({}), true);
 });

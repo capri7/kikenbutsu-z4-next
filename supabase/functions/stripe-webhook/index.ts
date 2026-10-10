@@ -13,15 +13,37 @@ import {
 } from "../_shared/stripeSync.ts";
 
 import {
-  decideWebhookResponse,
+  isUserDeletionFailure,
   shouldPhysicallyDeleteUser,
 } from "./decision.ts";
+import { type EventStore, processAndFinish, receiveEvent } from "./receive.ts";
 import { resolveCurrentPeriodEnd, type PeriodEndSource } from "../_shared/periodEnd.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
 const STRIPE_WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET")!;
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2024-06-20" });
+
+// 通知の記録は、DB の関数で行う（supabase/migrations/20261010203000_stripe_event_functions.sql）
+const eventStore: EventStore = {
+  async record(event) {
+    const { data, error } = await admin.rpc("record_stripe_event", {
+      p_id: event.id,
+      p_type: event.type,
+      p_livemode: event.livemode,
+      p_payload: event.payload,
+    });
+    if (error) throw error;
+    return data === true;
+  },
+  async finish(eventId, errorText) {
+    const { error } = await admin.rpc("finish_stripe_event", {
+      p_id: eventId,
+      p_error: errorText,
+    });
+    if (error) throw error;
+  },
+};
 
 async function selectSingleUserIdByEmail(
   email: string,
@@ -31,7 +53,9 @@ async function selectSingleUserIdByEmail(
     .select("user_id")
     .eq("email", email)
     .maybeSingle();
-  if (error || !data?.user_id) return null;
+  // 読み込みの失敗を「見つからない」として扱うと、通知が反映されないまま処理済みになるため、投げる
+  if (error) throw error;
+  if (!data?.user_id) return null;
   return data.user_id as string;
 }
 
@@ -45,7 +69,8 @@ async function findUserIdByCustomerOrEmail(
       .select("user_id")
       .eq("stripe_customer_id", customer_id)
       .maybeSingle();
-    if (!error && data?.user_id) return data.user_id as string;
+    if (error) throw error;
+    if (data?.user_id) return data.user_id as string;
   }
   if (email) {
     const uid = await selectSingleUserIdByEmail(email);
@@ -139,100 +164,102 @@ async function syncFromSubscription(
 }
 
 // ---------------- イベント種別ごとの実処理（バックグラウンド実行） ----------------
+// 失敗したら投げる。processAndFinish が失敗として記録し、通知を未処理のまま残す
 async function processEvent(event: Stripe.Event, livemode: boolean) {
-  try {
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
+  switch (event.type) {
+    case "checkout.session.completed": {
+      const session = event.data.object as Stripe.Checkout.Session;
 
-        const uidFromSession = (
-          session.metadata?.user_id ||
-          session.client_reference_id ||
-          ""
-        ).trim();
-        if (uidFromSession) {
-          const customerId =
-            typeof session.customer === "string"
-              ? session.customer
-              : (session.customer?.id ?? null);
-          const email =
-            session.customer_details?.email ??
-            (typeof session.customer_email === "string"
-              ? session.customer_email
-              : null);
-          await upsertUserProfiles({
-            user_id: uidFromSession,
-            email: email ?? null,
-            stripe_customer_id: customerId,
-          });
-        }
-
-        if (session.subscription) {
-          const sub = await stripe.subscriptions.retrieve(
-            String(session.subscription),
-          );
-          await syncFromSubscription(sub, livemode);
-        }
-        break;
+      const uidFromSession = (
+        session.metadata?.user_id ||
+        session.client_reference_id ||
+        ""
+      ).trim();
+      if (uidFromSession) {
+        const customerId =
+          typeof session.customer === "string"
+            ? session.customer
+            : (session.customer?.id ?? null);
+        const email =
+          session.customer_details?.email ??
+          (typeof session.customer_email === "string"
+            ? session.customer_email
+            : null);
+        await upsertUserProfiles({
+          user_id: uidFromSession,
+          email: email ?? null,
+          stripe_customer_id: customerId,
+        });
       }
 
-      case "customer.subscription.created":
-      case "customer.subscription.updated":
-      case "customer.subscription.deleted": {
-        const sub = event.data.object as Stripe.Subscription;
-        const user_id = await syncFromSubscription(sub, livemode);
+      if (session.subscription) {
+        const sub = await stripe.subscriptions.retrieve(
+          String(session.subscription),
+        );
+        await syncFromSubscription(sub, livemode);
+      }
+      break;
+    }
+
+    case "customer.subscription.created":
+    case "customer.subscription.updated":
+    case "customer.subscription.deleted": {
+      const sub = event.data.object as Stripe.Subscription;
+      const user_id = await syncFromSubscription(sub, livemode);
 
 
-        if (event.type === "customer.subscription.deleted") {
-          if (!user_id) {
-            console.warn(
-              "[webhook] deletion check skipped: user_id not resolved for sub:",
-              sub.id,
-            );
-          } else {
-            const { data: subRow } = await admin
-              .from("subscriptions")
-              .select("deletion_requested")
-              .eq("stripe_subscription_id", sub.id)
-              .maybeSingle();
+      if (event.type === "customer.subscription.deleted") {
+        if (!user_id) {
+          console.warn(
+            "[webhook] deletion check skipped: user_id not resolved for sub:",
+            sub.id,
+          );
+        } else {
+          const { data: subRow, error: subRowError } = await admin
+            .from("subscriptions")
+            .select("deletion_requested")
+            .eq("stripe_subscription_id", sub.id)
+            .maybeSingle();
+          // 読めないまま進むと、退会の予約があっても削除しないまま処理済みになるため、投げる
+          if (subRowError) throw subRowError;
 
-            if (shouldPhysicallyDeleteUser(user_id, subRow?.deletion_requested)) {
-              const { error: delError } =
-                await admin.auth.admin.deleteUser(user_id);
-              if (delError) {
-                console.error(
-                  "[webhook] failed to delete user after deletion_requested:",
-                  delError,
-                );
-              } else {
-                console.log(
-                  "[webhook] user deleted per deletion_requested flag:",
-                  user_id,
-                );
-              }
+          if (shouldPhysicallyDeleteUser(user_id, subRow?.deletion_requested)) {
+            const { error: delError } =
+              await admin.auth.admin.deleteUser(user_id);
+            if (isUserDeletionFailure(delError)) {
+              // 削除できなかった。投げて未処理のまま残し、処理し直す
+              throw delError;
+            } else if (delError) {
+              console.log(
+                "[webhook] user already deleted per deletion_requested flag:",
+                user_id,
+              );
+            } else {
+              console.log(
+                "[webhook] user deleted per deletion_requested flag:",
+                user_id,
+              );
             }
           }
         }
-        break;
       }
-
-      case "invoice.paid":
-      case "invoice.payment_succeeded": {
-        const inv = event.data.object as Stripe.Invoice;
-        if (inv.subscription) {
-          const sub = await stripe.subscriptions.retrieve(
-            String(inv.subscription),
-          );
-          await syncFromSubscription(sub, livemode);
-        }
-        break;
-      }
-
-      default:
-        break;
+      break;
     }
-  } catch (e) {
-    console.error("[webhook] background processing failed:", event.id, e);
+
+    case "invoice.paid":
+    case "invoice.payment_succeeded": {
+      const inv = event.data.object as Stripe.Invoice;
+      if (inv.subscription) {
+        const sub = await stripe.subscriptions.retrieve(
+          String(inv.subscription),
+        );
+        await syncFromSubscription(sub, livemode);
+      }
+      break;
+    }
+
+    default:
+      break;
   }
 }
 
@@ -256,32 +283,21 @@ Deno.serve(async (req) => {
 
     const livemode = !!event.livemode;
 
-    const { data: existingEvent } = await admin
-      .from("stripe_events")
-      .select("id")
-      .eq("id", event.id)
-      .maybeSingle();
+    // 未処理として記録してから応答する。記録できなければ 500（Stripe が再送する）
+    const received = await receiveEvent(
+      { id: event.id, type: event.type, livemode, payload: event },
+      eventStore,
+    );
 
-    const responseDecision = decideWebhookResponse(!!existingEvent);
-
-    if (!responseDecision.shouldProcess) {
+    if (received.shouldProcess) {
+      (globalThis as unknown as { EdgeRuntime: typeof EdgeRuntimeTypes.EdgeRuntime }).EdgeRuntime.waitUntil(
+        processAndFinish(event.id, eventStore, () => processEvent(event, livemode)),
+      );
+    } else if (received.status === 200) {
       console.log("[webhook] duplicate event, skipping:", event.id);
-      return new Response(responseDecision.body, { status: responseDecision.status });
     }
 
-    const { error: logError } = await admin.from("stripe_events").insert({
-      id: event.id,
-      type: event.type,
-      livemode,
-      payload: event,
-    });
-    if (logError) {
-      console.error("[webhook] failed to log stripe event:", logError);
-    }
-
-    (globalThis as unknown as { EdgeRuntime: typeof EdgeRuntimeTypes.EdgeRuntime }).EdgeRuntime.waitUntil(processEvent(event, livemode));
-
-    return new Response(responseDecision.body, { status: responseDecision.status });
+    return new Response(received.body, { status: received.status });
   } catch (e) {
     console.error("handler error:", e);
     return new Response(`handler error: ${String(e)}`, { status: 400 });
