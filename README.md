@@ -70,8 +70,25 @@ flowchart LR
   repo -- "main への push<br/>（supabase/functions/・config.toml の変更）" --> deploy["Edge Functions のデプロイ<br/>（GitHub Actions）"]
   repo -- "PR はプレビュー、main は本番" --> vercel["Vercel"]
   deploy --> ef["Supabase Edge Functions"]
+  repo -- "main への push<br/>（supabase/migrations/ の変更）" --> mig["migration の適用<br/>（GitHub Actions）"]
+  mig --> db["Supabase の DB"]
   watch["stripe-webhook の監視<br/>主：Better Stack（3分ごと）<br/>補助：GitHub Actions（1時間ごとの時刻指定）"] -- "応答を確認、異常はメールで通知" --> ef
 ```
+
+### 環境の分け方
+
+| 環境 | アプリ | DB・認証 | Edge Functions |
+|---|---|---|---|
+| ローカル | `next dev` | ローカルの Supabase（migrations と架空の問題データ） | ローカル |
+| プレビュー（PR ごと） | Vercel のプレビュー | **本番** | 呼べない |
+| 本番 | Vercel | 本番 | 本番 |
+
+プレビューは、本番の DB と認証を使う。そのため、プレビューでの確認を次のように限っている。
+
+- 機能の確認の中心は、ローカルの Supabase で動く E2E と pgTAP。本番には触れない
+- プレビューで確かめるのは、画面の表示と移動。データを書き込む確認は、テスト用のアカウントだけで行う
+- Edge Functions（決済・退会・請求情報）は、CORS で本番のドメインだけを許可しているため、プレビューからは呼べない。これらは、ローカルの E2E と、マージ後の本番で確かめる
+- DB の構成の変更は、マージの後に CI が本番に適用する。プレビューの段階では、本番の DB の構成は変わらない（[適用の流れ](docs/operations.md#本番の-db-への-migration-の適用)）
 
 ## 主な設計判断
 
@@ -269,6 +286,7 @@ Stripe から返る値の一部（契約終了日）は、範囲を限定した�
 - `supabase/functions/` を独立したリポジトリへ切り出す作業（優先度は低く、緊急のバグ修正を優先してきたため未着手のまま）
 - 旧バニラ JS 版（`dangerous-materials-fe4`）の Vercel プロジェクトの削除（Next.js 版への移行は完了済み。プロジェクトは未削除）
 - Storage のファイル（問題の図、SVG 33個）のバックアップ。DB のバックアップに含まれず、今は Supabase の Storage にしかない
+- プレビュー用に、本番と分けた環境を用意する（Supabase の branching と Stripe のテストモード）。今はプレビューが本番の DB と認証を使っている（[環境の分け方](#環境の分け方)）
 
 ### コンテンツ構造
 
