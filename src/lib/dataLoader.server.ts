@@ -7,7 +7,8 @@ export async function fetchQuestionData(id: string): Promise<QuestionRow | null>
     .from('questions')
     .select('*')
     .eq('id', id)
-    .single()
+    // 見られない問題（存在しない、または無料会員に有料の問題）は 0 行になる。正常な場合なので、エラーにしない
+    .maybeSingle()
   if (error) {
     console.error('[fetchQuestionData:server] error', error)
     return null
