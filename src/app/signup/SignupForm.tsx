@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import styles from './signup.module.css'
 import { leakedPasswordMessage } from '@/lib/leakedPassword'
@@ -14,7 +13,6 @@ function normalizeEmail(v: string): string {
 }
 
 export default function SignupForm() {
-  const router = useRouter()
   const supabase = createClient()
 
   const [email, setEmail] = useState('')
@@ -138,7 +136,8 @@ export default function SignupForm() {
         // ここで失敗しても、サインアップ自体は成功として続行する
       }
 
-      router.push('/mypage')
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- ログインの状態が変わる移動なので、ページ全体を読み込み直して、新しいログインの情報でマイページを確実に表示する（router.push では、登録の直後に画面が移らないことがあった）
+      window.location.href = '/mypage'
 
 
     } catch (err) {
