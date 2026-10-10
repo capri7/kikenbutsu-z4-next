@@ -76,6 +76,7 @@
 | NFR-OM-04 | ― | `@sentry/nextjs`（送る前に利用者の情報を除く） | ― | 2026-10-07 に確認用のページで、送られる中身を確認（PR #90） |
 | NFR-OM-05 | ― | Better Stack・Vercel Alerts・GitHub・Stripe の通知 | ― | 通知のメールが届くことを確認済み |
 | NFR-OM-06 | △ | GitHub のルールセット `main-protection`、CI | CI（PR ごと） | PR と CI の成功は運用の決まり（ルールセットで強制しているのは削除と force push の禁止だけ） |
+| NFR-OM-07 | ― | `.github/workflows/deploy-migrations.yml` | CI（migration を含む PR ごとに、適用される予定を表示） | ― |
 | NFR-MG-01 | ― | ― | ― | 対象外 |
 | NFR-SE-01 | ✅ | RLS・6つの書き込みの関数・権限 | pgTAP（63ファイル・104件） | ― |
 | NFR-SE-02 | △ | 各 Edge Functions（JWT から本人を決める） | Deno.test：create-checkout-session/decision.test.ts（トークンから確定した ID を使う） | ほかの4つの関数（退会・予約の取り消し・ゲスト決済・請求情報）は、共通の関数 `getAuthenticatedUser` で JWT から本人を決め、本文のユーザー ID を使っていないことを、コードで確認（2026-10-09） |

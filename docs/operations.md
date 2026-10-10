@@ -23,6 +23,28 @@ Supabase Edge Functions（`supabase secrets set` で登録）
 
 `SUPABASE_URL` と `SUPABASE_SERVICE_ROLE_KEY` は Supabase が自動で設定する。
 
+GitHub Actions（リポジトリの Secrets に登録）
+
+| 変数 | 用途 |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL`・`NEXT_PUBLIC_SUPABASE_ANON_KEY`・`NEXT_PUBLIC_STRIPE_PRICE_ID` | Lighthouse CI でアプリをビルドする |
+| `SUPABASE_ACCESS_TOKEN` | Edge Functions のデプロイ。権限は本番のプロジェクトの Edge Functions の読み書きだけ |
+| `SUPABASE_DB_URL` | migration の適用。本番の DB の Session pooler の接続文字列（パスワードを含む） |
+
+## 本番の DB への migration の適用
+
+本番の DB の構成は、main にマージした migration を GitHub Actions が適用して変える（`.github/workflows/deploy-migrations.yml`）。手元の機械からは適用しない。Supabase の公式のガイド（Managing Environments）が勧める形である。
+
+| きっかけ | 動き |
+|---|---|
+| migration を含む PR | 本番に適用される予定の migration を表示する（`supabase db push --dry-run`）。本番は変更しない |
+| main への push（`supabase/migrations/**` の変更） | 予定を表示してから、本番に適用する（`supabase db push`） |
+| 手動の実行 | main への push と同じ |
+
+**`supabase link` を使わない理由**：公式の例は `supabase link` で本番のプロジェクトに結び付けてから適用する。`link` は Management API から service_role キーを含む API キーを読むため、CI に渡すトークンに API キーを読む権限が要る。このリポジトリでは `--db-url` で DB に直接つなぎ、CI に渡す秘密情報を DB の接続文字列だけにしている。
+
+**変更の順番**：プレビューは本番の DB を使い、アプリ（Vercel）と DB は別々に更新される。そのため、DB の構成の変更は、変更の前のコードと後のコードのどちらでも動く順で行う。たとえば列の名前を変えるときは、新しい列を足す → コードを新しい列に移す → 古い列を消す、の3つの PR に分ける。migration を含む PR のプレビューでは、新しい構成を使う部分は動かないため、ローカルの Supabase（E2E・pgTAP）で確かめる。
+
 ## 監視
 
 | 対象 | 仕組み | 間隔 | 異常とみなす条件 |
