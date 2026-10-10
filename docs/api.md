@@ -119,8 +119,9 @@ Stripeからのイベント通知を受信する。**リクエスト/レスポ�
 // リクエストボディ：Stripe.Event（stripe-signatureヘッダーで署名検証）
 
 // レスポンス（プレーンテキスト、Content-Type指定なし）
-// 200 "ok"              : 正常受理（実処理はバックグラウンドで継続）
-// 200 "ok (duplicate)"  : stripe_eventsテーブルに同一event.idが既存（Stripeのリトライによる重複配信を無視）
+// 200 "ok"              : 未処理として記録した（実処理はバックグラウンドで継続。前回の処理が失敗した通知の再送も含む）
+// 200 "ok (duplicate)"  : 同じevent.idの通知が処理済み（Stripeのリトライによる重複配信を無視）
+// 500 "failed to record event" : 通知をstripe_eventsに記録できなかった（Stripeが再送する）
 // 400 "invalid signature" : 署名検証失敗
 // 400 "handler error: ${message}" : 署名検証の失敗以外で、応答を返すまでに起きた未捕捉例外
 ```
@@ -136,11 +137,11 @@ Stripeからのイベント通知を受信する。**リクエスト/レスポ�
 
 **冪等性の仕組み**
 
-Stripeは同一イベントを複数回配信することがあるため、`stripe_events`テーブルに`event.id`を記録し、既存であれば処理をスキップする。
+Stripeは同一イベントを複数回配信することがあるため、`stripe_events`テーブルに`event.id`を記録し、**処理済み**であれば処理をスキップする。処理が失敗した通知は未処理のまま残り（`attempts`・`last_error` に記録）、再送されたときに処理し直す。記録と結果の記録は DB の関数 `record_stripe_event()`・`finish_stripe_event()` で行う。
 
 **設計判断：即時レスポンスとバックグラウンド処理の分離**
 
-署名検証・冪等性チェック・イベント記録は同期的に完了させて`200`を即座に返し、Stripe APIへの追加呼び出しを伴う実同期処理（`user_profiles`/`subscriptions`更新、`auth.users`削除）は`EdgeRuntime.waitUntil()`でバックグラウンドに回している。Stripeの10秒タイムアウト・リトライ設計に対して、処理が重い場合でも安定してレスポンスできるようにするための対応。
+署名検証と通知の記録（`record_stripe_event()`）は応答の前に完了させて`200`を返し、Stripe APIへの追加呼び出しを伴う実同期処理（`user_profiles`/`subscriptions`更新、`auth.users`削除）は`EdgeRuntime.waitUntil()`でバックグラウンドに回している。Stripe の公式ドキュメントの勧め（時間切れの原因になりうる処理の前に、すぐに `2xx` を返す）に沿った形。通知は応答の前に未処理として記録しているため、バックグラウンドの処理が失敗しても通知は失われず、結果は `finish_stripe_event()` で記録する。
 
 ## `cancel-account-deletion`
 
