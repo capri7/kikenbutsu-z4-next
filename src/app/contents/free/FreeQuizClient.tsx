@@ -95,8 +95,8 @@ function FreeQuiz() {
     if (!reset) return
     saveSafe(LS_KEY, initial)
     window.history.replaceState(null, '', '/contents/free')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    // replaceState は useSearchParams と同期するため、この後 reset は false になり、次の呼び出しは最初の行で終わる
+  }, [reset, initial])
 
   // 問題データの読み込み
   useEffect(() => {

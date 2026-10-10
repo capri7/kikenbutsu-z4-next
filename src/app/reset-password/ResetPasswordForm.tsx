@@ -125,8 +125,8 @@ export default function ResetPasswordForm() {
       if (redirectTimer.current) clearTimeout(redirectTimer.current)
       if (checkTimer.current) clearTimeout(checkTimer.current)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    // ブラウザでは createClient が毎回同じ接続を返すため、supabase は変わらず、開いたときに1回だけ動く
+  }, [supabase])
 
   function passwordsValid(): boolean {
     if (pw1.length < 6) {
