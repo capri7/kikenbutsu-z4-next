@@ -24,7 +24,7 @@ Next.js 16（App Router）・Supabase・Stripe を使い、認証・決済・進
 - 解く課題：独学の受験者が、弱点の分野をつかめないまま同じ範囲を繰り返し、再受験を重ねること。乙4以外の試験、スマートフォンのアプリ、人による指導は扱わない（[要件定義](docs/requirements.md#プロジェクト概要要件定義)）
 - データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（[詳細設計](docs/design.md)）
 - 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（[運用上の学び：verify_jwt と Webhook 認証の落とし穴](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)）
-- テスト：分岐ロジックを関数に切り出し、Deno.test 50件・Vitest 53件・Playwright E2E 33件。DB の権限・RLS・関数は pgTAP 104件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[テスト・品質保証](docs/testing.md)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
+- テスト：分岐ロジックを関数に切り出し、Deno.test 50件・Vitest 61件・Playwright E2E 33件。DB の権限・RLS・関数は pgTAP 104件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[テスト・品質保証](docs/testing.md)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
 
 ## 全体構成
 
@@ -92,7 +92,7 @@ flowchart LR
 | 対象 | ツール | 件数 | 確かめていること |
 |---|---|---|---|
 | Edge Functions の判定 | Deno.test | 50件 | 決済・退会・Webhook の分岐（判定を `decision.ts` などに切り出して検証） |
-| Next.js の関数 | Vitest | 53件 | 正誤の判定、ログイン後の移動先、Edge Functions の呼び出し、問題の図の URL、漏えいしたパスワードの案内、試験日までの残り日数、分野別の正答率と出題 |
+| Next.js の関数 | Vitest | 61件 | 正誤の判定、ログイン後の移動先、Edge Functions の呼び出し、問題の図の URL、漏えいしたパスワードの案内、試験日までの残り日数、分野別の正答率と出題、退会・請求情報の関数（ログインが切れているときの扱いなど） |
 | DB | pgTAP | 104件（63ファイル） | ロールの権限、RLS、関数が本人の記録だけを使うこと |
 | 画面の流れ | Playwright（E2E） | 33件 | 無料登録〜練習問題〜誤答リスト、ログイン、ログインしていない状態でのマイページの保護、Stripe の通知（Webhook）による有料転換と契約の更新・終了、退会（即時削除・予約・取り消し・契約終了の通知による削除）、有料会員の画面の出し分けなど。ローカルの Supabase で動かし、本番に触れない |
 
@@ -174,7 +174,7 @@ npm run dev                        # http://localhost:3000
 ### テスト
 
 ```bash
-# Next.js の単体テスト（Vitest、53件）
+# Next.js の単体テスト（Vitest、61件）
 npm test -- --run
 
 # Edge Functions の判定ロジック（Deno.test、50件）
@@ -250,7 +250,7 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 
 - 有料転換のうち、Checkout のセッション作成、決済完了の通知（`checkout.session.completed`）の経路、ゲスト決済の紐付け（`check-guest-subscription`）。どれも中で Stripe の API を呼ぶため、ローカルの E2E では動かせない。決済画面そのものの操作とあわせて、テストモードで手動で確認する（契約の通知から有料の問題の解放までは E2E で確かめている）
 - `checkout-session-info`・`billing-portal` の E2E と、`useSearchParams` と Suspense 境界のケーススタディの E2E
-- `src/lib` のうち Supabase の呼び出しを包むだけの関数（`account.ts`・`mistakes.ts`・`review.ts`・`progress.ts`）の単体テスト（判定ロジックの比率が低いため優先度は低い）
+- `src/lib` のうち Supabase の呼び出しを包むだけの関数（`mistakes.ts`・`review.ts`・`progress.ts`）の単体テスト（判定ロジックの比率が低いため優先度は低い）
 
 テストの構成と方針は [docs/testing.md](docs/testing.md) を参照。
 

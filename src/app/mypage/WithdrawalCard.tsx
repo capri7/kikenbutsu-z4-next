@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { requestAccountDeletion, cancelAccountDeletion } from '@/lib/account'
+import { NotLoggedInError } from '@/lib/authErrors'
 import styles from './mypage.module.css'
 
 const ACTIVE_STATUSES = ['active', 'trialing', 'past_due']
@@ -86,6 +87,11 @@ export default function WithdrawalCard({ userId }: { userId: string }) {
         setConfirming(false)
       }
     } catch (err) {
+      if (err instanceof NotLoggedInError) {
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- ログインが切れているので、ページ全体を読み込み直して、画面に残った会員の情報も消す
+        window.location.href = '/login'
+        return
+      }
       console.error(err)
       setError(toErrorMessage(err, '退会手続きに失敗しました。しばらくして再度お試しください。'))
     } finally {
@@ -101,6 +107,11 @@ export default function WithdrawalCard({ userId }: { userId: string }) {
       await cancelAccountDeletion()
       setDeletionRequested(false)
     } catch (err) {
+      if (err instanceof NotLoggedInError) {
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- ログインが切れているので、ページ全体を読み込み直して、画面に残った会員の情報も消す
+        window.location.href = '/login'
+        return
+      }
       console.error(err)
       setError(toErrorMessage(err, '予約の取り消しに失敗しました。しばらくして再度お試しください。'))
     } finally {

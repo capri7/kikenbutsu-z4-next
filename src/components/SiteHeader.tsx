@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { openBillingPortal } from '@/lib/billing'
+import { useBillingPortal } from '@/lib/useBillingPortal'
 import { isSubscribed } from '@/lib/subscription'
 
 export default function SiteHeader() {
@@ -13,7 +13,7 @@ export default function SiteHeader() {
   const [loggedIn, setLoggedIn] = useState(false)
   const [showCheckout, setShowCheckout] = useState(true)
   const [showCancel, setShowCancel] = useState(false)
-  const [portalBusy, setPortalBusy] = useState(false)
+  const { open: openBillingPortal } = useBillingPortal()
   const [loggingOut, setLoggingOut] = useState(false)
 
   const hamburgerRef = useRef<HTMLButtonElement>(null)
@@ -104,19 +104,10 @@ export default function SiteHeader() {
     if (!isDesktop) setNavOpen(false)
   }
 
-  // billing.ts: Stripeカスタマーポータルを開く
-  async function handleOpenBillingPortal(e: React.MouseEvent) {
+  // 請求情報：Stripe のカスタマーポータルを開く（移り方は useBillingPortal にまとめている）
+  function handleOpenBillingPortal(e: React.MouseEvent) {
     e.preventDefault()
-    if (portalBusy) return
-    setPortalBusy(true)
-    try {
-      await openBillingPortal()
-    } catch (err) {
-      console.error(err)
-      alert('請求ポータルを開けませんでした。しばらくして再度お試しください。')
-    } finally {
-      setPortalBusy(false)
-    }
+    void openBillingPortal()
   }
 
   async function handleLogout(e: React.MouseEvent) {
