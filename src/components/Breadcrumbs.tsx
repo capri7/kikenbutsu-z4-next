@@ -26,8 +26,8 @@ export default function Breadcrumbs({ items }: { items: BreadcrumbItem[] }) {
     <>
       <script
         type="application/ld+json"
-        // eslint-disable-next-line react/no-danger
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        // JSON.stringify は XSS につながる文字列を無害にしないため、Next.js の公式ガイドどおり < を \u003c に置き換える
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
       />
       <nav className="breadcrumbs" aria-label="パンくずリスト">
         {items.map((item, i) => {
