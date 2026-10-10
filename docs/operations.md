@@ -28,18 +28,24 @@ GitHub Actions（リポジトリの Secrets に登録）
 | 変数 | 用途 |
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL`・`NEXT_PUBLIC_SUPABASE_ANON_KEY`・`NEXT_PUBLIC_STRIPE_PRICE_ID` | Lighthouse CI でアプリをビルドする |
-| `SUPABASE_ACCESS_TOKEN` | Edge Functions のデプロイ。権限は本番のプロジェクトの Edge Functions の読み書きだけ |
+| `SUPABASE_ACCESS_TOKEN` | Edge Functions の反映。権限は本番のプロジェクトの Edge Functions の読み書きだけ |
 | `SUPABASE_DB_URL` | migration の適用。本番の DB の Session pooler の接続文字列（パスワードを含む） |
 
 ## 本番の DB への migration の適用
 
-本番の DB の構成は、main にマージした migration を GitHub Actions が適用して変える（`.github/workflows/deploy-migrations.yml`）。手元の機械からは適用しない。Supabase の公式のガイド（Managing Environments）が勧める形である。
+本番の DB の構成は、main にマージした migration を GitHub Actions が適用して変える（`.github/workflows/deploy.yml`）。手元の機械からは適用しない。Supabase の公式のガイド（Managing Environments）が勧める形である。Edge Functions も同じワークフローで反映する。
 
 | きっかけ | 動き |
 |---|---|
 | migration を含む PR | 本番に適用される予定の migration を表示する（`supabase db push --dry-run`）。本番は変更しない |
-| main への push（`supabase/migrations/**` の変更） | 予定を表示してから、本番に適用する（`supabase db push`） |
+| main への push（`supabase/migrations/**`・`supabase/functions/**`・`supabase/config.toml` の変更） | migration を本番に適用し（`supabase db push`。適用するものがなければ何もしない）、成功してから Edge Functions を反映する（`supabase functions deploy`） |
 | 手動の実行 | main への push と同じ |
+
+**Edge Functions を migration の後に反映する理由**：関数が使う DB の構成（テーブル・列・関数）が先にないと、関数は呼ばれたときに失敗する。2026-10-11 まで、migration の適用と Edge Functions の反映は別々のワークフローで、同じ push で同時に動いていた。PR #119 のマージでは、DB の関数ができたのが 06:14:10、関数の反映が終わったのが 06:14:22（JST）で、順番は処理時間の差で決まっていた。今は1つのワークフローの中で、Edge Functions の反映が migration の適用の成功を待つ（GitHub Actions の `needs`）。migration の適用が失敗したときは、Edge Functions を反映しない。migration だけを変えたときも Edge Functions を反映し直す。本番の関数を、常に main と同じにするためである。
+
+**本番の反映の待ちを取り消さないようにする**：同じ `concurrency` の group で待っている実行は、次の実行が来ると取り消される。PR の確認は PR ごとの group に分け、本番への反映の待ちを取り消さないようにしている。
+
+**戻すとき**：適用した migration のファイルは、main から消さない。消すと、本番の記録と合わなくなって migration の適用が失敗し、Edge Functions も反映されなくなる。DB の構成を戻すときは、戻す内容の migration を新しく足す。
 
 **`supabase link` を使わない理由**：公式の例は `supabase link` で本番のプロジェクトに結び付けてから適用する。`link` は Management API から service_role キーを含む API キーを読むため、CI に渡すトークンに API キーを読む権限が要る。このリポジトリでは `--db-url` で DB に直接つなぎ、CI に渡す秘密情報を DB の接続文字列だけにしている。
 
