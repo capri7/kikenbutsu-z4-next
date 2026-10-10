@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ChoicesTable from './ChoicesTable'
 import Breadcrumbs from '@/components/Breadcrumbs'
@@ -77,19 +77,15 @@ useEffect(() => {
 
   const correctIndex = question.answer - 1
 
-  const questionData: QuestionData = useMemo(
-    () => ({
-      answer: question.answer,
-      feedback_mode: question.feedback_mode,
-      choices,
-    }),
-    [question.answer, question.feedback_mode, choices]
-  )
-
   async function handleSelect(index: number) {
     if (answered || busy) return
     setBusy(true)
 
+    const questionData: QuestionData = {
+      answer: question.answer,
+      feedback_mode: question.feedback_mode,
+      choices,
+    }
     const { msg, shouldShowHint, questionIsCorrect } = getFeedbackMessage(index, questionData)
 
     try {
