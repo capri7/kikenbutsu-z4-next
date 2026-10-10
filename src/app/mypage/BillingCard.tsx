@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { openBillingPortal } from '@/lib/billing'
+import { useBillingPortal } from '@/lib/useBillingPortal'
 import styles from './mypage.module.css'
 
 type Subscription = {
@@ -13,7 +13,7 @@ type Subscription = {
 
 export default function BillingCard({ userId }: { userId: string }) {
   const [subscription, setSubscription] = useState<Subscription | null>(null)
-  const [busy, setBusy] = useState(false)
+  const { open: openPortal, busy } = useBillingPortal()
 
   useEffect(() => {
     let cancelled = false
@@ -49,19 +49,6 @@ export default function BillingCard({ userId }: { userId: string }) {
     `現在のステータス：${subscription.status ?? 'none'}` +
     (endStr ? `（有効期限：${endStr} まで）` : '')
 
-  async function handleOpenPortal() {
-    if (busy) return
-    setBusy(true)
-    try {
-      await openBillingPortal('/mypage')
-    } catch (err) {
-      console.error(err)
-      alert('請求ポータルを開けませんでした。しばらくして再度お試しください。')
-    } finally {
-      setBusy(false)
-    }
-  }
-
   return (
     <section className={styles.subcatCard}>
       <h3>💳 請求情報</h3>
@@ -70,7 +57,7 @@ export default function BillingCard({ userId }: { userId: string }) {
         <button
           type="button"
           className={`${styles.btn} ${styles.btnPrimary}`}
-          onClick={handleOpenPortal}
+          onClick={openPortal}
           disabled={busy}
         >
           請求情報を開く

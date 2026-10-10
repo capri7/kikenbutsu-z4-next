@@ -1,16 +1,21 @@
 import { createClient } from '@/lib/supabase/client'
 import { invokeEdgeFunction } from '@/lib/edge-functions'
+import { NotLoggedInError } from '@/lib/authErrors'
 
-export async function openBillingPortal(returnPath: string = '/mypage'): Promise<void> {
+export type BillingPortalResult =
+  | { kind: 'no_customer' } // Stripe の顧客 ID がない（購入の画面へ案内する）
+  | { kind: 'portal'; url: string } // Stripe の請求の画面（カスタマーポータル）の URL
+
+// Stripe の請求の画面の URL を作る。画面は移らない（移るのは useBillingPortal）。
+// ログインが切れていたら NotLoggedInError を投げる。
+export async function getBillingPortalUrl(returnPath: string = '/mypage'): Promise<BillingPortalResult> {
   const supabase = createClient()
   const {
     data: { session },
   } = await supabase.auth.getSession()
   const user = session?.user
   if (!user) {
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- 画面の部品の外の関数で router を使えないため。ログインが切れているので、ページ全体を読み込み直して、画面に残った会員の情報も消す
-    window.location.href = '/login'
-    return
+    throw new NotLoggedInError()
   }
 
   const { data: profile } = await supabase
@@ -20,9 +25,7 @@ export async function openBillingPortal(returnPath: string = '/mypage'): Promise
     .maybeSingle()
 
   if (!profile?.stripe_customer_id) {
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- 画面の部品の外の関数で router を使えないため（ログインの状態は変わらない。呼び出す側の画面が router.push で移る形に直す予定）
-    window.location.href = '/checkout'
-    return
+    return { kind: 'no_customer' }
   }
 
   const json = await invokeEdgeFunction<{ url?: string }>(
@@ -33,5 +36,5 @@ export async function openBillingPortal(returnPath: string = '/mypage'): Promise
   )
   if (!json?.url) throw new Error('No portal URL')
 
-  window.location.href = json.url
+  return { kind: 'portal', url: json.url }
 }
