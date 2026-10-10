@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import styles from './login.module.css'
@@ -36,7 +35,6 @@ type Props = {
 }
 
 export default function LoginClient({ next }: Props) {
-  const router = useRouter()
   const supabase = createClient()
 
   const [email, setEmail] = useState('')
@@ -77,7 +75,9 @@ export default function LoginClient({ next }: Props) {
         return
       }
 
-      router.push(next)
+      // ログインの状態が変わる移動なので、ページ全体を読み込み直して、新しいログインの情報で移動先を確実に表示する
+      // （next は page.tsx の getSafeNextPath で、サイトの中のパスに限っている）
+      window.location.href = next
     } catch (err) {
       setFeedback(`ログインに失敗しました：${String(err)}`)
       setFeedbackType('error')

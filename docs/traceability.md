@@ -24,6 +24,7 @@
 | FR-03-2 | ✅ | `src/app/mypage/page.tsx`（`redirect('/login')`） | E2E：mypage-auth-guard.spec.ts「一度もログインしていなければ…」「ログアウトしたあとに…」 | ― |
 | FR-03-3 | ✅ | `src/lib/safeRedirect.ts` | Vitest：safeRedirect.test.ts（10件） | ― |
 | FR-03-4 | 未 | `SignupForm.tsx`・`LoginClient.tsx`（依頼）、`src/app/reset-password/` | ― | 手動：ローカルの Supabase の受信箱（Mailpit）に届いたメールのリンクから、新しいパスワードを設定できることを確かめる |
+| FR-03-5 | ✅ | `src/app/login/LoginClient.tsx`（ページ全体を読み込み直して移る）、`src/lib/safeRedirect.ts` | E2E：login.spec.ts「ログインすると、マイページに移る」「移動先（?next=）を指定してログインすると…」 | ― |
 | FR-04-1 | ✅ | RLS：`questions_read_free`・`read_paid_questions_with_subscription` | pgTAP：free_cannot_read_paid。E2E：paid-member.spec.ts・paid-conversion.spec.ts（契約の前は 404） | ― |
 | FR-04-2 | ✅ | RLS：`read_paid_questions_with_subscription`、`has_active_subscription()` | pgTAP：paid_can_read_paid。E2E：paid-member.spec.ts・paid-conversion.spec.ts | ― |
 | FR-04-3 | △ | `pick_next_question()`、`src/lib/dataLoader.ts` | pgTAP：next_question_own_progress（本人がまだ解いていない問題を返す） | 手動：分野を選んで解き、その分野の問題が出ることを確かめる |
