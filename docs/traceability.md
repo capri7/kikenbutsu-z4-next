@@ -5,7 +5,7 @@
 [要件定義](requirements.md)の受け入れ基準（FR）と非機能要件（NFR）の1つずつについて、どこで実現し、何で確かめているかを示す。
 
 - 状態：✅ 自動テストで確かめている／△ 一部だけ自動テストで確かめている／未 自動テストがない
-- 自動テストの種類：E2E（Playwright、`e2e/`）・pgTAP（`supabase/tests/database/`）・Deno.test（`supabase/functions/`）・Vitest（`src/lib/`）
+- 自動テストの種類：E2E（Playwright、`e2e/`）・pgTAP（`supabase/tests/database/`）・Deno.test（`supabase/functions/`）・Vitest（`src/lib/`・`src/components/`）
 - 自動テストがない部分は、空欄にせず、確かめ方を書く。手動の確認は、その画面・処理を変えた PR で、マージの前に行う
 - 機能・テスト・設定を変える PR では、この表の該当の行を同じ PR で更新する
 - 「自動テストを足す予定」の行は、壊れたときの影響が大きい（お金・個人のデータ・権限）か、計算の境目があり壊れやすいもの。それ以外は、変更の少なさと自動化の費用から、手動の確認とする

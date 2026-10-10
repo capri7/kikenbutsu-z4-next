@@ -3,7 +3,7 @@
 //   node scripts/migrate-basics/run.mjs --all      -> 全79ページを走査して正常/要確認に仕分け、
 //                                                      out/normal/*.json と out/report.json を出力
 
-import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { extractPage, StructureError } from './extract.mjs';

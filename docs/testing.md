@@ -63,7 +63,7 @@ Edge Functions（Deno）・Next.js（Node/Vite）・DB（PostgreSQL）で実行�
 | 層 | 対象 | ツール |
 |---|---|---|
 | Edge Functions | 分岐ロジック（判定関数として切り出したもの） | `Deno.test` |
-| Next.js単体テスト | ユーティリティ関数（`src/lib`）。Client Components のテストは未作成 | Vitest（React Testing Library・jsdom は導入済み） |
+| Next.js単体テスト | ユーティリティ関数（`src/lib`）と、パンくずの部品（`Breadcrumbs.tsx`）の構造化データ。Client Components のテストは未作成 | Vitest（React Testing Library・jsdom は導入済み） |
 | DB | ロールの権限・RLS・関数が本人の記録だけを使うこと | pgTAP（`supabase test db`） |
 | E2Eテスト | 無料登録〜マイページ〜練習問題〜誤答リストの一連の動作（コアフロー、ローカルの Supabase で実装・合格確認済み）、有料会員の画面の出し分け（有料の問題・ヘッダー・退会のカード。契約の行はテストの中で作り、決済は通さない）、Stripe の通知（Webhook）による有料転換と契約の更新・終了（署名した通知を本物の `stripe-webhook` に送り、契約の反映〜有料の問題の解放、解約の予約の反映、契約終了で無料会員に戻ることを確かめる）、退会（無料会員の即時削除、有料会員の退会の予約と取り消し、契約終了の通知による削除。削除で個人の記録が消え、契約の記録は残ることも確かめる）、非同期Server Components | Playwright |
 
@@ -82,7 +82,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `_shared/activeSubscription.ts` | ✅ 5パターン |
 | `_shared/userProfilePayload.ts`（`stripe-webhook`・`check-guest-subscription`共通） | ✅ 4パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。`billing-portal` を呼ぶ共通の関数 `invokeEdgeFunction` は Vitest で検証） |
-| Next.js側（Vitest） | ✅ 61パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3・`examCountdown.ts` 9・`categoryProgress.ts` 13・`account.ts` 4・`billing.ts` 4） |
+| Next.js側（Vitest） | ✅ 63パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3・`examCountdown.ts` 9・`categoryProgress.ts` 13・`account.ts` 4・`billing.ts` 4・`Breadcrumbs.tsx` 2） |
 | DB（pgTAP） | ✅ 63ファイル・104件（ロールの権限・RLS・関数） |
 | E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅・有料会員の画面の出し分け3件 ✅・有料転換と契約の更新・終了（Webhook）6件 ✅・退会3件 ✅・ログインしていない状態のマイページ2件 ✅・ログイン2件 ✅（いずれもローカルの Supabase）・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
 
@@ -125,7 +125,7 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 チェック順序（`priceId`→リダイレクトURL→許可リスト）を意図的にテストで固定した。優先度の低いチェックが先に実行されて誤ったエラーコードを返す、という将来の実装変更によるリグレッションを防ぐため。`checkout-session-info`・`billing-portal`は判定ロジックがほぼ無いので、ユニットテストの対象外とし、E2Eで確かめる方針とした（E2Eは未実装。README の「今後の課題」に挙げている）。
 
-## Next.js側（Vitest、61パターン）
+## Next.js側（Vitest、63パターン）
 
 クイズの正誤判定ロジック（`src/lib/feedback.ts`）を検証している。既にSupabaseへの呼び出しを含まない純粋関数として実装されていたため、Edge Functionsのような切り出し作業は不要だった。
 
@@ -144,6 +144,8 @@ Edge Functionsの呼び出しの共通関数`src/lib/edge-functions.ts`（5パ�
 マイページの分野別の進捗の計算`src/lib/categoryProgress.ts`（13パターン）は、DB を読む関数（`dataLoader.ts`）と画面（`CategoryProgress.tsx`）の中にあった計算を、中身を変えずに切り出したもの。分野ごとの正答率は「最新の回答が正解の問題数 ÷ 解ける問題数」で、前に正解していても最新の回答が不正解なら数えないこと、同じ問題に何回正解しても1問と数えること、大分野は小分野の合計になること、割合の四捨五入を確かめる。分野を押したときの出題は、まだ正解していない問題（最新の回答が不正解・未回答）から選び、すべて正解済みなら全体から選ぶこと、「すべて完了」の判定を確かめる。乱数は引数で差し替えられるようにし、テストでは固定の値を渡す。回答の記録を新しい順に並べるのは DB の問い合わせの側で、この単体テストの対象外。
 
 退会の関数`src/lib/account.ts`（4パターン）と請求情報の関数`src/lib/billing.ts`（4パターン）は、以前は関数の中でログインの画面や購入の画面へ移っていたため、単体テストで確かめられなかった。関数は「ログインが切れている」（`NotLoggedInError`）や「顧客 ID がない」という結果を返すだけにし、画面の移動は呼び出す側の画面（請求情報は`src/lib/useBillingPortal.ts`）に移した。Supabase の接続を偽物に差し替え、ログインが切れていたら Edge Function を呼ばないこと、顧客 ID がなければ請求の画面を作らないこと、戻り先（`/mypage`）を付けて`billing-portal`を呼ぶことを確かめる。
+
+パンくずの部品`src/components/Breadcrumbs.tsx`（2パターン）は、検索エンジン向けの構造化データ（JSON-LD）を`<script>`に書き出す。`JSON.stringify`は XSS につながる文字列を無害にしないため、Next.js の公式ガイドどおり`<`を`\u003c`に置き換えている。名前に`</script>`を含めたとき、サーバーが出す HTML の`<script>`が1つのままで、JSON として読み直すと元の名前に戻ることを確かめる（置き換えを外すと、2つ目の`<script>`ができてテストが失敗することを確認済み）。順番・名前・URL が`BreadcrumbList`の形で出ることもあわせて確かめる。
 
 **セットアップ**：Next.js公式ドキュメントに沿って、Vitest・React Testing Library・jsdomを導入した。`vitest.config.mts`で`supabase/**`を検索対象から除外している（Edge Functions側は`Deno.test`という別のテストランナーを使っており、混在させるとVitestが誤って実行しようとしてエラーになるため）。
 
