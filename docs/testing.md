@@ -82,7 +82,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `_shared/activeSubscription.ts` | ✅ 5パターン |
 | `_shared/userProfilePayload.ts`（`stripe-webhook`・`check-guest-subscription`共通） | ✅ 4パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。`billing-portal` を呼ぶ共通の関数 `invokeEdgeFunction` は Vitest で検証） |
-| Next.js側（Vitest） | ✅ 63パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3・`examCountdown.ts` 9・`categoryProgress.ts` 13・`account.ts` 4・`billing.ts` 4・`Breadcrumbs.tsx` 2） |
+| Next.js側（Vitest） | ✅ 66パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3・`examCountdown.ts` 9・`categoryProgress.ts` 13・`account.ts` 4・`billing.ts` 4・`Breadcrumbs.tsx` 2・`dataLoader.server.ts` 3） |
 | DB（pgTAP） | ✅ 63ファイル・104件（ロールの権限・RLS・関数） |
 | E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅・有料会員の画面の出し分け3件 ✅・有料転換と契約の更新・終了（Webhook）6件 ✅・退会3件 ✅・ログインしていない状態のマイページ2件 ✅・ログイン2件 ✅（いずれもローカルの Supabase）・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
 
@@ -125,7 +125,7 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 チェック順序（`priceId`→リダイレクトURL→許可リスト）を意図的にテストで固定した。優先度の低いチェックが先に実行されて誤ったエラーコードを返す、という将来の実装変更によるリグレッションを防ぐため。`checkout-session-info`・`billing-portal`は判定ロジックがほぼ無いので、ユニットテストの対象外とし、E2Eで確かめる方針とした（E2Eは未実装。README の「今後の課題」に挙げている）。
 
-## Next.js側（Vitest、63パターン）
+## Next.js側（Vitest、66パターン）
 
 クイズの正誤判定ロジック（`src/lib/feedback.ts`）を検証している。既にSupabaseへの呼び出しを含まない純粋関数として実装されていたため、Edge Functionsのような切り出し作業は不要だった。
 
@@ -146,6 +146,8 @@ Edge Functionsの呼び出しの共通関数`src/lib/edge-functions.ts`（5パ�
 退会の関数`src/lib/account.ts`（4パターン）と請求情報の関数`src/lib/billing.ts`（4パターン）は、以前は関数の中でログインの画面や購入の画面へ移っていたため、単体テストで確かめられなかった。関数は「ログインが切れている」（`NotLoggedInError`）や「顧客 ID がない」という結果を返すだけにし、画面の移動は呼び出す側の画面（請求情報は`src/lib/useBillingPortal.ts`）に移した。Supabase の接続を偽物に差し替え、ログインが切れていたら Edge Function を呼ばないこと、顧客 ID がなければ請求の画面を作らないこと、戻り先（`/mypage`）を付けて`billing-portal`を呼ぶことを確かめる。
 
 パンくずの部品`src/components/Breadcrumbs.tsx`（2パターン）は、検索エンジン向けの構造化データ（JSON-LD）を`<script>`に書き出す。`JSON.stringify`は XSS につながる文字列を無害にしないため、Next.js の公式ガイドどおり`<`を`\u003c`に置き換えている。名前に`</script>`を含めたとき、サーバーが出す HTML の`<script>`が1つのままで、JSON として読み直すと元の名前に戻ることを確かめる（置き換えを外すと、2つ目の`<script>`ができてテストが失敗することを確認済み）。順番・名前・URL が`BreadcrumbList`の形で出ることもあわせて確かめる。
+
+問題のページの読み込み`src/lib/dataLoader.server.ts`（3パターン）は、問題を1行読む。存在しない問題や、無料会員が開いた有料の問題は、RLS により0行になり、ページは「見つからない」を返す。以前は`.single()`（必ず1行ある前提の読み方）を使っていたため、この正常な場合も`console.error`でエラーとして記録していた（E2E の実行中に`JSON object requested, multiple (or no) rows returned`と出ていた）。`.maybeSingle()`に変え、0行は`null`を返してエラーとして記録せず、読み込みの失敗だけを記録することを確かめる。
 
 **セットアップ**：Next.js公式ドキュメントに沿って、Vitest・React Testing Library・jsdomを導入した。`vitest.config.mts`で`supabase/**`を検索対象から除外している（Edge Functions側は`Deno.test`という別のテストランナーを使っており、混在させるとVitestが誤って実行しようとしてエラーになるため）。
 
