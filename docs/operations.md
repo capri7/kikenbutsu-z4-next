@@ -41,7 +41,7 @@ GitHub Actions（リポジトリの Secrets に登録）
 | main への push（`supabase/migrations/**`・`supabase/functions/**`・`supabase/config.toml` の変更） | migration を本番に適用し（`supabase db push`。適用するものがなければ何もしない）、成功してから Edge Functions を反映する（`supabase functions deploy`） |
 | 手動の実行 | main への push と同じ |
 
-**Edge Functions を migration の後に反映する理由**：関数が使う DB の構成（テーブル・列・関数）が先にないと、関数は呼ばれたときに失敗する。2026-10-11 まで、migration の適用と Edge Functions の反映は別々のワークフローで、同じ push で同時に動いていた。PR #119 のマージでは、DB の関数ができたのが 06:14:10、関数の反映が終わったのが 06:14:22（JST）で、順番は処理時間の差で決まっていた。今は1つのワークフローの中で、Edge Functions の反映が migration の適用の成功を待つ（GitHub Actions の `needs`）。migration の適用が失敗したときは、Edge Functions を反映しない。migration だけを変えたときも Edge Functions を反映し直す。本番の関数を、常に main と同じにするためである。
+**Edge Functions を migration の後に反映する理由**：関数が使う DB の構成（テーブル・列・関数）が先にないと、関数は呼ばれたときに失敗する。2026-10-11 まで、migration の適用と Edge Functions の反映は別々のワークフローで、同じ push で同時に動いていた。PR #119 のマージでは、DB の関数ができたのが 06:14:10、関数の反映が終わったのが 06:14:22（JST）で、順番は処理時間の差で決まっていた。今は1つのワークフローの中で、Edge Functions の反映が migration の適用の成功を待つ（GitHub Actions の `needs`）。migration の適用が失敗したときは、Edge Functions を反映しない。migration だけを変えたときも、Edge Functions の反映の処理は動く。Supabase CLI は、関数ごとに、まとめた中身のハッシュと `verify_jwt` の設定を本番と比べ、同じ関数は送らない（ログに `No change found in Function: <関数名>` と出て、本番の版は上がらない）。中身が変わった関数だけを送るため（`Deploying Function: <関数名>`）、本番の関数は常に main と同じになる。ログの最後の `Deployed Functions on project …` には、送らなかった関数も並ぶ。送ったかどうかは、関数ごとの行で判断する。PR #120 のマージ後の実行では、7つの関数すべてが `No change found` で、本番の版は変わらなかった。
 
 **本番の反映の待ちを取り消さないようにする**：同じ `concurrency` の group で待っている実行は、次の実行が来ると取り消される。PR の確認は PR ごとの group に分け、本番への反映の待ちを取り消さないようにしている。
 
