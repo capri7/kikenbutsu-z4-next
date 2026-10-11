@@ -4,6 +4,10 @@ name: Deploy
 # Edge Functions は、migration の適用が成功してから反映する（needs）。関数が先に反映されると、
 # 関数が使う DB の構成（テーブル・列・関数）がまだない間に呼ばれて失敗するため。
 # migration の適用が失敗したときは、Edge Functions を反映しない。
+# アプリ（Vercel）は、この2つの job が成功してから本番のドメインに割り当てる（Vercel の Deployment Checks）。
+# そのため、main への push では、どのファイルの変更でも必ず動かす。変更がなければ、本番は変わらない
+# （db push は適用するものがなく、functions deploy は中身の同じ関数を送らない）。
+# job の名前（migrations・functions）は Vercel の設定のチェックの名前と同じ。変えるときは Vercel の設定も直す。
 #
 # migration を含む PR では、適用される予定の migration を表示するだけで、本番は変更しない（--dry-run）。
 # 接続には Session pooler（IPv4）の接続文字列を使う。GitHub Actions の実行環境は IPv6 の直接接続を使えないため。
@@ -13,11 +17,6 @@ on:
     paths: ['supabase/migrations/**', '.github/workflows/deploy.yml']
   push:
     branches: [main]
-    paths:
-      - 'supabase/migrations/**'
-      - 'supabase/functions/**'
-      - 'supabase/config.toml'
-      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 # 本番への反映は1つずつ行う。PR の確認は PR ごとの group に分ける。
