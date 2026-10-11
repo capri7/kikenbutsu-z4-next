@@ -1,10 +1,11 @@
 -- stripe_events に、処理の状態を記録する列と、未処理の通知を探す索引があること
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(9);
+select plan(11);
 
 select col_type_is('public', 'stripe_events', 'processed_at', 'timestamp with time zone', '処理済みの時刻の列がある');
 select col_is_null('public', 'stripe_events', 'processed_at', '処理済みの時刻は空（未処理）を許す');
+select col_hasnt_default('public', 'stripe_events', 'processed_at', '処理済みの時刻に既定値はない（記録した通知は、処理を終えるまで未処理）');
 select col_type_is('public', 'stripe_events', 'attempts', 'integer', '処理を試みた回数の列がある');
 select col_not_null('public', 'stripe_events', 'attempts', '処理を試みた回数は空にならない');
 select col_default_is('public', 'stripe_events', 'attempts', '0', '処理を試みた回数は 0 から始まる');
@@ -26,6 +27,13 @@ select is(
   (select count(*)::int from public.stripe_events where processed_at is null and id = 'evt_pgtap_unprocessed'),
   1,
   '処理済みの時刻を空で記録した通知は、未処理として見つかる'
+);
+
+-- 処理済みの時刻を指定せずに足した通知も、未処理になる（処理していないのに処理済みにならない）
+insert into public.stripe_events (id, type) values ('evt_pgtap_no_processed_at', 'customer.subscription.created');
+select ok(
+  (select processed_at is null from public.stripe_events where id = 'evt_pgtap_no_processed_at'),
+  '処理済みの時刻を指定せずに記録した通知は、未処理になる'
 );
 
 select * from finish();
