@@ -67,11 +67,12 @@ flowchart LR
 flowchart LR
   dev["開発者"] -- "PR・main へのマージ" --> repo["GitHub リポジトリ"]
   repo -- "PR ごと<br/>（テストは main への push でも実行）" --> ci["CI（GitHub Actions）<br/>Vitest・Deno.test・deno check<br/>pgTAP・Playwright E2E・ESLint・Lighthouse"]
-  repo -- "main への push<br/>（supabase/migrations/・functions/・config.toml の変更）" --> mig["migration の適用<br/>（GitHub Actions）"]
+  repo -- "main への push" --> mig["migration の適用<br/>（GitHub Actions）"]
   repo -- "PR はプレビュー、main は本番" --> vercel["Vercel"]
   mig --> db["Supabase の DB"]
   mig -- "適用が成功してから" --> deploy["Edge Functions の反映<br/>（GitHub Actions）"]
   deploy --> ef["Supabase Edge Functions"]
+  deploy -- "反映が成功してから<br/>本番のドメインに割り当てる" --> vercel
   watch["stripe-webhook の監視<br/>主：Better Stack（3分ごと）<br/>補助：GitHub Actions（1時間ごとの時刻指定）"] -- "応答を確認、異常はメールで通知" --> ef
 ```
 
@@ -139,7 +140,7 @@ flowchart LR
 - 異常はすべてメールで知らせる。Stripe・GitHub・Better Stack の通知は、メールのフィルタで他のメールと分け、見落とさないようにしている（[運用上の学び](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)。NFR-OM-05）
 - 本番への変更（マージ・デプロイ・migration）は対応する時間帯の中で行い、18:00 以降は行わない（NFR-OM-02）
 - main への変更は PR を通し、CI が成功してからマージする。main のルールセットで強制しているのは、削除と force push の禁止だけ（NFR-OM-06）
-- 本番の DB の構成は、main にマージした migration を GitHub Actions が適用して変える。手元の機械からは適用しない。変更は、変更の前のコードと後のコードのどちらでも動く順で行う。Edge Functions は、migration の適用が成功してから反映する（[適用の流れ](docs/operations.md#本番の-db-への-migration-の適用)。NFR-OM-07）
+- 本番の DB の構成は、main にマージした migration を GitHub Actions が適用して変える。手元の機械からは適用しない。変更は、変更の前のコードと後のコードのどちらでも動く順で行う。Edge Functions は、migration の適用が成功してから反映する。アプリ（Vercel）は、その2つが成功してから本番のドメインに割り当てる（[適用の流れ](docs/operations.md#本番の-db-への-migration-の適用)。NFR-OM-07）
 
 ### 移行性
 
@@ -251,7 +252,7 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 | Supabase Edge Functions（Deno） | Stripe 秘密鍵を扱う処理・外部 API 連携の集約先（[API 設計](docs/api.md)参照） | 秘密の鍵を、ブラウザと Vercel から切り離して置ける。DB と同じ Supabase の中にあり、管理する場所が増えない |
 | Stripe | 決済・サブスクリプション管理 | 月額の自動更新・解約の予約・請求の画面（ポータル）を自前で作らずに使え、カードの情報をこちらのサーバーで扱わない |
 | Vercel | Next.js アプリのホスティング（本番稼働中） | PR ごとのプレビューで、利用者に出す前に画面を確かめられる。問題があれば直前の版にすぐ戻せる（Instant Rollback。アプリの復旧の目標30分の手段） |
-| GitHub Actions | PR ごとのテスト（Vitest・Deno.test・pgTAP・Playwright E2E）・Edge Functions の型の検査（`deno check`）・ESLint・Lighthouse CI の実行。本番への反映（PR では適用される予定の migration を表示し、main へのマージ後に migration を適用してから Edge Functions を反映）。`stripe-webhook` の応答の本文を1時間ごとの時刻指定で確かめる補助の監視 | テストとデプロイの設定がリポジトリの中にあり、チームの誰でも PR の上で中身と結果を確かめられる |
+| GitHub Actions | PR ごとのテスト（Vitest・Deno.test・pgTAP・Playwright E2E）・Edge Functions の型の検査（`deno check`）・ESLint・Lighthouse CI の実行。本番への反映（PR では適用される予定の migration を表示し、main へのマージ後に migration を適用してから Edge Functions を反映し、アプリの本番への割り当てはその成功を待つ）。`stripe-webhook` の応答の本文を1時間ごとの時刻指定で確かめる補助の監視 | テストとデプロイの設定がリポジトリの中にあり、チームの誰でも PR の上で中身と結果を確かめられる |
 | Better Stack（Free） | 監視（`stripe-webhook` とトップのページの応答、3分ごと）と、画面・サーバーのエラーの記録（`@sentry/nextjs` で送信） | 3分ごとの監視とエラーの記録を、Free のプランの1つのサービスで行える |
 
 ### 技術的なハイライト

@@ -33,15 +33,21 @@ GitHub Actions（リポジトリの Secrets に登録）
 
 ## 本番の DB への migration の適用
 
-本番の DB の構成は、main にマージした migration を GitHub Actions が適用して変える（`.github/workflows/deploy.yml`）。手元の機械からは適用しない。Supabase の公式のガイド（Managing Environments）が勧める形である。Edge Functions も同じワークフローで反映する。
+本番の DB の構成は、main にマージした migration を GitHub Actions が適用して変える（`.github/workflows/deploy.yml`）。手元の機械からは適用しない。Supabase の公式のガイド（Managing Environments）が勧める形である。Edge Functions も同じワークフローで反映する。アプリ（Vercel）は、このワークフローが成功してから本番のドメインに割り当てる。
 
 | きっかけ | 動き |
 |---|---|
 | migration を含む PR | 本番に適用される予定の migration を表示する（`supabase db push --dry-run`）。本番は変更しない |
-| main への push（`supabase/migrations/**`・`supabase/functions/**`・`supabase/config.toml` の変更） | migration を本番に適用し（`supabase db push`。適用するものがなければ何もしない）、成功してから Edge Functions を反映する（`supabase functions deploy`） |
+| main への push（すべての変更） | migration を本番に適用し（`supabase db push`。適用するものがなければ何もしない）、成功してから Edge Functions を反映する（`supabase functions deploy`）。2つが成功してから、Vercel がアプリを本番のドメインに割り当てる |
 | 手動の実行 | main への push と同じ |
 
 **Edge Functions を migration の後に反映する理由**：関数が使う DB の構成（テーブル・列・関数）が先にないと、関数は呼ばれたときに失敗する。2026-10-11 まで、migration の適用と Edge Functions の反映は別々のワークフローで、同じ push で同時に動いていた。PR #119 のマージでは、DB の関数ができたのが 06:14:10、関数の反映が終わったのが 06:14:22（JST）で、順番は処理時間の差で決まっていた。今は1つのワークフローの中で、Edge Functions の反映が migration の適用の成功を待つ（GitHub Actions の `needs`）。migration の適用が失敗したときは、Edge Functions を反映しない。migration だけを変えたときも、Edge Functions の反映の処理は動く。Supabase CLI は、関数ごとに、まとめた中身のハッシュと `verify_jwt` の設定を本番と比べ、同じ関数は送らない（ログに `No change found in Function: <関数名>` と出て、本番の版は上がらない）。中身が変わった関数だけを送るため（`Deploying Function: <関数名>`）、本番の関数は常に main と同じになる。ログの最後の `Deployed Functions on project …` には、送らなかった関数も並ぶ。送ったかどうかは、関数ごとの行で判断する。PR #120 のマージ後の実行では、7つの関数すべてが `No change found` で、本番の版は変わらなかった。
+
+**アプリを migration と Edge Functions の後に本番に出す理由**：アプリが先に本番に出ると、まだない DB の構成や Edge Functions を使って失敗する。2026-10-12 まで、Vercel は main への push で、migration の適用と別に、同時にアプリを本番に出していた。今は Vercel の Deployment Checks で、このワークフローの job `migrations` と `functions` を必須のチェックにしている。Vercel は本番用のビルドを今までどおり作るが、2つのチェックが成功するまで本番のドメインに割り当てない。成功したら自動で割り当てる。どちらかが失敗したときは、本番のアプリは前の版のまま残る。そのため、main への push では、どのファイルの変更でもこのワークフローを動かす（動かないと、アプリだけの変更が本番に出ない）。
+
+- 緊急のときは、Vercel のデプロイの画面の Force Promote で、チェックを待たずに本番に出せる
+- job の名前は、Vercel の設定のチェックの名前と同じ。job の名前を変えるときは、Vercel の設定も直す
+- 失敗した実行を、新しいコミットが来た後に Re-run しない。Re-run は最初の実行と同じコミットのファイルで動くため、その後に本番に当てた migration がなく、失敗する（2026-10-11 に、PR #113 の時点の実行を Re-run して失敗した）
 
 **本番の反映の待ちを取り消さないようにする**：同じ `concurrency` の group で待っている実行は、次の実行が来ると取り消される。PR の確認は PR ごとの group に分け、本番への反映の待ちを取り消さないようにしている。
 
@@ -49,7 +55,7 @@ GitHub Actions（リポジトリの Secrets に登録）
 
 **`supabase link` を使わない理由**：公式の例は `supabase link` で本番のプロジェクトに結び付けてから適用する。`link` は Management API から service_role キーを含む API キーを読むため、CI に渡すトークンに API キーを読む権限が要る。このリポジトリでは `--db-url` で DB に直接つなぎ、CI に渡す秘密情報を DB の接続文字列だけにしている。
 
-**変更の順番**：プレビューは本番の DB を使い、アプリ（Vercel）と DB は別々に更新される。そのため、DB の構成の変更は、変更の前のコードと後のコードのどちらでも動く順で行う。たとえば列の名前を変えるときは、新しい列を足す → コードを新しい列に移す → 古い列を消す、の3つの PR に分ける。migration を含む PR のプレビューでは、新しい構成を使う部分は動かないため、ローカルの Supabase（E2E・pgTAP）で確かめる。
+**変更の順番**：プレビューは本番の DB を使う。また、本番でも、migration を適用してからアプリが切り替わるまでの間は、前の版のアプリが新しい DB の構成で動く。そのため、DB の構成の変更は、変更の前のコードと後のコードのどちらでも動く順で行う。たとえば列の名前を変えるときは、新しい列を足す → コードを新しい列に移す → 古い列を消す、の3つの PR に分ける。migration を含む PR のプレビューでは、新しい構成を使う部分は動かないため、ローカルの Supabase（E2E・pgTAP）で確かめる。
 
 ## 監視
 
