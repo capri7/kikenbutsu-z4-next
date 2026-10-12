@@ -203,9 +203,9 @@ npm test -- --run
 deno test supabase/functions/
 
 # E2E（Playwright、34件）。ローカルの Supabase を起動してから実行する
-# stripe-webhook の E2E 用に、テスト専用の値（本物の鍵ではない）を置いてから起動する
+# stripe-webhook の E2E 用に、テスト専用の値（本物の鍵ではない）と偽の Stripe API の宛先を置いてから起動する
 npx playwright install chromium    # 初回のみ
-printf 'STRIPE_WEBHOOK_SECRET=whsec_e2e_local_only\nSTRIPE_SECRET_KEY=sk_test_e2e_dummy\n' > supabase/functions/.env
+printf 'STRIPE_WEBHOOK_SECRET=whsec_e2e_local_only\nSTRIPE_SECRET_KEY=sk_test_e2e_dummy\nSTRIPE_API_BASE_URL=http://host.docker.internal:54399\n' > supabase/functions/.env
 mkdir -p supabase/.temp && cp supabase/production-versions/*-version supabase/.temp/
 supabase start
 bash scripts/check_local_supabase_versions.sh    # 本番と同じ版で動いているかを確かめる

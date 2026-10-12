@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createHmac, randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
+import { putStripeObject } from './fake-stripe';
 
 /**
  * 退会：無料会員の即時削除、有料会員の退会の予約と取り消し、契約終了の通知による削除
@@ -8,6 +9,7 @@ import { createClient } from '@supabase/supabase-js';
  * 画面から、ローカルの Supabase で動く本物の request-account-deletion・cancel-account-deletion を呼ぶ。
  * 契約終了は、Stripe と同じ方式で署名した customer.subscription.deleted の通知を、本物の stripe-webhook に送る。
  * 署名の鍵はテスト専用の値で、supabase/functions/.env（Git の管理外）に同じ値を置く（paid-conversion.spec.ts と同じ）。
+ * stripe-webhook が Stripe から取りに来る契約は、偽の Stripe API に登録しておく（paid-conversion.spec.ts と同じ）。
  */
 
 const WEBHOOK_SECRET = 'whsec_e2e_local_only';
@@ -91,26 +93,26 @@ function stripeSignature(payload: string, secret: string): string {
 
 async function sendSubscriptionDeleted(subscriptionId: string, userId: string) {
   const endedAt = Math.floor(Date.now() / 1000);
+  const subscription = {
+    id: subscriptionId,
+    object: 'subscription',
+    customer: subscriptionId.replace('sub_', 'cus_'),
+    status: 'canceled',
+    cancel_at_period_end: false,
+    current_period_end: endedAt,
+    ended_at: endedAt,
+    latest_invoice: null,
+    metadata: { user_id: userId },
+    items: { object: 'list', data: [{ current_period_end: endedAt }] },
+  };
+  await putStripeObject('subscriptions', subscription);
   const payload = JSON.stringify({
     id: `evt_e2e_${randomUUID()}`,
     object: 'event',
     type: 'customer.subscription.deleted',
     livemode: false,
     created: endedAt,
-    data: {
-      object: {
-        id: subscriptionId,
-        object: 'subscription',
-        customer: subscriptionId.replace('sub_', 'cus_'),
-        status: 'canceled',
-        cancel_at_period_end: false,
-        current_period_end: endedAt,
-        ended_at: endedAt,
-        latest_invoice: null,
-        metadata: { user_id: userId },
-        items: { object: 'list', data: [{ current_period_end: endedAt }] },
-      },
-    },
+    data: { object: subscription },
   });
   const res = await fetch(`${supabaseUrl()}/functions/v1/stripe-webhook`, {
     method: 'POST',

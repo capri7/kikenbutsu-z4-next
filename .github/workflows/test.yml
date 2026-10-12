@@ -69,10 +69,10 @@ jobs:
         with:
           version: 2.115.0
 
-      # stripe-webhook の E2E（paid-conversion.spec.ts）で使う、テスト専用の値（本物の鍵ではない）。
+      # stripe-webhook の E2E（paid-conversion.spec.ts）で使う、テスト専用の値（本物の鍵ではない）と、偽の Stripe API の宛先。
       # supabase start が supabase/functions/.env を読み込む
       - name: Edge Functions のテスト用の環境変数
-        run: printf 'STRIPE_WEBHOOK_SECRET=whsec_e2e_local_only\nSTRIPE_SECRET_KEY=sk_test_e2e_dummy\n' > supabase/functions/.env
+        run: printf 'STRIPE_WEBHOOK_SECRET=whsec_e2e_local_only\nSTRIPE_SECRET_KEY=sk_test_e2e_dummy\nSTRIPE_API_BASE_URL=http://host.docker.internal:54399\n' > supabase/functions/.env
 
       # 本番と同じ版で起動する。supabase start は supabase/.temp/ の版のファイルを読み、その版で起動する
       # （公式の文書にはない、CLI の作りによる動き。次の次の手順で、起動した版を確かめる）
