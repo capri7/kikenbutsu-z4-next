@@ -118,15 +118,24 @@ export default defineConfig({
   ],
 
   /* E2E 用に本番ビルドを起動する（接続先はローカルの Supabase） */
-  webServer: {
-    command: 'npm run build && npm run start',
-    url: 'http://localhost:3000',
-    // 本番に接続したサーバーを誤って使い回さないよう、常に新しく起動する
-    reuseExistingServer: false,
-    timeout: 180 * 1000,
-    env: {
-      NEXT_PUBLIC_SUPABASE_URL: localSupabase.url,
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: localSupabase.anonKey,
+  webServer: [
+    {
+      command: 'npm run build && npm run start',
+      url: 'http://localhost:3000',
+      // 本番に接続したサーバーを誤って使い回さないよう、常に新しく起動する
+      reuseExistingServer: false,
+      timeout: 180 * 1000,
+      env: {
+        NEXT_PUBLIC_SUPABASE_URL: localSupabase.url,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: localSupabase.anonKey,
+      },
     },
-  },
+    // 偽の Stripe API。stripe-webhook が、本物の Stripe の代わりに契約などを取りに来る（e2e/fake-stripe-server.mjs）
+    {
+      command: 'node e2e/fake-stripe-server.mjs',
+      url: 'http://127.0.0.1:54399/health',
+      reuseExistingServer: false,
+      timeout: 10 * 1000,
+    },
+  ],
 });

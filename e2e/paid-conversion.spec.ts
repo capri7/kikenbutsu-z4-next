@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createHmac, randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
+import { putStripeObject } from './fake-stripe';
 
 /**
  * 有料転換：Stripe の通知（Webhook）を受けて、契約が DB に入り、有料の問題が開けるようになるまで。
@@ -12,6 +13,9 @@ import { createClient } from '@supabase/supabase-js';
  *
  * 署名の鍵はテスト専用の値で、supabase/functions/.env（Git の管理外）に同じ値を置く。
  * CI では、ワークフローが supabase start の前にこのファイルを作る。
+ *
+ * stripe-webhook は、Stripe から契約などを取りに行く。E2E では、その宛先を偽の Stripe API（e2e/fake-stripe-server.mjs）にし、
+ * 取りに来たときに返す中身を、通知を送る前に登録しておく（putStripeObject）。
  */
 
 const WEBHOOK_SECRET = 'whsec_e2e_local_only';
@@ -117,6 +121,7 @@ test.describe('有料転換（Webhook から有料の問題の解放まで）', 
     await expect(page.getByText('This page could not be found')).toBeVisible();
 
     const event = subscriptionCreatedEvent(userId);
+    await putStripeObject('subscriptions', event.data.object);
     const payload = JSON.stringify(event);
     const res = await sendWebhook(payload, stripeSignature(payload, WEBHOOK_SECRET));
     expect(res).toEqual({ status: 200, body: 'ok' });
@@ -136,6 +141,7 @@ test.describe('有料転換（Webhook から有料の問題の解放まで）', 
     const userId = await userIdOf(email);
 
     const event = subscriptionCreatedEvent(userId);
+    await putStripeObject('subscriptions', event.data.object);
     const payload = JSON.stringify(event);
 
     const first = await sendWebhook(payload, stripeSignature(payload, WEBHOOK_SECRET));
@@ -170,8 +176,9 @@ test.describe('有料転換（Webhook から有料の問題の解放まで）', 
     const email = await signUp(page);
     const userId = await userIdOf(email);
 
-    // テストの Stripe の鍵は本物ではないため、stripe-webhook は Stripe からメールアドレスを取得できない（null になる）
+    // 偽の Stripe API に顧客を登録しないため、stripe-webhook は Stripe からメールアドレスを取得できない（null になる）
     const event = subscriptionCreatedEvent(userId);
+    await putStripeObject('subscriptions', event.data.object);
     expect(await sendSigned(event)).toEqual({ status: 200, body: 'ok' });
     await expect
       .poll(() => subscriptionRows(event.data.object.id), { timeout: 15000 })
@@ -219,6 +226,7 @@ test.describe('契約の更新・終了（Webhook）', () => {
     const created = subscriptionCreatedEvent(userId);
     const subscriptionId = created.data.object.id;
 
+    await putStripeObject('subscriptions', created.data.object);
     expect(await sendSigned(created)).toEqual({ status: 200, body: 'ok' });
     await expect
       .poll(() => subscriptionState(subscriptionId), { timeout: 15000 })
@@ -228,6 +236,7 @@ test.describe('契約の更新・終了（Webhook）', () => {
       status: 'active',
       cancel_at_period_end: true,
     });
+    await putStripeObject('subscriptions', updated.data.object);
     expect(await sendSigned(updated)).toEqual({ status: 200, body: 'ok' });
     await expect
       .poll(() => subscriptionState(subscriptionId), { timeout: 15000 })
@@ -246,6 +255,7 @@ test.describe('契約の更新・終了（Webhook）', () => {
     const created = subscriptionCreatedEvent(userId);
     const subscriptionId = created.data.object.id;
 
+    await putStripeObject('subscriptions', created.data.object);
     expect(await sendSigned(created)).toEqual({ status: 200, body: 'ok' });
     await expect
       .poll(() => subscriptionState(subscriptionId), { timeout: 15000 })
@@ -257,6 +267,7 @@ test.describe('契約の更新・終了（Webhook）', () => {
       status: 'canceled',
       cancel_at_period_end: false,
     });
+    await putStripeObject('subscriptions', deleted.data.object);
     expect(await sendSigned(deleted)).toEqual({ status: 200, body: 'ok' });
     await expect
       .poll(() => subscriptionState(subscriptionId), { timeout: 15000 })
@@ -267,6 +278,40 @@ test.describe('契約の更新・終了（Webhook）', () => {
     await expect(page.getByRole('link', { name: '購入', exact: true })).toBeVisible();
     // 退会の予約がないので、アカウントは残る
     expect(await userIdOf(email)).toBe(userId);
+  });
+  test('古い内容の通知が後から届いても、Stripe の最新の契約を反映する（FR-11-7）', async ({ page }) => {
+    const email = await signUp(page);
+    const userId = await userIdOf(email);
+    const created = subscriptionCreatedEvent(userId);
+    const subscriptionId = created.data.object.id;
+
+    await putStripeObject('subscriptions', created.data.object);
+    expect(await sendSigned(created)).toEqual({ status: 200, body: 'ok' });
+    await expect
+      .poll(() => subscriptionState(subscriptionId), { timeout: 15000 })
+      .toEqual({ status: 'active', cancel_at_period_end: false });
+
+    // Stripe では、解約の予約が入った状態が最新。Stripe は通知を起きた順に届けると限らないため、
+    // 予約が入ったときの通知（新しい）のあとに、それより前の通知（古い：予約なし）が届く場合を再現する
+    const newer = followUpEvent(created, 'customer.subscription.updated', {
+      status: 'active',
+      cancel_at_period_end: true,
+    });
+    const older = followUpEvent(created, 'customer.subscription.updated', {
+      status: 'active',
+      cancel_at_period_end: false,
+    });
+    await putStripeObject('subscriptions', newer.data.object);
+
+    expect(await sendSigned(newer)).toEqual({ status: 200, body: 'ok' });
+    await expect
+      .poll(() => subscriptionState(subscriptionId), { timeout: 15000 })
+      .toEqual({ status: 'active', cancel_at_period_end: true });
+
+    expect(await sendSigned(older)).toEqual({ status: 200, body: 'ok' });
+    await expect.poll(() => eventState(older.id), { timeout: 15000 }).toMatchObject({ processed: true });
+    // 古い通知の中身（予約なし）ではなく、Stripe の最新の契約（予約あり）のまま
+    expect(await subscriptionState(subscriptionId)).toEqual({ status: 'active', cancel_at_period_end: true });
   });
 });
 
@@ -288,6 +333,7 @@ test.describe('通知の処理が失敗したとき（Webhook）', () => {
     const userId = randomUUID();
     const email = `e2e-test+${randomUUID()}@example.com`;
     const event = subscriptionCreatedEvent(userId);
+    await putStripeObject('subscriptions', event.data.object);
 
     expect(await sendSigned(event)).toEqual({ status: 200, body: 'ok' });
     await expect.poll(() => eventState(event.id), { timeout: 15000 }).toMatchObject({ processed: false, attempts: 1 });
