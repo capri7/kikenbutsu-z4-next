@@ -77,6 +77,9 @@ jobs:
       # migrations と seed.sql を適用したローカルの Supabase を起動する
       - name: Start local Supabase
         run: supabase start
+      # 本番と同じ版で動いているかを確かめる（版は supabase/production-versions/ に書く。違えば失敗）
+      - name: 本番と同じ版で起動したかを確かめる
+        run: bash scripts/check_local_supabase_versions.sh
       - name: DB のテスト（pgTAP）
         run: supabase test db
 
