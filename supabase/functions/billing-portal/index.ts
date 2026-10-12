@@ -1,12 +1,12 @@
 // supabase/functions/billing-portal/index.ts
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import Stripe from "https://esm.sh/stripe@14?target=denonext";
+import Stripe from "npm:stripe@18.2.1";
 import { admin } from "../_shared/stripeSync.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getAuthenticatedUser } from "../_shared/auth.ts";
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"), {
-  apiVersion: "2024-06-20"
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
+  apiVersion: "2025-05-28.basil"
 });
 
 const j = (body: unknown, status: number, headers: HeadersInit) =>
