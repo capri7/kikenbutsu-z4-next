@@ -212,7 +212,11 @@ async function processEvent(event: Stripe.Event, livemode: boolean) {
     case "customer.subscription.created":
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {
-      const sub = event.data.object as Stripe.Subscription;
+      // Stripe は通知を起きた順に届けるとは限らないため、通知の中身ではなく、Stripe から最新の契約を取り直して反映する
+      // （https://docs.stripe.com/webhooks の Event ordering）。解約済みの契約も取り出せる（2026-10-12 に本番の契約で確認）。
+      // 取り直せなければ投げ、通知を未処理のまま残して処理し直す
+      const eventSub = event.data.object as Stripe.Subscription;
+      const sub = await stripe.subscriptions.retrieve(eventSub.id);
       const user_id = await syncFromSubscription(sub, livemode);
 
 
