@@ -103,7 +103,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 
 同じロジックを2箇所に置いたまま個別にテストすると、片方だけ修正した場合、修正していない側のテストは古い実装に対して通り続けるため、両方とも green のまま、2つの実装がズレたこと自体を検知する仕組みがない。1箇所に集約してから1回だけテストすることで、「ロジックが1つしか存在しない」こと自体が正しさの担保になる。
 
-## `stripe-webhook`（17パターン）
+## `stripe-webhook`（22パターン）
 
 契約終了日の解決ロジックは上記の`_shared/periodEnd.ts`に集約したため、`stripe-webhook`固有では次を検証している。
 
@@ -156,9 +156,13 @@ Edge Functionsの呼び出しの共通関数`src/lib/edge-functions.ts`（5パ�
 
 ## E2E の構成と方針
 
-コアフロー（無料登録〜マイページ〜練習問題への回答〜誤答リストへの遷移）3件を実装し、ローカルの Supabase に対して合格を確認済み（`--repeat-each=10` で30回連続合格）。E2E は本番ビルドを起動して実行する設定（`webServer`）とした。開発サーバーでは、初回のコンパイル待ちで間欠的にタイムアウトするため。有料転換は、Stripe の公式ドキュメントの案内（Checkout などの決済画面には自動操作を防ぐ仕組みがあるため、自動テストでは出力を模擬する）と、Stripe の公式ライブラリの README の「Testing Webhook signing」の方法に従い、Stripe と同じ方式で署名した `customer.subscription.created` の通知を、ローカルで動く本物の `stripe-webhook` に送って確かめている（`e2e/paid-conversion.spec.ts`、7件）。契約の反映（`subscriptions` の行）、有料の問題の解放とヘッダーの切り替え、同じ通知の重複の処理、署名が正しくない通知の拒否に加え、契約の更新（`customer.subscription.updated` による解約の予約）と終了（`customer.subscription.deleted` で無料会員に戻る）、Stripe からメールアドレスを取れなかったときに会員のメールアドレスを消さないこと、処理に失敗した通知が未処理のまま残り、再送されると処理し直されることを検証する。署名の鍵はテスト専用の値で、CI では `supabase start` の前に `supabase/functions/.env` に置く。`stripe-webhook` は Stripe から契約や顧客を取りに行くため、E2E では、その宛先を偽の Stripe API（`e2e/fake-stripe-server.mjs`。Playwright の `webServer` が起動し、Edge Functions のコンテナから `http://host.docker.internal:54399` で呼ばれる）にし、テストが通知を送る前に、取りに来たときに返す契約を登録する。Stripe 公式の stripe-mock は、登録した中身を ID で返さず（状態を持たない）、最新の API の版にしか対応しないため使わない。通知が起きた順と違う順で届いても、Stripe の最新の契約が反映されることも確かめる（FR-11-7）。`stripe-webhook` は応答を返したあとに裏の処理（`EdgeRuntime.waitUntil`）で契約を反映するため、ローカルの Edge Functions を `policy = "per_worker"` で動かしている（Supabase の公式ドキュメントの案内どおり。`oneshot` では応答のあとに関数が終了し、裏の処理が最後まで動かない）。Checkout のセッション作成、`checkout.session.completed` の経路、ゲスト決済の紐付けは、中で Stripe の API を呼ぶため E2E の対象外とし、決済画面の操作とあわせてテストモードで手動で確認する。
+コアフロー（無料登録〜マイページ〜練習問題への回答〜誤答リストへの遷移）3件を実装し、ローカルの Supabase に対して合格を確認済み（`--repeat-each=10` で30回連続合格）。E2E は本番ビルドを起動して実行する設定（`webServer`）とした。開発サーバーでは、初回のコンパイル待ちで間欠的にタイムアウトするため。有料転換は、Stripe の公式ドキュメントの案内（Checkout などの決済画面には自動操作を防ぐ仕組みがあるため、自動テストでは出力を模擬する）と、Stripe の公式ライブラリの README の「Testing Webhook signing」の方法に従い、Stripe と同じ方式で署名した `customer.subscription.created` の通知を、ローカルで動く本物の `stripe-webhook` に送って確かめている（`e2e/paid-conversion.spec.ts`、8件）。契約の反映（`subscriptions` の行）、有料の問題の解放とヘッダーの切り替え、同じ通知の重複の処理、署名が正しくない通知の拒否に加え、契約の更新（`customer.subscription.updated` による解約の予約）と終了（`customer.subscription.deleted` で無料会員に戻る）、Stripe からメールアドレスを取れなかったときに会員のメールアドレスを消さないこと、処理に失敗した通知が未処理のまま残り、再送されると処理し直されることを検証する。署名の鍵はテスト専用の値で、CI では `supabase start` の前に `supabase/functions/.env` に置く。`stripe-webhook` は Stripe から契約や顧客を取りに行くため、E2E では、その宛先を偽の Stripe API（`e2e/fake-stripe-server.mjs`。Playwright の `webServer` が起動し、Edge Functions のコンテナから `http://host.docker.internal:54399` で呼ばれる）にし、テストが通知を送る前に、取りに来たときに返す契約を登録する。Stripe 公式の stripe-mock は、登録した中身を ID で返さず（状態を持たない）、最新の API の版にしか対応しないため使わない。通知が起きた順と違う順で届いても、Stripe の最新の契約が反映されることも確かめる（FR-11-7）。`stripe-webhook` は応答を返したあとに裏の処理（`EdgeRuntime.waitUntil`）で契約を反映するため、ローカルの Edge Functions を `policy = "per_worker"` で動かしている（Supabase の公式ドキュメントの案内どおり。`oneshot` では応答のあとに関数が終了し、裏の処理が最後まで動かない）。Checkout のセッション作成、`checkout.session.completed` の経路、ゲスト決済の紐付けは、中で Stripe の API を呼ぶため E2E の対象外とし、決済画面の操作とあわせてテストモードで手動で確認する。
 
 E2E は、Vitest・Deno.test・pgTAP・ESLint とあわせて、PR ごとと main への push ごとに GitHub Actions で実行している（`.github/workflows/test.yml`）。CI の中で `supabase start` を実行し、migrations と `seed.sql` を適用したローカルの Supabase に接続するため、本番には触れない。その先の候補として、`useSearchParams`とSuspense境界のケーススタディと、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E対象とした2関数）が残っている。
+
+ログインの「移動先（?next=）を指定してログインすると、そのページに移る（FR-03-5）」のテストは、2026-10-13 まで、ログインしなくても通っていた。移動先を正規表現 `/\/checkout$/` で確かめていたため、開いた URL `/login?next=/checkout` が最初から当てはまっていた（Playwright の trace で、ログインの要求の応答より前に合格していたことを確認）。今は `toHaveURL('/checkout')` で確かめる。Playwright の公式の文書のとおり、文字列は `baseURL` と合わせた完全な URL と比べるため、移動の前の URL には当てはまらない。URL を正規表現で確かめるときは、移動の前の URL に当てはまらないことも確かめる。
+
+失敗したテストの trace（通信・画面・コンソールの記録）は、CI では1回目の流し直しで取り（`on-first-retry`）、手元では失敗したテストの分を残す（`retain-on-failure`）。手元は流し直さない（`retries: 0`）ため、以前の `on-first-retry` だけの設定では、手元で失敗しても trace が残らなかった。
 
 ## ローカルの E2E で起きている2つの失敗
 

@@ -44,6 +44,8 @@ test.describe('ログイン', () => {
 
     await page.goto('/login?next=/checkout');
     await logIn(page, email);
-    await expect(page).toHaveURL(/\/checkout$/, { timeout: 15000 });
+    // 文字列は baseURL と合わせた完全な URL（http://localhost:3000/checkout）と比べるため、
+    // 移動の前の URL（/login?next=/checkout）には当てはまらない（正規表現 /\/checkout$/ は当てはまっていた）
+    await expect(page).toHaveURL('/checkout', { timeout: 15000 });
   });
 });
