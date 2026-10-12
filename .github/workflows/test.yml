@@ -74,9 +74,17 @@ jobs:
       - name: Edge Functions のテスト用の環境変数
         run: printf 'STRIPE_WEBHOOK_SECRET=whsec_e2e_local_only\nSTRIPE_SECRET_KEY=sk_test_e2e_dummy\n' > supabase/functions/.env
 
+      # 本番と同じ版で起動する。supabase start は supabase/.temp/ の版のファイルを読み、その版で起動する
+      # （公式の文書にはない、CLI の作りによる動き。次の次の手順で、起動した版を確かめる）
+      - name: 本番と同じ版を指定する
+        run: mkdir -p supabase/.temp && cp supabase/production-versions/*-version supabase/.temp/
+
       # migrations と seed.sql を適用したローカルの Supabase を起動する
       - name: Start local Supabase
         run: supabase start
+      # 本番と同じ版で動いているかを確かめる（版は supabase/production-versions/ に書く。違えば失敗）
+      - name: 本番と同じ版で起動したかを確かめる
+        run: bash scripts/check_local_supabase_versions.sh
       - name: DB のテスト（pgTAP）
         run: supabase test db
 
