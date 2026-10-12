@@ -177,7 +177,7 @@ E2E は、Vitest・Deno.test・pgTAP・ESLint とあわせて、PR ごとと mai
 
 **解消**：`supabase link` をし直して、手元の版を本番に合わせた（PostgREST 14.18、Auth 2.197.0、Postgres 17.11.0.002、Storage 1.80.2）。そのあとの E2E（34件×3回）で、102件すべてが通り、Kong の接続の切断と 502 はどちらも0件だった。
 
-**CI**：CI は本番とリンクせず、Supabase CLI（2.115.0）に同梱の PostgREST v16.1 で E2E を実行している。本番（14.18）と版が違う。
+**CI**：CI は本番とリンクせず、Supabase CLI（2.115.0）に同梱の版（PostgREST v16.1、Auth v2.195.0、Postgres 17.6.1.159、Storage v1.69.11。CI の実行で確認）で E2E を実行していて、本番と版が違っていた。今は、`supabase/production-versions/` に書いた本番の版を `supabase/.temp/` に写してから起動し、起動した版がファイルと違えば失敗する（`scripts/check_local_supabase_versions.sh`。手元の手順は README の「ローカルで起動する」）。
 
 ### 退会の予約の応答をブラウザが受け取れず、画面が「処理中...」のまま止まる（原因は未特定）
 
