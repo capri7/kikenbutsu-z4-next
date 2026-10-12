@@ -159,6 +159,39 @@ Edge Functionsの呼び出しの共通関数`src/lib/edge-functions.ts`（5パ�
 
 E2E は、Vitest・Deno.test・pgTAP・ESLint とあわせて、PR ごとと main への push ごとに GitHub Actions で実行している（`.github/workflows/test.yml`）。CI の中で `supabase start` を実行し、migrations と `seed.sql` を適用したローカルの Supabase に接続するため、本番には触れない。その先の候補として、`useSearchParams`とSuspense境界のケーススタディと、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E対象とした2関数）が残っている。
 
+## ローカルの E2E で起きている2つの失敗
+
+2026-10-12 時点の事実と、確かめたことを記録する。どちらもローカルの E2E（macOS、Docker Desktop）で起きている。
+
+### 書き込みの要求がまれに 502 になる（原因は特定済み、対応は検討中）
+
+**現象**：Kong を通した書き込みの要求（POST）が、まれに 502 になる。これまでに、`rpc/has_active_subscription` と、テストの準備で契約の行を作る `POST /rest/v1/subscriptions` で起きた。
+
+**原因**：PostgREST v12.2.12 は、HEAD の要求に 2xx を返したあと、その接続を閉じる。応答に `Connection: close` を付けないため、Kong は接続がまだ使えると見て次の要求に使い回し、接続が切れる。Kong は読み取りの要求（GET・HEAD）はやり直すため成功し、やり直さない書き込みの要求（POST）だけが 502 になる。PostgREST v14.15 で、閉じる接続には `Connection: close` を付けるよう直っている（PostgREST の issue #5279、Supabase CLI の issue #6674）。
+
+**確かめたこと**：
+- PostgREST のコンテナで通信を記録した。HEAD の応答 84件のうち 79件の後に PostgREST が接続を閉じていた。接続が切れた4件は、すべて HEAD の応答の直後だった
+- ローカルの PostgREST だけを v14.15 に替えて E2E（34件×3回）を実行すると、Kong の接続の切断と 502 は、どちらも0件だった（v12.2.12 では、1回の実行あたり2〜9件の切断）
+
+**本番**：ローカルの PostgREST の版は、リンクした本番と同じ v12.2.12 に合わせている。本番も同じ版で、2026-10-05〜10-12 の本番の記録（要求 約7,700件）では、5xx は0件だった。本番の PostgREST を v14.15 以上に上げる対応を検討している。
+
+### 退会の予約の応答をブラウザが受け取れず、画面が「処理中...」のまま止まる（原因は未特定）
+
+**現象**：退会の予約の E2E（`e2e/account-deletion.spec.ts` の FR-13-2 と FR-13-2・FR-13-3）で、「本当に退会を予約する」を押したあと、ボタンが「処理中...」のまま15秒たち、失敗する。2026-10-11 に1回（PostgREST v12.2.12）起きた。10-12 には、PostgREST v14.15 で E2E（34件×3回）を5回実行し、そのうち2回で1件ずつ起きた。
+
+**確かめたこと**（10-12 の2回目）：
+- DB：予約は書き込まれていた（`deletion_requested` が true）
+- Kong：要求を受け、Edge Function の応答（200、89バイト、gzip で圧縮した `{"scheduled":true,"effective_date":"…"}`）を最後まで返していた。Kong のコンテナで記録した通信では、相手（Docker Desktop の中継、192.168.65.1）から受け取りの返事（ACK）も返っていた。応答は、同じ実行で成功したほかの予約の応答と同じ形で、gzip も正しくほどけた
+- ブラウザ：Playwright の trace では、この要求は応答を受け取らないまま、約27秒後にテストの時間切れで接続が閉じられた
+- この要求は、その実行で最初の `request-account-deletion` の呼び出しで、Edge Function の処理に 829 ms かかっていた（同じ実行のほかの予約は 144〜192 ms）
+
+**分かっていないこと**：
+- 応答が消えたのが、Docker Desktop の中継の中か、Chrome の中か
+- 起きる条件。Mac の側（`127.0.0.1:54321`）の通信の記録を加えた2回の実行では起きなかった（この記録で、Kong の側の記録と同じ通信がもれなく取れていることは確かめた）
+- CI（Ubuntu。Docker Desktop を使わない）で起きているか
+
+**環境**：macOS、Docker Desktop 4.88.0（Engine 29.7.2）、Supabase CLI v2.115.0、Playwright 1.62.1（Chromium 151、headless）。
+
 ## 単体テストの対象の選び方（Next.js 側）
 
 `src/lib/feedback.ts`・`src/lib/safeRedirect.ts`・`src/lib/edge-functions.ts`・`src/lib/questionImage.ts`・`src/lib/leakedPassword.ts`は着手済み。`src/lib/subscription.ts`の`isSubscribed()`は、判定を DB の関数 `has_active_subscription()` に任せ、呼び出した結果を返すだけになったため、判定の検証は pgTAP で行っている（[詳細設計](design.md) の「⑦ 有料会員の判定」参照）。`account.ts`・`billing.ts`も着手済み。他（`mistakes.ts`・`review.ts`・`progress.ts`）は主にSupabase呼び出しのラッパーで、判定ロジックの比率が低いため優先度は下がる。

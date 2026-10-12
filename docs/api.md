@@ -132,7 +132,7 @@ Stripeからのイベント通知を受信する。**リクエスト/レスポ�
 |---|---|
 | `checkout.session.completed` | `session.metadata.user_id`または`client_reference_id`から会員を特定し、`user_profiles`を更新。紐づくサブスクリプションがあれば同期 |
 | `customer.subscription.created`/`updated`/`deleted` | Stripeの最新状態に合わせて、`subscriptions`（状態・契約終了日・期間末の解約の予約）と`user_profiles`（メールアドレス・Stripeの顧客ID）を更新。`deleted`の場合、`deletion_requested`フラグが立っていれば`auth.users`を物理削除する（`request-account-deletion`が立てた予約フラグを、実際の契約終了タイミングでここが実行に移す2段階構成） |
-| `invoice.paid`/`invoice.payment_succeeded` | 紐づくサブスクリプションを取得し同期 |
+| `invoice.paid`/`invoice.payment_succeeded` | 請求書の`parent.subscription_details.subscription`から契約を特定し、Stripeから取得して同期する。契約と関係のない請求書（`parent.type`が`subscription_details`でないもの）は何もしない |
 | それ以外 | 何もしない |
 
 **冪等性の仕組み**

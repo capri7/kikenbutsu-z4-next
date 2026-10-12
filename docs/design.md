@@ -322,10 +322,12 @@ Stripe の勧め（すぐに 2xx を返し、処理は非同期の列で行う�
 
 ## 型安全性
 
-**対応済み**：`check-guest-subscription`・`stripe-webhook`にあった3箇所の`as any`を解消した。契約終了日の解決部分（2箇所）は、範囲を`PeriodEndSource`型に限定したアサーション（`as unknown as PeriodEndSource`）に変更。顧客のメールアドレス取得部分（`stripe-webhook`）は、`"deleted" in cust`による型の絞り込みに変更し、キャスト自体を排除した。
+**対応済み**：`check-guest-subscription`・`stripe-webhook`にあった3箇所の`as any`を解消した。契約終了日の解決部分（2箇所）は、範囲を`PeriodEndSource`型に限定したアサーション（`as unknown as PeriodEndSource`）に変更し、その後 SDK を API の版に合わせたことで、アサーションも不要になった（下記）。顧客のメールアドレス取得部分（`stripe-webhook`）は、`"deleted" in cust`による型の絞り込みに変更し、キャスト自体を排除した。
 
-原因はStripeが2025-03-31のBasil APIバージョンで`Subscription`直下の`current_period_end`を廃止し`items.data[].current_period_end`に移行したこと。当プロジェクトはBasil以前のAPIバージョン（2024-06-20）を使っており実行時には直下のフィールドが存在するが、`esm.sh`経由で読み込む型定義はBasil以降の形を反映しているため、型とランタイムの実態がズレる。
+原因はStripeが2025-03-31のBasil APIバージョンで`Subscription`直下の`current_period_end`を廃止し`items.data[].current_period_end`に移行したこと。2026-10-12 まで、Edge Functions は Basil 以前の API バージョン（2024-06-20、`esm.sh` の `stripe@14`）で Stripe の API を呼んでいた。一方、アカウントと Webhook の送信先の API バージョンは `2025-05-28.basil` で、届く通知は Basil の形だった。読み込む型定義は Basil 以降の形を反映しており、型と実行時の値がずれていた。
 
-**この対応は完全ではない**。`as unknown as PeriodEndSource`は依然として型アサーション（コンパイラに「この形だと信じてよい」と伝えるだけの記述）であり、実行時にStripeから返る値が本当にこの形をしている保証はコンパイラの外にある。抜本的な解決には、Basil以降のAPIバージョンへの全面移行（`items.data[].current_period_end`だけを正とする設計への作り替え）か、`zod`等によるスキーマ検証を実行時に挟む対応が必要になるが、どちらも決済まわり全体への影響が大きいため今回のスコープ外とした。
+**SDK を API の版に合わせて解消（2026-10-12）**：5つの Edge Functions の Stripe の SDK を、`esm.sh` の `stripe@14`（`2024-06-20`）から、アカウントと Webhook の送信先の版に合う `npm:stripe@18.2.1`（`2025-05-28.basil` に固定）に変えた。読み込みは Supabase の公式の例と同じ `npm:` の形にし、Webhook の署名の確認には `Stripe.createSubtleCryptoProvider()`（Web Crypto）を渡す。型と実行時の値が一致したため、`as unknown as PeriodEndSource` をやめた。実行時のスキーマ検証（`zod` 等）は行っていない。
+
+**同じずれで見落としていた欠陥**：請求書の通知（`invoice.paid`・`invoice.payment_succeeded`）の処理は、Basil でなくなった `invoice.subscription` を読んでいたため、本番に届いた13件はどれも契約を同期していなかった（2026-10-12 に本番の `stripe_events` で確認）。月次更新の請求書10件には、どれも2時間以内に同じ契約の `customer.subscription.updated` が届いており、契約終了日はそちらの通知で反映されていた。データの欠けは見つかっていない。請求書の `parent.subscription_details.subscription` から契約を特定するように直した（`stripe-webhook/invoice.ts`。Deno.test で、直す前の作りでは失敗することを確かめた）。
 
 **Edge Functions の型の検査**：CI の `Deno.test` が型を検査するのは、テストと、テストが読み込むファイル（判定の関数を切り出した `decision.ts` など）だけで、Stripe の呼び出しや DB への書き込みがある各関数の `index.ts` は型の検査の対象外だった。CI に `deno check` を加え、7つの `index.ts` を PR ごとに検査するようにした。最初の検査で見つかった19件は、引数の型の書き忘れ（15件）、型の推論の失敗（3件。実行時の値は正しく、本番の `subscriptions` に契約の ID が空の行がないことも確認）、`EdgeRuntime` が見つからない（1件）で、いずれも動きを変えずに直した。`EdgeRuntime` は、Supabase の型定義（`edge-runtime.d.ts`）を JSR から読み込むと宣言がグローバルにならないことを、最小の再現で確かめたうえで、型だけを取り出して使う形にした。

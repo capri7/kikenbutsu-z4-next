@@ -1,15 +1,15 @@
 // supabase/functions/check-guest-subscription/index.ts
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import Stripe from "https://esm.sh/stripe@14?target=denonext";
+import Stripe from "npm:stripe@18.2.1";
 import { toIsoOrNull, upsertUserProfiles, upsertSubscriptions } from "../_shared/stripeSync.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { getAuthenticatedUser } from "../_shared/auth.ts";
-import { resolveCurrentPeriodEnd, type PeriodEndSource } from "../_shared/periodEnd.ts";
+import { resolveCurrentPeriodEnd } from "../_shared/periodEnd.ts";
 import { findActiveSubscription } from "./decision.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
 
-const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2024-06-20" });
+const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2025-05-28.basil" });
 
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
@@ -45,12 +45,8 @@ Deno.serve(async (req) => {
       const active = findActiveSubscription<Stripe.Subscription>(subs.data);
 
       if (active) {
-        // Stripeは2025-03-31のBasil APIバージョンでSubscription直下のcurrent_period_endを廃止し、
-        // items.data[].current_period_endに移行した。当プロジェクトはBasil以前のAPIバージョン
-        // （2024-06-20）を使っており実行時には直下のフィールドが存在するが、esm.sh経由で読み込む
-        // 型定義はBasil以降の形を反映しているため、型とランタイムの実態がズレる。
-        // PeriodEndSourceへの限定キャストで、読み取る5フィールドの範囲だけ安全性を確保している。
-        const periodEndSec = resolveCurrentPeriodEnd(active as unknown as PeriodEndSource);
+        // Basil（2025-03-31）以降、契約終了日は items.data[].current_period_end にある
+        const periodEndSec = resolveCurrentPeriodEnd(active);
         const currentPeriodEnd = toIsoOrNull(periodEndSec);
         const status = active.status.toLowerCase();
 

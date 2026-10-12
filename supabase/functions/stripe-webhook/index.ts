@@ -4,7 +4,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 // （同じファイルを手元にコピーして読み込むとグローバルになることを確認済み）。型だけを取り出して globalThis から呼ぶ。
 // import type は実行時には消えるため、動きは変わらない。
 import type * as EdgeRuntimeTypes from "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import Stripe from "https://esm.sh/stripe@14?target=denonext";
+import Stripe from "npm:stripe@18.2.1";
 import {
   admin,
   toIsoOrNull,
@@ -17,12 +17,16 @@ import {
   shouldPhysicallyDeleteUser,
 } from "./decision.ts";
 import { type EventStore, processAndFinish, receiveEvent } from "./receive.ts";
-import { resolveCurrentPeriodEnd, type PeriodEndSource } from "../_shared/periodEnd.ts";
+import { resolveCurrentPeriodEnd } from "../_shared/periodEnd.ts";
+import { subscriptionIdFromInvoice } from "./invoice.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
 const STRIPE_WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET")!;
 
-const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2024-06-20" });
+// SDK の版（stripe@18.2.1）は、アカウントと Webhook の送信先の API の版（2025-05-28.basil）に合わせて固定する
+const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2025-05-28.basil" });
+// Deno では Web Crypto で署名を確かめる（Supabase の公式の例と同じ）
+const cryptoProvider = Stripe.createSubtleCryptoProvider();
 
 // 通知の記録は、DB の関数で行う（supabase/migrations/20261010203000_stripe_event_functions.sql）
 const eventStore: EventStore = {
@@ -88,8 +92,11 @@ async function getEmailForSubscription(
         typeof sub.latest_invoice === "string"
           ? sub.latest_invoice
           : sub.latest_invoice.id;
-      const inv = await stripe.invoices.retrieve(invId);
-      if (inv.customer_email) return inv.customer_email;
+      // Basil 以降、Invoice の id は型の上で省略されうる（プレビューの請求書には id がない）
+      if (invId) {
+        const inv = await stripe.invoices.retrieve(invId);
+        if (inv.customer_email) return inv.customer_email;
+      }
     }
 
     const customerId =
@@ -136,12 +143,8 @@ async function syncFromSubscription(
   const status = (sub.status ?? "none").toLowerCase();
 
 
-  // Stripeは2025-03-31のBasil APIバージョンでSubscription直下のcurrent_period_endを廃止し、
-  // items.data[].current_period_endに移行した。当プロジェクトはBasil以前のAPIバージョン
-  // （2024-06-20）を使っており実行時には直下のフィールドが存在するが、esm.sh経由で読み込む
-  // 型定義はBasil以降の形を反映しているため、型とランタイムの実態がズレる。
-  // PeriodEndSourceへの限定キャストで、読み取る5フィールドの範囲だけ安全性を確保している。
-  const periodEndSec = resolveCurrentPeriodEnd(sub as unknown as PeriodEndSource);
+  // Basil（2025-03-31）以降、契約終了日は items.data[].current_period_end にある
+  const periodEndSec = resolveCurrentPeriodEnd(sub);
   const currentPeriodEnd = toIsoOrNull(periodEndSec);
 
   await upsertUserProfiles({
@@ -249,10 +252,10 @@ async function processEvent(event: Stripe.Event, livemode: boolean) {
     case "invoice.paid":
     case "invoice.payment_succeeded": {
       const inv = event.data.object as Stripe.Invoice;
-      if (inv.subscription) {
-        const sub = await stripe.subscriptions.retrieve(
-          String(inv.subscription),
-        );
+      // 契約と関係のない請求書は同期しない
+      const subscriptionId = subscriptionIdFromInvoice(inv);
+      if (subscriptionId) {
+        const sub = await stripe.subscriptions.retrieve(subscriptionId);
         await syncFromSubscription(sub, livemode);
       }
       break;
@@ -275,6 +278,8 @@ Deno.serve(async (req) => {
         body,
         sig!,
         STRIPE_WEBHOOK_SECRET,
+        undefined,
+        cryptoProvider,
       );
     } catch (err) {
       console.error("[webhook] signature verification failed:", err);

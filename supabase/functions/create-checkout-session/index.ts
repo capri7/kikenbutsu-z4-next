@@ -1,15 +1,15 @@
 // supabase/functions/create-checkout-session/index.ts
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import Stripe from "https://esm.sh/stripe@14?target=denonext";
+import Stripe from "npm:stripe@18.2.1";
 import { corsHeaders } from "../_shared/cors.ts";
 import { parseAllowList, resolveCheckoutIdentity, validateCheckoutRequest } from "./decision.ts";
 import { getAuthenticatedUser } from "../_shared/auth.ts";
 
-const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
+const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")!;
 const ALLOW_LIST = parseAllowList(Deno.env.get("PRICE_IDS"));
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: "2024-06-20"
+  apiVersion: "2025-05-28.basil"
 });
 
 const j = (body: unknown, status: number, headers: HeadersInit) =>
