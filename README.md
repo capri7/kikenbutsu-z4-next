@@ -184,6 +184,8 @@ NEXT_PUBLIC_SUPABASE_URL=<supabase status の API_URL>
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<supabase status の ANON_KEY>
 ```
 
+本番とリンクしている場合、手元の Supabase の各サービス（PostgREST・Auth・Postgres・Storage）は、`supabase link` をしたときに `supabase/.temp/` に書かれた本番の版で動く。リンクした後に本番の版が変わっても、手元の版は変わらない。ダッシュボードの Project Settings → General → Service versions と、`supabase/.temp/` の `*-version` の値を見比べ、違っていれば `supabase link` をし直してから、`supabase stop` と `supabase start` で起動し直す（手元だけが古い版で、本番にない不具合が E2E に出た経緯は [docs/testing.md](docs/testing.md#ローカルの-e2e-で起きている2つの失敗)）。
+
 ```bash
 npm run dev                        # http://localhost:3000
 ```
@@ -270,7 +272,7 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 - 有料転換のうち、Checkout のセッション作成、決済完了の通知（`checkout.session.completed`）の経路、ゲスト決済の紐付け（`check-guest-subscription`）。どれも中で Stripe の API を呼ぶため、ローカルの E2E では動かせない。決済画面そのものの操作とあわせて、テストモードで手動で確認する（契約の通知から有料の問題の解放までは E2E で確かめている）
 - `checkout-session-info`・`billing-portal` の E2E と、`useSearchParams` と Suspense 境界のケーススタディの E2E
 - `src/lib` のうち Supabase の呼び出しを包むだけの関数（`mistakes.ts`・`review.ts`・`progress.ts`）の単体テスト（判定ロジックの比率が低いため優先度は低い）
-- ローカルの E2E で起きている2つの失敗。書き込みの要求がまれに 502 になる失敗は、PostgREST v12.2.12 の不具合が原因と特定した（本番も同じ版。版を上げる対応を検討中）。退会の予約で、Edge Function は正しい応答を返しているのに、ブラウザがそれを受け取れず画面が止まる失敗は、原因を特定できていない（2026-10-12 に PostgREST v14.15 で5回実行し、2回で起きた）。事実と確かめたことは [docs/testing.md](docs/testing.md#ローカルの-e2e-で起きている2つの失敗) に記録している
+- ローカルの E2E で、退会の予約で、Edge Function は正しい応答を返しているのに、ブラウザがそれを受け取れず画面が止まる失敗。原因を特定できていない（2026-10-12 に PostgREST v14.15 で5回実行し、2回で起きた）。もう1つの、書き込みの要求がまれに 502 になる失敗は、手元の PostgREST がリンクしたときの古い版（v12.2.12）のままで、その版の不具合が原因だった。本番（14.18）はこの不具合を持たない。手元の版を本番に合わせて解消した。事実と確かめたことは [docs/testing.md](docs/testing.md#ローカルの-e2e-で起きている2つの失敗) に記録している
 
 テストの構成と方針は [docs/testing.md](docs/testing.md) を参照。
 
