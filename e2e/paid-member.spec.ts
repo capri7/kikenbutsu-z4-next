@@ -14,9 +14,9 @@ const PAID_QUESTION_ID = 'E2E_Test_004'; // seed.sql の有料の問題（is_pai
 
 function adminClient() {
   const url = process.env.E2E_SUPABASE_URL;
-  const key = process.env.E2E_SUPABASE_SERVICE_ROLE_KEY;
+  const key = process.env.E2E_SUPABASE_SECRET_KEY;
   if (!url || !key) {
-    throw new Error('E2E_SUPABASE_URL・E2E_SUPABASE_SERVICE_ROLE_KEY がありません（playwright.config.ts で設定する）。');
+    throw new Error('E2E_SUPABASE_URL・E2E_SUPABASE_SECRET_KEY がありません（playwright.config.ts で設定する）。');
   }
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }

@@ -78,6 +78,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `_shared/periodEnd.ts`（`stripe-webhook`・`check-guest-subscription`共通） | ✅ 7パターン |
 | `_shared/stripe-events/`（`stripe-webhook`・`stripe-events-retry` 共通の通知の処理） | ✅ 22パターン（`decision.ts` 7・`receive.ts` 10・`invoice.ts` 5） |
 | `stripe-events-retry` | ✅ 9パターン（`retry.ts`） |
+| `_shared/secretKey.ts`（関数が使う秘密の鍵の決め方） | ✅ 6パターン |
 | `check-guest-subscription` | ✅ 6パターン |
 | `create-checkout-session` | ✅ 11パターン |
 | `_shared/activeSubscription.ts` | ✅ 5パターン |
