@@ -176,14 +176,14 @@ flowchart LR
 npm ci
 mkdir -p supabase/.temp && cp supabase/production-versions/*-version supabase/.temp/    # 本番と同じ版で起動する（下の段落）
 supabase start
-supabase status -o env    # API_URL と ANON_KEY を確認する
+supabase status -o env    # API_URL と PUBLISHABLE_KEY を確認する
 ```
 
 `.env.local` を作り、ローカルの値を設定する。
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=<supabase status の API_URL>
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<supabase status の ANON_KEY>
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<supabase status の PUBLISHABLE_KEY>
 ```
 
 手元と CI の Supabase の各サービス（PostgREST・Auth・Postgres・Storage）は、`supabase/production-versions/` に書いた本番の版で動かす。`supabase start` は `supabase/.temp/` にある版のファイルを読み、その版で起動する（`supabase link` も同じ場所に本番の版を書く。どちらも公式の文書にはない、CLI の作りによる動き）。そのため、起動する前にこのファイルを `supabase/.temp/` に写す（上のコマンド）。CI も同じことをし、起動した版がファイルと違えば失敗する（`scripts/check_local_supabase_versions.sh`）。本番の版が変わったら、ダッシュボードの Project Settings → General → Service versions を見て `supabase/production-versions/` を直し、手元は `supabase stop` と `supabase start` で起動し直す（手元だけが古い版で、本番にない不具合が E2E に出た経緯は [docs/testing.md](docs/testing.md#ローカルの-e2e-で起きている2つの失敗)）。

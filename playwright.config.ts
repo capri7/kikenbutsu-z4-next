@@ -5,7 +5,7 @@ import { execSync } from 'node:child_process';
  * E2E はローカルの Supabase（supabase start）に対してだけ実行する。
  * 接続先は .env.local（本番）ではなく、supabase status から取得する。
  */
-function loadLocalSupabaseEnv(): { url: string; anonKey: string; secretKey: string } {
+function loadLocalSupabaseEnv(): { url: string; publishableKey: string; secretKey: string } {
   let output: string;
   try {
     output = execSync('supabase status -o env', {
@@ -25,11 +25,12 @@ function loadLocalSupabaseEnv(): { url: string; anonKey: string; secretKey: stri
   }
 
   const url = env.API_URL;
-  const anonKey = env.ANON_KEY;
+  // 新しい形式の公開用の鍵（アプリが使う）
+  const publishableKey = env.PUBLISHABLE_KEY;
   // 新しい形式の秘密の鍵（Supabase CLI が手元の環境に使う値）
   const secretKey = env.SECRET_KEY;
-  if (!url || !anonKey || !secretKey) {
-    throw new Error('supabase status から API_URL・ANON_KEY・SECRET_KEY を取得できませんでした。');
+  if (!url || !publishableKey || !secretKey) {
+    throw new Error('supabase status から API_URL・PUBLISHABLE_KEY・SECRET_KEY を取得できませんでした。');
   }
 
   const host = new URL(url).hostname;
@@ -37,7 +38,7 @@ function loadLocalSupabaseEnv(): { url: string; anonKey: string; secretKey: stri
     throw new Error(`E2E の接続先がローカルではありません（${url}）。本番に対しては実行しません。`);
   }
 
-  return { url, anonKey, secretKey };
+  return { url, publishableKey, secretKey };
 }
 
 const localSupabase = loadLocalSupabaseEnv();
@@ -129,7 +130,7 @@ export default defineConfig({
       timeout: 180 * 1000,
       env: {
         NEXT_PUBLIC_SUPABASE_URL: localSupabase.url,
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: localSupabase.anonKey,
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: localSupabase.publishableKey,
       },
     },
     // 偽の Stripe API。stripe-webhook が、本物の Stripe の代わりに契約などを取りに来る（e2e/fake-stripe-server.mjs）

@@ -5,8 +5,8 @@
 // 呼び出しは、新しい形式の秘密の鍵（apikey ヘッダー）を @supabase/server が確かめる
 // （Supabase の公式の文書「Securing Edge Functions」の Service-to-service calls。config.toml で verify_jwt = false）。
 // 照らし合わせる鍵は、関数の secret の STRIPE_EVENTS_RETRY_SECRET_KEY に置き、withSupabase の env で渡す
-// （@supabase/server の文書「Using env overrides」）。本番では、Supabase が入れるはずの SUPABASE_SECRET_KEYS が
-// 空だったため（2026-10-13 確認）。secret がない手元と CI では、渡さずに SUPABASE_SECRET_KEYS を読む。
+// （@supabase/server の文書「Using env overrides」）。本番の関数では、環境変数 SUPABASE_SECRET_KEYS から
+// 鍵を読めなかったため（2026-10-13 確認）。secret がない手元と CI では、渡さずに SUPABASE_SECRET_KEYS を読む。
 // 処理の中身は stripe-webhook と同じ（_shared/stripe-events/process.ts）。
 import { withSupabase } from "npm:@supabase/server@1.9.1";
 import type Stripe from "npm:stripe@18.2.1";
