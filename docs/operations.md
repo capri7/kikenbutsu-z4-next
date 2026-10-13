@@ -9,7 +9,7 @@ Next.js（Vercel）
 | 変数 | 用途 |
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase のプロジェクト URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 公開用の anon キー（RLS でアクセスを制御する前提でクライアントに渡す） |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | 新しい形式の公開用の鍵（`sb_publishable_`、`default`）。RLS でアクセスを制御する前提でクライアントに渡す |
 | `NEXT_PUBLIC_STRIPE_PRICE_ID` | 購入ページで使う Stripe の Price ID。Edge Functions 側の `PRICE_IDS` に含まれていること |
 | `NEXT_PUBLIC_SENTRY_DSN` | Better Stack の Error tracking の送り先（DSN）。ブラウザに渡すための値で、秘密の鍵ではない。Production と Preview にだけ入れ、開発の機械からは送らない |
 
@@ -28,7 +28,7 @@ GitHub Actions（リポジトリの Secrets に登録）
 
 | 変数 | 用途 |
 |---|---|
-| `NEXT_PUBLIC_SUPABASE_URL`・`NEXT_PUBLIC_SUPABASE_ANON_KEY`・`NEXT_PUBLIC_STRIPE_PRICE_ID` | Lighthouse CI でアプリをビルドする |
+| `NEXT_PUBLIC_SUPABASE_URL`・`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`・`NEXT_PUBLIC_STRIPE_PRICE_ID` | Lighthouse CI でアプリをビルドする |
 | `SUPABASE_ACCESS_TOKEN` | Edge Functions の反映。権限は本番のプロジェクトの Edge Functions の読み書きだけ |
 | `SUPABASE_DB_URL` | migration の適用。本番の DB の Session pooler の接続文字列（パスワードを含む） |
 
@@ -73,7 +73,7 @@ GitHub Actions（リポジトリの Secrets に登録）
 
 **未処理の通知の処理し直し**：`pg_cron` のジョブ `stripe-events-retry` が10分ごとに Edge Function の `stripe-events-retry` を呼ぶ。呼び出しの URL（`project_url`）と鍵（`stripe_events_retry_secret_key`、新しい形式の秘密の鍵 `default`）は、本番の Vault に入れる（URL は SQL エディタ、鍵は Dashboard の Integrations → Vault の画面。コードと migration には書かない）。どちらかがなければ、ジョブは関数を呼ばない。関数が照らし合わせる鍵（同じ `default` の鍵）は、Edge Functions の Secrets の `STRIPE_EVENTS_RETRY_SECRET_KEY` に置く。Heartbeat の URL は、同じ Secrets の `BETTERSTACK_HEARTBEAT_URL` に置く。鍵を作り直したときは、Vault と `STRIPE_EVENTS_RETRY_SECRET_KEY`・`EDGE_SECRET_KEY` を入れ替える。
 
-**新しい形式の鍵についての既知の問題**：本番では、Dashboard で新しい鍵（publishable・secret）を作った後も、Supabase が Edge Functions に入れるはずの `SUPABASE_SECRET_KEYS` が空だった（2026-10-13 確認。`@supabase/server` が `NO_KEYS_CONFIGURED` を返した）。そのため `stripe-events-retry` は鍵を自分の secret で受け取っている。他の関数を新しい鍵に移すとき（旧い `anon`・`service_role` の鍵は 2026 年末まで）に、この問題を改めて確かめる。
+**関数が秘密の鍵を受け取る場所**：本番の関数では、Dashboard で新しい鍵（publishable・secret）を作った後も、環境変数 `SUPABASE_SECRET_KEYS` から鍵を読めなかった（2026-10-13 確認。`@supabase/server` が `NO_KEYS_CONFIGURED` を返した。原因は未確認）。そのため関数は、秘密の鍵を自分の secret（`STRIPE_EVENTS_RETRY_SECRET_KEY`・`EDGE_SECRET_KEY`）で受け取っている。
 
 **`stripe-webhook` の役割の分け方**：`stripe-webhook` は、署名のないリクエストに 400 と `invalid signature` を返すのが正常である。Better Stack の Free は状態コードしか確かめられないため、Better Stack で応答の停止・401（`verify_jwt` が有効に戻った場合）・5xx を3分ごとに検知し、本文の確認（リクエストが関数のコードまで届いていること）は GitHub Actions が補う。
 
