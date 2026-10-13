@@ -234,7 +234,7 @@ Stripe の勧め（すぐに 2xx を返し、処理は非同期の列で行う�
    - Supabase の公式の文書「Scheduling Edge Functions」の構成で、`pg_cron` が10分ごとに `pg_net` で Edge Function の `stripe-events-retry` を呼ぶ。URL と鍵は Vault に置き、呼ぶときに読む（`20261013120000_stripe_events_retry.sql`）
    - 処理し直すのは、未処理で、受け取ってから10分以上たった通知（処理は最長400秒で打ち切られるため、処理の途中のものを含まない）。前回の試みから10・20・40・80分と間隔を広げ、最大5回まで（Stripe の再送と同じく、間隔を広げる形）
    - 受け取ってから3時間たっても未処理の通知があれば、Better Stack の Heartbeat に失敗（`/fail`）を送り、メールで知らせる。毎回の終わりに Heartbeat を送るため、ジョブや関数が止まった場合も、届かないことで知らせが出る
-   - 関数の呼び出しは、新しい形式の秘密の鍵（`apikey` ヘッダー）を `@supabase/server` の `withSupabase({ auth: 'secret' })` で確かめる（公式の文書「Securing Edge Functions」）。決済の通知を受ける `stripe-webhook` とは別の関数にし、処理し直しの不具合が通知の受け取りを止めないようにした。処理の中身は `_shared/stripe-events/` に移して共通にした
+   - 関数の呼び出しは、新しい形式の秘密の鍵（`apikey` ヘッダー）を `@supabase/server` の `withSupabase({ auth: 'secret' })` で確かめる（公式の文書「Securing Edge Functions」）。照らし合わせる鍵は、関数の secret の `STRIPE_EVENTS_RETRY_SECRET_KEY` から `env` で渡す（`@supabase/server` の文書「Using env overrides」）。本番では、Supabase が関数に入れるはずの `SUPABASE_SECRET_KEYS` が空だったため（2026-10-13 確認）。決済の通知を受ける `stripe-webhook` とは別の関数にし、処理し直しの不具合が通知の受け取りを止めないようにした。処理の中身は `_shared/stripe-events/` に移して共通にした
 
 ### ③ mistakesテーブルの不変性保護
 
