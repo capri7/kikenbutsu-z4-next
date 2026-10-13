@@ -20,8 +20,9 @@ Supabase Edge Functions（`supabase secrets set` で登録）
 | `STRIPE_SECRET_KEY` | Stripe API の呼び出し |
 | `STRIPE_WEBHOOK_SECRET` | `stripe-webhook` の署名検証 |
 | `PRICE_IDS` | `create-checkout-session` で許可する Price ID の一覧（カンマ区切り）。空のときは、どの価格でも決済を始められない |
+| `EDGE_SECRET_KEY` | 関数が Supabase を管理者として呼ぶときの、新しい形式の秘密の鍵（`default`）。`_shared/secretKey.ts` が読む。ない手元と CI では、Supabase CLI が入れる `SUPABASE_SECRET_KEYS` の `default` を使う |
 
-`SUPABASE_URL` と `SUPABASE_SERVICE_ROLE_KEY` は Supabase が自動で設定する。
+`SUPABASE_URL` は Supabase が自動で設定する。
 
 GitHub Actions（リポジトリの Secrets に登録）
 
@@ -70,7 +71,7 @@ GitHub Actions（リポジトリの Secrets に登録）
 
 通知はすべてメールで受け取る。Better Stack の通知は、メールのフィルタでラベルを付けている。Vercel の通知は、件数が少ないうちはフィルタを作らずに確認する。
 
-**未処理の通知の処理し直し**：`pg_cron` のジョブ `stripe-events-retry` が10分ごとに Edge Function の `stripe-events-retry` を呼ぶ。呼び出しの URL（`project_url`）と鍵（`stripe_events_retry_secret_key`、新しい形式の秘密の鍵 `default`）は、本番の Vault に入れる（URL は SQL エディタ、鍵は Dashboard の Integrations → Vault の画面。コードと migration には書かない）。どちらかがなければ、ジョブは関数を呼ばない。関数が照らし合わせる鍵（同じ `default` の鍵）は、Edge Functions の Secrets の `STRIPE_EVENTS_RETRY_SECRET_KEY` に置く。Heartbeat の URL は、同じ Secrets の `BETTERSTACK_HEARTBEAT_URL` に置く。鍵を作り直したときは、Vault と `STRIPE_EVENTS_RETRY_SECRET_KEY` の両方を入れ替える。
+**未処理の通知の処理し直し**：`pg_cron` のジョブ `stripe-events-retry` が10分ごとに Edge Function の `stripe-events-retry` を呼ぶ。呼び出しの URL（`project_url`）と鍵（`stripe_events_retry_secret_key`、新しい形式の秘密の鍵 `default`）は、本番の Vault に入れる（URL は SQL エディタ、鍵は Dashboard の Integrations → Vault の画面。コードと migration には書かない）。どちらかがなければ、ジョブは関数を呼ばない。関数が照らし合わせる鍵（同じ `default` の鍵）は、Edge Functions の Secrets の `STRIPE_EVENTS_RETRY_SECRET_KEY` に置く。Heartbeat の URL は、同じ Secrets の `BETTERSTACK_HEARTBEAT_URL` に置く。鍵を作り直したときは、Vault と `STRIPE_EVENTS_RETRY_SECRET_KEY`・`EDGE_SECRET_KEY` を入れ替える。
 
 **新しい形式の鍵についての既知の問題**：本番では、Dashboard で新しい鍵（publishable・secret）を作った後も、Supabase が Edge Functions に入れるはずの `SUPABASE_SECRET_KEYS` が空だった（2026-10-13 確認。`@supabase/server` が `NO_KEYS_CONFIGURED` を返した）。そのため `stripe-events-retry` は鍵を自分の secret で受け取っている。他の関数を新しい鍵に移すとき（旧い `anon`・`service_role` の鍵は 2026 年末まで）に、この問題を改めて確かめる。
 

@@ -28,8 +28,8 @@ function supabaseUrl(): string {
 }
 
 function adminClient() {
-  const key = process.env.E2E_SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) throw new Error('E2E_SUPABASE_SERVICE_ROLE_KEY がありません（playwright.config.ts で設定する）。');
+  const key = process.env.E2E_SUPABASE_SECRET_KEY;
+  if (!key) throw new Error('E2E_SUPABASE_SECRET_KEY がありません（playwright.config.ts で設定する）。');
   return createClient(supabaseUrl(), key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 

@@ -5,5 +5,16 @@
 // secret がない手元と CI では、Supabase CLI が入れる SUPABASE_SECRET_KEYS の default を使う
 // （Supabase の公式の文書「Migrating to publishable and secret API keys」の Step 4 Option 1）。
 export function resolveSecretKey(get: (name: string) => string | undefined): string {
-  throw new Error("未実装");
+  const own = get("EDGE_SECRET_KEY");
+  if (own) return own;
+  const raw = get("SUPABASE_SECRET_KEYS");
+  if (raw) {
+    try {
+      const key = (JSON.parse(raw) as Record<string, unknown>)["default"];
+      if (typeof key === "string" && key) return key;
+    } catch {
+      // JSON でなければ、下で止める
+    }
+  }
+  throw new Error("秘密の鍵がない：EDGE_SECRET_KEY か、SUPABASE_SECRET_KEYS の default を置く");
 }

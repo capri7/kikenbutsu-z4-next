@@ -1,11 +1,13 @@
 // supabase/functions/_shared/stripeSync.ts
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { buildUserProfilePayload } from "./userProfilePayload.ts";
+import { resolveSecretKey } from "./secretKey.ts";
 
-const SUPABASE_URL     = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+// 新しい形式の秘密の鍵（公式の文書「Migrating to publishable and secret API keys」の Step 3）。決め方は secretKey.ts
+const SECRET_KEY = resolveSecretKey((name) => Deno.env.get(name));
 
-export const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+export const admin = createClient(SUPABASE_URL, SECRET_KEY, { auth: { persistSession: false } });
 
 export const toIsoOrNull = (sec?: number | string | null) =>
   sec != null && !Number.isNaN(Number(sec))
