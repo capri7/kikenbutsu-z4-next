@@ -1,4 +1,4 @@
-// supabase/functions/stripe-webhook/decision.ts
+// supabase/functions/_shared/stripe-events/decision.ts
 
 /**
  * customer.subscription.deleted受信時、実際にauth.usersを物理削除すべきか判定する。

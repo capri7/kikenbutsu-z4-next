@@ -1,4 +1,4 @@
-// supabase/functions/stripe-webhook/receive.test.ts
+// supabase/functions/_shared/stripe-events/receive.test.ts
 import { assertEquals } from "jsr:@std/assert";
 import {
   type EventStore,

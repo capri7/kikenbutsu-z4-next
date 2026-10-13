@@ -1,4 +1,4 @@
-// supabase/functions/stripe-webhook/invoice.test.ts
+// supabase/functions/_shared/stripe-events/invoice.test.ts
 import { assertEquals } from "jsr:@std/assert";
 import { subscriptionIdFromInvoice } from "./invoice.ts";
 
