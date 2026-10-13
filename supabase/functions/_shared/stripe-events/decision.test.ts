@@ -1,4 +1,4 @@
-// supabase/functions/stripe-webhook/decision.test.ts
+// supabase/functions/_shared/stripe-events/decision.test.ts
 import { assertEquals } from "jsr:@std/assert";
 import {
   isUserDeletionFailure,

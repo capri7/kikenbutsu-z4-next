@@ -47,15 +47,17 @@
 | FR-10-4 | ✅ | `create-checkout-session`（`PRICE_IDS`） | Deno.test：create-checkout-session/decision.test.ts「許可リストに無いpriceIdは PRICE_NOT_ALLOWED…」 | ― |
 | FR-10-5 | ✅ | `create-checkout-session`（`PRICE_IDS` が空なら `PRICE_IDS_NOT_CONFIGURED`、500） | Deno.test：create-checkout-session/decision.test.ts「許可リストが空（PRICE_IDS の設定漏れ）なら…」・「PRICE_IDS をカンマで分け…」 | 本番の `PRICE_IDS` が設定されていることは、ダッシュボードで確かめる（直近の確認：2026-10-08） |
 | FR-11-1 | ✅ | `stripe-webhook`（署名の確認） | E2E：paid-conversion.spec.ts「署名が正しくない通知は拒否し…」 | ― |
-| FR-11-2 | ✅ | `stripe-webhook`（`receive.ts`）、`record_stripe_event()` | E2E：paid-conversion.spec.ts「同じ通知が2回届いても…」（処理済みになった後の2回目は飛ばす）。Deno.test：stripe-webhook/receive.test.ts（処理済みなら 200 `ok (duplicate)`）。pgTAP：stripe_event_functions（処理済みの通知は重複として飛ばす） | ― |
-| FR-11-3 | ✅ | `stripe-webhook`（`syncFromSubscription`）、`_shared/periodEnd.ts` | E2E：paid-conversion.spec.ts「契約の通知を受けると有料会員になり…」（作成）・「解約の予約の通知を受けると反映され…」（更新）・「契約終了の通知を受けると無料会員に戻り…」（終了）。Deno.test：periodEnd.test.ts（契約終了日の選び方）・stripe-webhook/invoice.test.ts（請求書から契約を特定する） | ― |
+| FR-11-2 | ✅ | `stripe-webhook`（`receive.ts`）、`record_stripe_event()` | E2E：paid-conversion.spec.ts「同じ通知が2回届いても…」（処理済みになった後の2回目は飛ばす）。Deno.test：_shared/stripe-events/receive.test.ts（処理済みなら 200 `ok (duplicate)`）。pgTAP：stripe_event_functions（処理済みの通知は重複として飛ばす） | ― |
+| FR-11-3 | ✅ | `stripe-webhook`（`syncFromSubscription`）、`_shared/periodEnd.ts` | E2E：paid-conversion.spec.ts「契約の通知を受けると有料会員になり…」（作成）・「解約の予約の通知を受けると反映され…」（更新）・「契約終了の通知を受けると無料会員に戻り…」（終了）。Deno.test：periodEnd.test.ts（契約終了日の選び方）・_shared/stripe-events/invoice.test.ts（請求書から契約を特定する） | ― |
 | FR-11-4 | ✅ | `_shared/stripeSync.ts`（`upsertUserProfiles`）、`_shared/userProfilePayload.ts` | E2E：paid-conversion.spec.ts「Stripe からメールアドレスを取れなくても…」。Deno.test：userProfilePayload.test.ts（値がないときは列を含めない） | ― |
-| FR-11-5 | ✅ | `stripe-webhook`（`receive.ts` の `processAndFinish`）、`finish_stripe_event()`、`record_stripe_event()` | E2E：paid-conversion.spec.ts「処理に失敗した通知は未処理として残り、再送されると処理し直される」（存在しない会員の契約で書き込みを失敗させ、会員を作ってから再送する）。Deno.test：receive.test.ts（失敗の内容を記録して未処理のまま残す・未処理の通知の再送は処理し直す）。pgTAP：stripe_event_functions（失敗・成功の記録） | 決めた回数を超えて失敗した通知を知らせる仕組みは、段階4で作る |
+| FR-11-5 | ✅ | `stripe-webhook`（`receive.ts` の `processAndFinish`）、`finish_stripe_event()`、`record_stripe_event()` | E2E：paid-conversion.spec.ts「処理に失敗した通知は未処理として残り、再送されると処理し直される」（存在しない会員の契約で書き込みを失敗させ、会員を作ってから再送する）。Deno.test：receive.test.ts（失敗の内容を記録して未処理のまま残す・未処理の通知の再送は処理し直す）。pgTAP：stripe_event_functions（失敗・成功の記録） | 再送されなくても処理し直すこと（FR-11-8）と、残ったときの知らせ（FR-11-9）は、`stripe-events-retry` で行う |
 | FR-11-6 | ✅ | `stripe-webhook`（`receive.ts` の `receiveEvent`） | Deno.test：receive.test.ts「通知を記録できなかったら、500 を返して処理しない」 | E2E では DB への記録だけを失敗させられないため、Deno.test で確かめる |
 | FR-11-7 | ✅ | `stripe-webhook`（`customer.subscription.*` で `stripe.subscriptions.retrieve` により最新の契約を取り直す） | E2E：paid-conversion.spec.ts「古い内容の通知が後から届いても、Stripe の最新の契約を反映する」（偽の Stripe API に最新の契約を登録し、新しい通知のあとに古い通知を送る。取り直す前の作りでは失敗することを確かめた） | ― |
+| FR-11-8 | ✅ | `stripe-events-retry`（`retry.ts`）、`stripe_events_due_for_retry()`、`invoke_stripe_events_retry()` とジョブ `stripe-events-retry`（pg_cron、10分ごと） | E2E：stripe-events-retry.spec.ts「処理に失敗して未処理のまま残った通知は、処理し直されて反映される」。Deno.test：stripe-events-retry/retry.test.ts（受け取った順に処理する、失敗しても残りの処理を続ける）。pgTAP：stripe_events_retry（10分・間隔・上限・処理済み、Vault に鍵がなければ呼ばない、利用者は呼べない、ジョブの登録）。1つ目のコミット（処理し直しの流れが空）では失敗することを確かめた | 本番のジョブが関数を呼べることは、マージ後に本番で確かめる |
+| FR-11-9 | ✅ | `stripe-events-retry`（Heartbeat に `/fail` を送る）、`stripe_events_overdue_count()`、Better Stack の Heartbeat | E2E：stripe-events-retry.spec.ts「受け取ってから3時間たっても未処理の通知があると…」（偽の Heartbeat に失敗が届く）。Deno.test：retry.test.ts（3時間たった未処理があれば失敗を送る、読み込みに失敗しても失敗を送る、Heartbeat に送れなくても結果を返す）。pgTAP：stripe_events_retry（3時間の件数） | 本番の Heartbeat の知らせがメールで届くことは、マージ後に確かめる |
 | FR-12-1 | △ | `billing-portal`、`src/lib/billing.ts`（`getBillingPortalUrl`、戻り先 `/mypage`）、`src/lib/useBillingPortal.ts` | Vitest：billing.test.ts（戻り先 `/mypage` を付けて billing-portal を呼び、ポータルの URL を返す） | 呼び出しの共通の関数は Vitest：edge-functions.test.ts で確かめている。手動：ポータルの作成は Stripe の API を呼ぶため、Stripe のテストモードで、有料会員として請求情報を開き、ポータルに移って戻るとマイページに移ることを確かめる |
 | FR-13-1 | ✅ | `request-account-deletion`、外部キーの `ON DELETE CASCADE` | E2E：account-deletion.spec.ts「無料会員が退会すると…」（アカウントと `user_profiles` の行が消える）。Deno.test：request-account-deletion/decision.test.ts（契約がなければ即時削除の判定） | ― |
-| FR-13-2 | ✅ | `request-account-deletion`、`stripe-webhook`（契約終了の通知で削除）、`subscriptions` の外部キーの `ON DELETE SET NULL` | E2E：account-deletion.spec.ts「解約の手続きを済ませた有料会員は…」「退会を予約した有料会員は、契約終了の通知で…」（予約ではアカウントが残り、通知で削除され、契約の行は残る）・paid-member.spec.ts（未解約の有料会員には解約の案内を表示）。Deno.test：request-account-deletion/decision.test.ts（解約済みなら予約、未解約なら拒否）・stripe-webhook/decision.test.ts（予約があれば削除） | ― |
+| FR-13-2 | ✅ | `request-account-deletion`、`stripe-webhook`（契約終了の通知で削除）、`subscriptions` の外部キーの `ON DELETE SET NULL` | E2E：account-deletion.spec.ts「解約の手続きを済ませた有料会員は…」「退会を予約した有料会員は、契約終了の通知で…」（予約ではアカウントが残り、通知で削除され、契約の行は残る）・paid-member.spec.ts（未解約の有料会員には解約の案内を表示）。Deno.test：request-account-deletion/decision.test.ts（解約済みなら予約、未解約なら拒否）・_shared/stripe-events/decision.test.ts（予約があれば削除） | ― |
 | FR-13-3 | ✅ | `cancel-account-deletion` | E2E：account-deletion.spec.ts「…退会を予約でき、取り消せる」。Deno.test：cancel-account-deletion/decision.test.ts | ― |
 | FR-14-1 | 未 | `src/app/(legal)/` | ― | 手動：ログインせずに3つのページを開き、表示されることを確かめる |
 
@@ -75,7 +77,7 @@
 | NFR-PE-03 | ✅ | ― | Lighthouse CI（下回ったら警告） | ― |
 | NFR-OM-01 | ― | 運用の決まり | ― | 運用の決まり |
 | NFR-OM-02 | ― | 運用の決まり | ― | 運用の決まり |
-| NFR-OM-03 | ✅ | Better Stack、`.github/workflows/webhook-health-check.yml` | 監視：Better Stack（3分ごと）・GitHub Actions（補助） | ― |
+| NFR-OM-03 | ✅ | Better Stack、`.github/workflows/webhook-health-check.yml`、Better Stack の Heartbeat（`stripe-events-retry`） | 監視：Better Stack（3分ごと）・GitHub Actions（補助）・Heartbeat（10分ごと） | ― |
 | NFR-OM-04 | ― | `@sentry/nextjs`（送る前に利用者の情報を除く） | ― | 2026-10-07 に確認用のページで、送られる中身を確認（PR #90） |
 | NFR-OM-05 | ― | Better Stack・Vercel Alerts・GitHub・Stripe の通知 | ― | 通知のメールが届くことを確認済み |
 | NFR-OM-06 | △ | GitHub のルールセット `main-protection`、CI | CI（PR ごと） | PR と CI の成功は運用の決まり（ルールセットで強制しているのは削除と force push の禁止だけ） |

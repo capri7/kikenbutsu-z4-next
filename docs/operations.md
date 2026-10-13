@@ -64,10 +64,13 @@ GitHub Actions（リポジトリの Secrets に登録）
 | `stripe-webhook`（主） | Better Stack（Free） | 3分ごと | 署名のない POST に 400 以外を返す、または応答がない |
 | `stripe-webhook`（補助） | GitHub Actions（`.github/workflows/webhook-health-check.yml`） | 1時間ごとの時刻指定 | 400 以外を返す、または本文に `invalid signature` がない |
 | トップのページ | Better Stack（Free） | 3分ごと | 応答がない、または 2xx・3xx 以外を返す |
+| 未処理の Stripe の通知の処理し直し（`stripe-events-retry`） | Better Stack の Heartbeat（Free） | 10分ごと（待つ時間10分） | Heartbeat が届かない（ジョブや関数が止まった）、または失敗（`/fail`）が届く（受け取ってから3時間たっても未処理の通知がある） |
 | 画面とサーバーのエラー | Better Stack の Error tracking（`@sentry/nextjs`） | エラーが起きたとき | 捕まえられなかったエラーが起きる |
 | 5xx の急増・関数の使用量の異常 | Vercel の Alerts（既定のルール） | Vercel が判定する | Vercel の既定のルールによる |
 
 通知はすべてメールで受け取る。Better Stack の通知は、メールのフィルタでラベルを付けている。Vercel の通知は、件数が少ないうちはフィルタを作らずに確認する。
+
+**未処理の通知の処理し直し**：`pg_cron` のジョブ `stripe-events-retry` が10分ごとに Edge Function の `stripe-events-retry` を呼ぶ。呼び出しの URL（`project_url`）と鍵（`stripe_events_retry_secret_key`、新しい形式の秘密の鍵）は、本番の Vault に SQL エディタで入れる（コードと migration には書かない）。どちらかがなければ、ジョブは関数を呼ばない。Heartbeat の URL は、Edge Functions の Secrets の `BETTERSTACK_HEARTBEAT_URL` に置く。
 
 **`stripe-webhook` の役割の分け方**：`stripe-webhook` は、署名のないリクエストに 400 と `invalid signature` を返すのが正常である。Better Stack の Free は状態コードしか確かめられないため、Better Stack で応答の停止・401（`verify_jwt` が有効に戻った場合）・5xx を3分ごとに検知し、本文の確認（リクエストが関数のコードまで届いていること）は GitHub Actions が補う。
 

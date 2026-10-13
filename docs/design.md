@@ -223,14 +223,18 @@ E2E の実行中に、ローカルの DB への書き込みが一時的に失敗
 Stripe の勧め（すぐに 2xx を返し、処理は非同期の列で行う。重複の判定は処理済みの通知に限る）と、Supabase が示す構成（DB の列と `pg_cron`・`pg_net` による処理し直し）に沿って、次の順で直す。
 
 1. `stripe_events` に、処理済みの時刻・試みた回数・最後の失敗の内容の列を足す（`20261010201500_stripe_events_processing_state.sql`）。済み
-2. 受け取ったら未処理として記録して 200 を返し、処理を終えたら処理済みにする。失敗は記録して未処理のまま残す。重複の判定は処理済みの通知に限る。記録できなければ 500 を返す。記録と結果は DB の関数（`record_stripe_event()`・`finish_stripe_event()`）で行い、流れは `stripe-webhook/receive.ts` に切り出して、失敗の場合を Deno.test で確かめる。済み
+2. 受け取ったら未処理として記録して 200 を返し、処理を終えたら処理済みにする。失敗は記録して未処理のまま残す。重複の判定は処理済みの通知に限る。記録できなければ 500 を返す。記録と結果は DB の関数（`record_stripe_event()`・`finish_stripe_event()`）で行い、流れは `receive.ts`（今は `_shared/stripe-events/receive.ts`）に切り出して、失敗の場合を Deno.test で確かめる。済み
    - 処理の中で、DB の読み込みの失敗を「見つからない」として扱っていた箇所（会員の特定、退会の予約の確認）と、アカウントの削除の失敗をログに出すだけだった箇所も、失敗として扱うようにした。どれも、失敗したのに処理済みになり、通知が反映されないまま残る原因になるため
    - 同じ通知が処理の途中に再送されると、両方が処理することがある。書き込みは何度行っても結果が同じ（upsert）ため、データは正しいまま
    - 段階1で、変更の前のコードが足す行も処理済みになるよう `processed_at` に付けていた既定値（`now()`）は、段階2を本番に出した後に外した（`20261011193000_stripe_events_processed_at_no_default.sql`）。既定値が残ると、`processed_at` を指定せずに足した行が、処理していないのに処理済みになるため。済み
 3. 契約の通知は、通知の中身ではなく、Stripe から最新の契約を取得して反映する（届く順番に頼らない）。済み
    - `customer.subscription.created`・`updated`・`deleted` で、`stripe.subscriptions.retrieve` で取り直した契約を同期と退会の判定に使う。`checkout.session.completed` と請求書の通知は、もともと取り直していた。解約済みの契約も ID で取り出せることを、本番の解約済みの契約2件で確かめた（2026-10-12、Stripe の Workbench の API Explorer で読み取りのみ）
    - E2E では、Stripe の代わりに偽の Stripe API（`e2e/fake-stripe-server.mjs`）に取りに行く。宛先は環境変数 `STRIPE_API_BASE_URL`（手元と CI だけ。stripe-node の公式の設定 `host`・`port`・`protocol` に変える。本番の鍵と一緒に設定されていたら止める）。Stripe 公式の stripe-mock は、登録した中身を ID で返さず、最新の API の版にしか対応しないため使わない
-4. 未処理の通知を定期的に処理し直し、決めた回数を超えたら知らせる
+4. 未処理の通知を定期的に処理し直し、残ったら知らせる。済み
+   - Supabase の公式の文書「Scheduling Edge Functions」の構成で、`pg_cron` が10分ごとに `pg_net` で Edge Function の `stripe-events-retry` を呼ぶ。URL と鍵は Vault に置き、呼ぶときに読む（`20261013120000_stripe_events_retry.sql`）
+   - 処理し直すのは、未処理で、受け取ってから10分以上たった通知（処理は最長400秒で打ち切られるため、処理の途中のものを含まない）。前回の試みから10・20・40・80分と間隔を広げ、最大5回まで（Stripe の再送と同じく、間隔を広げる形）
+   - 受け取ってから3時間たっても未処理の通知があれば、Better Stack の Heartbeat に失敗（`/fail`）を送り、メールで知らせる。毎回の終わりに Heartbeat を送るため、ジョブや関数が止まった場合も、届かないことで知らせが出る
+   - 関数の呼び出しは、新しい形式の秘密の鍵（`apikey` ヘッダー）を `@supabase/server` の `withSupabase({ auth: 'secret' })` で確かめる（公式の文書「Securing Edge Functions」）。決済の通知を受ける `stripe-webhook` とは別の関数にし、処理し直しの不具合が通知の受け取りを止めないようにした。処理の中身は `_shared/stripe-events/` に移して共通にした
 
 ### ③ mistakesテーブルの不変性保護
 
@@ -330,6 +334,6 @@ Stripe の勧め（すぐに 2xx を返し、処理は非同期の列で行う�
 
 **SDK を API の版に合わせて解消（2026-10-12）**：5つの Edge Functions の Stripe の SDK を、`esm.sh` の `stripe@14`（`2024-06-20`）から、アカウントと Webhook の送信先の版に合う `npm:stripe@18.2.1`（`2025-05-28.basil` に固定）に変えた。読み込みは Supabase の公式の例と同じ `npm:` の形にし、Webhook の署名の確認には `Stripe.createSubtleCryptoProvider()`（Web Crypto）を渡す。型と実行時の値が一致したため、`as unknown as PeriodEndSource` をやめた。実行時のスキーマ検証（`zod` 等）は行っていない。
 
-**同じずれで見落としていた欠陥**：請求書の通知（`invoice.paid`・`invoice.payment_succeeded`）の処理は、Basil でなくなった `invoice.subscription` を読んでいたため、本番に届いた13件はどれも契約を同期していなかった（2026-10-12 に本番の `stripe_events` で確認）。月次更新の請求書10件には、どれも2時間以内に同じ契約の `customer.subscription.updated` が届いており、契約終了日はそちらの通知で反映されていた。データの欠けは見つかっていない。請求書の `parent.subscription_details.subscription` から契約を特定するように直した（`stripe-webhook/invoice.ts`。Deno.test で、直す前の作りでは失敗することを確かめた）。
+**同じずれで見落としていた欠陥**：請求書の通知（`invoice.paid`・`invoice.payment_succeeded`）の処理は、Basil でなくなった `invoice.subscription` を読んでいたため、本番に届いた13件はどれも契約を同期していなかった（2026-10-12 に本番の `stripe_events` で確認）。月次更新の請求書10件には、どれも2時間以内に同じ契約の `customer.subscription.updated` が届いており、契約終了日はそちらの通知で反映されていた。データの欠けは見つかっていない。請求書の `parent.subscription_details.subscription` から契約を特定するように直した（`invoice.ts`、今は `_shared/stripe-events/invoice.ts`。Deno.test で、直す前の作りでは失敗することを確かめた）。
 
 **Edge Functions の型の検査**：CI の `Deno.test` が型を検査するのは、テストと、テストが読み込むファイル（判定の関数を切り出した `decision.ts` など）だけで、Stripe の呼び出しや DB への書き込みがある各関数の `index.ts` は型の検査の対象外だった。CI に `deno check` を加え、7つの `index.ts` を PR ごとに検査するようにした。最初の検査で見つかった19件は、引数の型の書き忘れ（15件）、型の推論の失敗（3件。実行時の値は正しく、本番の `subscriptions` に契約の ID が空の行がないことも確認）、`EdgeRuntime` が見つからない（1件）で、いずれも動きを変えずに直した。`EdgeRuntime` は、Supabase の型定義（`edge-runtime.d.ts`）を JSR から読み込むと宣言がグローバルにならないことを、最小の再現で確かめたうえで、型だけを取り出して使う形にした。

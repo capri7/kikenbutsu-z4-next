@@ -76,7 +76,8 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `request-account-deletion` | ✅ 7パターン |
 | `cancel-account-deletion` | ✅ 4パターン |
 | `_shared/periodEnd.ts`（`stripe-webhook`・`check-guest-subscription`共通） | ✅ 7パターン |
-| `stripe-webhook` | ✅ 22パターン（`decision.ts` 7・`receive.ts` 10・`invoice.ts` 5） |
+| `_shared/stripe-events/`（`stripe-webhook`・`stripe-events-retry` 共通の通知の処理） | ✅ 22パターン（`decision.ts` 7・`receive.ts` 10・`invoice.ts` 5） |
+| `stripe-events-retry` | ✅ 9パターン（`retry.ts`） |
 | `check-guest-subscription` | ✅ 6パターン |
 | `create-checkout-session` | ✅ 11パターン |
 | `_shared/activeSubscription.ts` | ✅ 5パターン |
@@ -84,8 +85,8 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `_shared/stripeApiTarget.ts`（E2E で Stripe の API の宛先を偽の Stripe API にする） | ✅ 5パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。`billing-portal` を呼ぶ共通の関数 `invokeEdgeFunction` は Vitest で検証） |
 | Next.js側（Vitest） | ✅ 66パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3・`examCountdown.ts` 9・`categoryProgress.ts` 13・`account.ts` 4・`billing.ts` 4・`Breadcrumbs.tsx` 2・`dataLoader.server.ts` 3） |
-| DB（pgTAP） | ✅ 66ファイル・131件（ロールの権限・RLS・関数・Stripe の通知の処理の状態） |
-| E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅・有料会員の画面の出し分け3件 ✅・有料転換と契約の更新・終了と、届く順番が前後した通知、処理に失敗した通知の処理し直し（Webhook）8件 ✅・退会3件 ✅・ログインしていない状態のマイページ2件 ✅・ログイン2件 ✅（いずれもローカルの Supabase）・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
+| DB（pgTAP） | ✅ 67ファイル・153件（ロールの権限・RLS・関数・Stripe の通知の処理の状態・未処理の通知の処理し直し） |
+| E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅・有料会員の画面の出し分け3件 ✅・有料転換と契約の更新・終了と、届く順番が前後した通知、処理に失敗した通知の処理し直し（Webhook）8件 ✅・退会3件 ✅・ログインしていない状態のマイページ2件 ✅・ログイン2件 ✅・未処理の通知の処理し直し3件 ✅（いずれもローカルの Supabase）・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
 
 ## `request-account-deletion`（7パターン）
 
@@ -103,9 +104,9 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 
 同じロジックを2箇所に置いたまま個別にテストすると、片方だけ修正した場合、修正していない側のテストは古い実装に対して通り続けるため、両方とも green のまま、2つの実装がズレたこと自体を検知する仕組みがない。1箇所に集約してから1回だけテストすることで、「ロジックが1つしか存在しない」こと自体が正しさの担保になる。
 
-## `stripe-webhook`（22パターン）
+## Stripe の通知の処理（`_shared/stripe-events/`、22パターン）
 
-契約終了日の解決ロジックは上記の`_shared/periodEnd.ts`に集約したため、`stripe-webhook`固有では次を検証している。
+`stripe-webhook` と `stripe-events-retry` が共通で使う通知の処理（2026-10-13 に `stripe-webhook/` から移した）。契約終了日の解決ロジックは上記の`_shared/periodEnd.ts`に集約したため、ここでは次を検証している。
 
 - **アカウント物理削除の実行条件**（`decision.ts`）：`deletion_requested`フラグと`user_id`解決の両方が揃った場合のみ`auth.users`を削除する。片方だけでは削除しないことを個別に検証し、退会予約と無関係なユーザーが誤って削除されることを防ぐ。削除の結果は、すでに削除済み（`user_not_found`）なら成功として扱い、それ以外のエラーは失敗として処理し直す
 - **通知の受け取りと処理の結果の記録**（`receive.ts`、10パターン）：DB の呼び出しを偽物に差し替え、失敗する場合を作って確かめる。初めての通知は処理する、処理済みの通知は重複として飛ばす、前回の処理が失敗して未処理の通知は再送されたら処理し直す、通知を記録できなければ 500 を返して Stripe に再送させる、処理が失敗したら投げずに失敗の内容を記録して未処理のまま残す、結果を記録できなくても投げない
@@ -113,6 +114,10 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 `receive.ts` のテストは、直す前の作りを再現した版で失敗することを確かめている。記録に失敗しても 200 を返す版では「記録できなければ 500」が、処理の失敗をログに出すだけの版では「失敗の内容を記録する」が、それぞれ失敗する。
 
 **この節のテストで見落としていたこと**：以前の`stripe-webhook`のテストは、重複の判定（記録があれば飛ばす）と削除の条件だけで、DB への書き込みが失敗したときの扱いを確かめていなかった。そのため、処理の前に「記録済み」として書き、処理の結果を待たずに 200 を返す作りで、一時的な失敗が1回起きるだけで通知が反映されないまま残ることに、テストでは気づけなかった。2026-10-11 に、ローカルの E2E の実行中に DB への書き込みが一時的に失敗（502）したことで見つかった（経緯と対応は[詳細設計の設計判断②](design.md#設計判断のハイライト)）。決済とデータに関わる処理では、失敗した場合のテストも書く。
+
+## `stripe-events-retry`（9パターン）
+
+未処理のまま残った通知の処理し直しの流れ（`retry.ts`）。DB と Heartbeat への送信を偽物に差し替え、受け取った順に処理して結果を記録すること、処理に失敗しても残りの通知の処理を続けること、受け取ってから3時間たっても未処理の通知があれば Heartbeat に失敗を送り、なければ成功を送ること（処理し直す対象がなくても送る）、対象や件数の読み込みに失敗したら失敗を送ってから投げること、Heartbeat に送れなくても結果を返すこと、失敗の URL（`/fail`）の作り方を確かめる。処理し直しの流れが空の作りでは9件とも失敗することを確かめた。
 
 ## `check-guest-subscription`（6パターン）
 
@@ -157,6 +162,8 @@ Edge Functionsの呼び出しの共通関数`src/lib/edge-functions.ts`（5パ�
 ## E2E の構成と方針
 
 コアフロー（無料登録〜マイページ〜練習問題への回答〜誤答リストへの遷移）3件を実装し、ローカルの Supabase に対して合格を確認済み（`--repeat-each=10` で30回連続合格）。E2E は本番ビルドを起動して実行する設定（`webServer`）とした。開発サーバーでは、初回のコンパイル待ちで間欠的にタイムアウトするため。有料転換は、Stripe の公式ドキュメントの案内（Checkout などの決済画面には自動操作を防ぐ仕組みがあるため、自動テストでは出力を模擬する）と、Stripe の公式ライブラリの README の「Testing Webhook signing」の方法に従い、Stripe と同じ方式で署名した `customer.subscription.created` の通知を、ローカルで動く本物の `stripe-webhook` に送って確かめている（`e2e/paid-conversion.spec.ts`、8件）。契約の反映（`subscriptions` の行）、有料の問題の解放とヘッダーの切り替え、同じ通知の重複の処理、署名が正しくない通知の拒否に加え、契約の更新（`customer.subscription.updated` による解約の予約）と終了（`customer.subscription.deleted` で無料会員に戻る）、Stripe からメールアドレスを取れなかったときに会員のメールアドレスを消さないこと、処理に失敗した通知が未処理のまま残り、再送されると処理し直されることを検証する。署名の鍵はテスト専用の値で、CI では `supabase start` の前に `supabase/functions/.env` に置く。`stripe-webhook` は Stripe から契約や顧客を取りに行くため、E2E では、その宛先を偽の Stripe API（`e2e/fake-stripe-server.mjs`。Playwright の `webServer` が起動し、Edge Functions のコンテナから `http://host.docker.internal:54399` で呼ばれる）にし、テストが通知を送る前に、取りに来たときに返す契約を登録する。Stripe 公式の stripe-mock は、登録した中身を ID で返さず（状態を持たない）、最新の API の版にしか対応しないため使わない。通知が起きた順と違う順で届いても、Stripe の最新の契約が反映されることも確かめる（FR-11-7）。`stripe-webhook` は応答を返したあとに裏の処理（`EdgeRuntime.waitUntil`）で契約を反映するため、ローカルの Edge Functions を `policy = "per_worker"` で動かしている（Supabase の公式ドキュメントの案内どおり。`oneshot` では応答のあとに関数が終了し、裏の処理が最後まで動かない）。Checkout のセッション作成、`checkout.session.completed` の経路、ゲスト決済の紐付けは、中で Stripe の API を呼ぶため E2E の対象外とし、決済画面の操作とあわせてテストモードで手動で確認する。
+
+未処理のまま残った通知の処理し直し（`e2e/stripe-events-retry.spec.ts`、3件）は、通知の記録（`stripe_events`）を受け取った時刻を過去にして作り、`stripe-events-retry` を直接呼んで確かめる（本番では `pg_cron` が10分ごとに呼ぶ）。呼び出しには、新しい形式の秘密の鍵（`supabase status` の `SECRET_KEY`）を `apikey` ヘッダーで付ける。処理し直しの結果は、本物の Better Stack の Heartbeat の代わりに、偽の Heartbeat（`e2e/fake-heartbeat-server.mjs`。Edge Functions のコンテナから `http://host.docker.internal:54398` で呼ばれる）に送り、成功と失敗（`/fail`）が届くことを確かめる。処理し直す対象と3時間の件数は、DB の中のすべての通知から決まるため、このファイルのテストは順に実行し（`mode: 'default'`。`serial` は1件失敗すると残りを飛ばすため使わない）、最初に前の実行で残った古い未処理の通知を消す。
 
 E2E は、Vitest・Deno.test・pgTAP・ESLint とあわせて、PR ごとと main への push ごとに GitHub Actions で実行している（`.github/workflows/test.yml`）。CI の中で `supabase start` を実行し、migrations と `seed.sql` を適用したローカルの Supabase に接続するため、本番には触れない。その先の候補として、`useSearchParams`とSuspense境界のケーススタディと、`checkout-session-info`・`billing-portal`（判定ロジックが薄くユニットテストの価値が低いためE2E対象とした2関数）が残っている。
 

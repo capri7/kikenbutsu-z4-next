@@ -324,6 +324,10 @@ verify_jwt = false
 [functions.stripe-webhook]
 verify_jwt = false
 
+# 処理し直しのジョブ（pg_cron）が、新しい形式の秘密の鍵（apikey ヘッダー）で呼ぶ。鍵は関数の中で @supabase/server が確かめる
+[functions.stripe-events-retry]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

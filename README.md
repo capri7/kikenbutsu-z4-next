@@ -24,7 +24,7 @@ Next.js 16（App Router）・Supabase・Stripe を使い、認証・決済・進
 - 解く課題：独学の受験者が、弱点の分野をつかめないまま同じ範囲を繰り返し、再受験を重ねること。乙4以外の試験、スマートフォンのアプリ、人による指導は扱わない（[要件定義](docs/requirements.md#プロジェクト概要要件定義)）
 - データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（[詳細設計](docs/design.md)）
 - 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（[運用上の学び：verify_jwt と Webhook 認証の落とし穴](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)）
-- テスト：分岐ロジックを関数に切り出し、Deno.test 71件・Vitest 66件・Playwright E2E 35件。DB の権限・RLS・関数は pgTAP 131件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[テスト・品質保証](docs/testing.md)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
+- テスト：分岐ロジックを関数に切り出し、Deno.test 80件・Vitest 66件・Playwright E2E 38件。DB の権限・RLS・関数は pgTAP 153件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[テスト・品質保証](docs/testing.md)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
 
 ## 全体構成
 
@@ -109,10 +109,10 @@ flowchart LR
 
 | 対象 | ツール | 件数 | 確かめていること |
 |---|---|---|---|
-| Edge Functions の判定 | Deno.test | 71件 | 決済・退会・Webhook の分岐（判定を `decision.ts` などに切り出して検証）。Webhook の通知の記録と、処理が失敗したときの扱い。請求書の通知から契約を特定する。E2E で Stripe の API の宛先を偽の Stripe API にする設定 |
+| Edge Functions の判定 | Deno.test | 80件 | 決済・退会・Webhook の分岐（判定を `decision.ts` などに切り出して検証）。Webhook の通知の記録と、処理が失敗したときの扱い。請求書の通知から契約を特定する。未処理の通知の処理し直しの流れと、Heartbeat に送る結果。E2E で Stripe の API の宛先を偽の Stripe API にする設定 |
 | Next.js の関数 | Vitest | 66件 | 正誤の判定、ログイン後の移動先、Edge Functions の呼び出し、問題の図の URL、漏えいしたパスワードの案内、試験日までの残り日数、分野別の正答率と出題、退会・請求情報の関数（ログインが切れているときの扱いなど）、パンくずの構造化データ（JSON-LD）、問題のページの読み込み（見られない問題をエラーとして記録しない） |
-| DB | pgTAP | 131件（66ファイル） | ロールの権限、RLS、関数が本人の記録だけを使うこと |
-| 画面の流れ | Playwright（E2E） | 35件 | 無料登録〜練習問題〜誤答リスト、ログイン、ログインしていない状態でのマイページの保護、Stripe の通知（Webhook）による有料転換と契約の更新・終了（Stripe の代わりに偽の Stripe API から最新の契約を取り直す。届く順番が前後した通知も確かめる）、処理に失敗した通知の処理し直し、退会（即時削除・予約・取り消し・契約終了の通知による削除）、有料会員の画面の出し分けなど。ローカルの Supabase で動かし、本番に触れない |
+| DB | pgTAP | 153件（67ファイル） | ロールの権限、RLS、関数が本人の記録だけを使うこと。未処理の通知を処理し直す対象の選び方と、ジョブ |
+| 画面の流れ | Playwright（E2E） | 38件 | 無料登録〜練習問題〜誤答リスト、ログイン、ログインしていない状態でのマイページの保護、Stripe の通知（Webhook）による有料転換と契約の更新・終了（Stripe の代わりに偽の Stripe API から最新の契約を取り直す。届く順番が前後した通知も確かめる）、処理に失敗した通知の処理し直し（再送されたとき、定期的な処理し直し、3時間たっても残ったときの知らせ）、退会（即時削除・予約・取り消し・契約終了の通知による削除）、有料会員の画面の出し分けなど。ローカルの Supabase で動かし、本番に触れない |
 
 4種類のテストと、Edge Functions の型の検査（`deno check`）・ESLint・Lighthouse CI を、PR ごとに GitHub Actions で実行している。テストの方針とケーススタディは [docs/testing.md](docs/testing.md) を参照。
 
@@ -135,6 +135,7 @@ flowchart LR
 
 - `stripe-webhook` は、Better Stack（主、3分ごと）と GitHub Actions（補助、1時間ごとの時刻指定）の2つで確かめる。Better Stack の Free は状態コードしか確かめられないため、本文の確認は GitHub Actions が補う（[役割の分け方](docs/operations.md#監視)。NFR-OM-03）
 - トップのページの応答を、Better Stack で3分ごとに確かめる（NFR-OM-03）
+- 未処理のまま残った Stripe の通知を、10分ごとのジョブ（`pg_cron`）で処理し直す。ジョブは Better Stack の Heartbeat で見張り、止まったときや、受け取ってから3時間たっても未処理の通知が残ったときに知らせる（[監視](docs/operations.md#監視)。FR-11-8・FR-11-9・NFR-OM-03）
 - 画面（ブラウザ）とサーバーのエラーを、`@sentry/nextjs` で Better Stack に記録する。利用者を特定できる情報は送らない（NFR-OM-04）
 - Vercel の Alerts（既定のルール）で、5xx の急増と関数の使用量の異常を知らせる
 - 異常はすべてメールで知らせる。Stripe・GitHub・Better Stack の通知は、メールのフィルタで他のメールと分け、見落とさないようにしている（[運用上の学び](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)。NFR-OM-05）
@@ -199,13 +200,13 @@ npm run dev                        # http://localhost:3000
 # Next.js の単体テスト（Vitest、66件）
 npm test -- --run
 
-# Edge Functions の判定ロジック（Deno.test、71件）
+# Edge Functions の判定ロジック（Deno.test、80件）
 deno test supabase/functions/
 
-# E2E（Playwright、35件）。ローカルの Supabase を起動してから実行する
-# stripe-webhook の E2E 用に、テスト専用の値（本物の鍵ではない）と偽の Stripe API の宛先を置いてから起動する
+# E2E（Playwright、38件）。ローカルの Supabase を起動してから実行する
+# stripe-webhook・stripe-events-retry の E2E 用に、テスト専用の値（本物の鍵ではない）と、偽の Stripe API・偽の Heartbeat の宛先を置いてから起動する
 npx playwright install chromium    # 初回のみ
-printf 'STRIPE_WEBHOOK_SECRET=whsec_e2e_local_only\nSTRIPE_SECRET_KEY=sk_test_e2e_dummy\nSTRIPE_API_BASE_URL=http://host.docker.internal:54399\n' > supabase/functions/.env
+printf 'STRIPE_WEBHOOK_SECRET=whsec_e2e_local_only\nSTRIPE_SECRET_KEY=sk_test_e2e_dummy\nSTRIPE_API_BASE_URL=http://host.docker.internal:54399\nBETTERSTACK_HEARTBEAT_URL=http://host.docker.internal:54398/heartbeat/e2e\n' > supabase/functions/.env
 mkdir -p supabase/.temp && cp supabase/production-versions/*-version supabase/.temp/
 supabase start
 bash scripts/check_local_supabase_versions.sh    # 本番と同じ版で動いているかを確かめる
@@ -213,7 +214,7 @@ bash scripts/check_local_supabase_versions.sh    # 本番と同じ版で動い�
 # そのときは supabase stop と supabase start で起動し直す
 npx playwright test
 
-# DB の権限・RLS・関数のテスト（pgTAP、66ファイル・131件）。E2E と同じく、ローカルの Supabase に対して実行する
+# DB の権限・RLS・関数のテスト（pgTAP、67ファイル・153件）。E2E と同じく、ローカルの Supabase に対して実行する
 supabase test db
 
 # lint（ESLint）
@@ -258,7 +259,7 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 | Stripe | 決済・サブスクリプション管理 | 月額の自動更新・解約の予約・請求の画面（ポータル）を自前で作らずに使え、カードの情報をこちらのサーバーで扱わない |
 | Vercel | Next.js アプリのホスティング（本番稼働中） | PR ごとのプレビューで、利用者に出す前に画面を確かめられる。問題があれば直前の版にすぐ戻せる（Instant Rollback。アプリの復旧の目標30分の手段） |
 | GitHub Actions | PR ごとのテスト（Vitest・Deno.test・pgTAP・Playwright E2E）・Edge Functions の型の検査（`deno check`）・ESLint・Lighthouse CI の実行。本番への反映（PR では適用される予定の migration を表示し、main へのマージ後に migration を適用してから Edge Functions を反映し、アプリの本番への割り当てはその成功を待つ）。`stripe-webhook` の応答の本文を1時間ごとの時刻指定で確かめる補助の監視 | テストとデプロイの設定がリポジトリの中にあり、チームの誰でも PR の上で中身と結果を確かめられる |
-| Better Stack（Free） | 監視（`stripe-webhook` とトップのページの応答、3分ごと）と、画面・サーバーのエラーの記録（`@sentry/nextjs` で送信） | 3分ごとの監視とエラーの記録を、Free のプランの1つのサービスで行える |
+| Better Stack（Free） | 監視（`stripe-webhook` とトップのページの応答、3分ごと）、未処理の通知を処理し直すジョブの Heartbeat（10分ごと）、画面・サーバーのエラーの記録（`@sentry/nextjs` で送信） | 3分ごとの監視とエラーの記録を、Free のプランの1つのサービスで行える |
 
 ### 技術的なハイライト
 

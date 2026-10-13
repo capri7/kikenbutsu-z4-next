@@ -1,4 +1,4 @@
-// supabase/functions/stripe-webhook/receive.ts
+// supabase/functions/_shared/stripe-events/receive.ts
 //
 // Stripe の通知の受け取りと、処理の結果の記録の流れ（DB の呼び出しは store に任せ、テストで差し替える）
 // Stripe の勧め：すぐに 2xx を返し、処理は非同期で行う。重複の判定は「処理済み」の通知に限る
@@ -48,7 +48,7 @@ export async function receiveEvent(event: StripeEventRecord, store: EventStore):
  */
 export async function processAndFinish(
   eventId: string,
-  store: EventStore,
+  store: Pick<EventStore, "finish">,
   process: () => Promise<void>,
 ): Promise<"processed" | "failed"> {
   let error: string | null = null;

@@ -5,7 +5,7 @@ import { execSync } from 'node:child_process';
  * E2E はローカルの Supabase（supabase start）に対してだけ実行する。
  * 接続先は .env.local（本番）ではなく、supabase status から取得する。
  */
-function loadLocalSupabaseEnv(): { url: string; anonKey: string; serviceRoleKey: string } {
+function loadLocalSupabaseEnv(): { url: string; anonKey: string; serviceRoleKey: string; secretKey: string } {
   let output: string;
   try {
     output = execSync('supabase status -o env', {
@@ -27,8 +27,10 @@ function loadLocalSupabaseEnv(): { url: string; anonKey: string; serviceRoleKey:
   const url = env.API_URL;
   const anonKey = env.ANON_KEY;
   const serviceRoleKey = env.SERVICE_ROLE_KEY;
-  if (!url || !anonKey || !serviceRoleKey) {
-    throw new Error('supabase status から API_URL・ANON_KEY・SERVICE_ROLE_KEY を取得できませんでした。');
+  // 新しい形式の秘密の鍵（stripe-events-retry を呼ぶため。Supabase CLI が手元の環境に使う値）
+  const secretKey = env.SECRET_KEY;
+  if (!url || !anonKey || !serviceRoleKey || !secretKey) {
+    throw new Error('supabase status から API_URL・ANON_KEY・SERVICE_ROLE_KEY・SECRET_KEY を取得できませんでした。');
   }
 
   const host = new URL(url).hostname;
@@ -36,7 +38,7 @@ function loadLocalSupabaseEnv(): { url: string; anonKey: string; serviceRoleKey:
     throw new Error(`E2E の接続先がローカルではありません（${url}）。本番に対しては実行しません。`);
   }
 
-  return { url, anonKey, serviceRoleKey };
+  return { url, anonKey, serviceRoleKey, secretKey };
 }
 
 const localSupabase = loadLocalSupabaseEnv();
@@ -45,6 +47,7 @@ const localSupabase = loadLocalSupabaseEnv();
 // 接続先は上でローカルに限定している。アプリ（webServer）には渡さない。
 process.env.E2E_SUPABASE_URL = localSupabase.url;
 process.env.E2E_SUPABASE_SERVICE_ROLE_KEY = localSupabase.serviceRoleKey;
+process.env.E2E_SUPABASE_SECRET_KEY = localSupabase.secretKey;
 
 /**
  * Read environment variables from file.
@@ -135,6 +138,13 @@ export default defineConfig({
     {
       command: 'node e2e/fake-stripe-server.mjs',
       url: 'http://127.0.0.1:54399/health',
+      reuseExistingServer: false,
+      timeout: 10 * 1000,
+    },
+    // 偽の Heartbeat。stripe-events-retry が、本物の Better Stack の代わりに結果を送る（e2e/fake-heartbeat-server.mjs）
+    {
+      command: 'node e2e/fake-heartbeat-server.mjs',
+      url: 'http://127.0.0.1:54398/health',
       reuseExistingServer: false,
       timeout: 10 * 1000,
     },

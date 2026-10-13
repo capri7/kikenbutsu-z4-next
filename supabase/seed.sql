@@ -57,3 +57,7 @@ values
    '["選択肢1の解説", "選択肢2の解説", "選択肢3の解説", "選択肢4の解説", "選択肢5の解説"]',
    'normal', '["description"]', '[""]')
 on conflict (id) do nothing;
+
+-- 未処理の通知の処理し直し（stripe-events-retry）を、手元の pg_cron から呼ぶときの URL（Supabase の公式の文書「Automatic embeddings」の手元の例と同じ値）。
+-- 鍵（stripe_events_retry_secret_key）は置かない。鍵がなければ invoke_stripe_events_retry() は呼ばずに終わる。
+select vault.create_secret('http://api.supabase.internal:8000', 'project_url');

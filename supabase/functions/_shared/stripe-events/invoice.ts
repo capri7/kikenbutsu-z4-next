@@ -1,4 +1,4 @@
-// supabase/functions/stripe-webhook/invoice.ts
+// supabase/functions/_shared/stripe-events/invoice.ts
 
 /** 請求書のうち、紐づく契約を探すのに使う欄（Basil 以降の API の版の形） */
 export type InvoiceParentSource = {
