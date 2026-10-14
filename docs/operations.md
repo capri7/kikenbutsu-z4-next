@@ -75,6 +75,8 @@ GitHub Actions（リポジトリの Secrets に登録）
 
 **関数が秘密の鍵を受け取る場所**：本番の関数では、Dashboard で新しい鍵（publishable・secret）を作った後も、環境変数 `SUPABASE_SECRET_KEYS` から鍵を読めなかった（2026-10-13 確認。`@supabase/server` が `NO_KEYS_CONFIGURED` を返した。原因は未確認）。そのため関数は、秘密の鍵を自分の secret（`STRIPE_EVENTS_RETRY_SECRET_KEY`・`EDGE_SECRET_KEY`）で受け取っている。
 
+**旧い鍵（`anon`・`service_role`）**：2026-10-14 に Dashboard の Settings → API Keys →「Legacy anon, service_role API keys」の「Disable JWT-based API keys」で止めた（Supabase の公式の文書「Migrating to publishable and secret API keys」の Step 6）。止める前に、API ゲートウェイのログ（`request.sb.jwt.apikey.payload.role`）で、新しい版の本番が出た後に旧い鍵の利用が 0 件であることを確かめた。旧い鍵を使う呼び出しが見つかったときは、同じ画面で有効に戻せる。利用者のログインの JWT は、旧い鍵を止めても有効なまま（同じ画面の説明）
+
 **`stripe-webhook` の役割の分け方**：`stripe-webhook` は、署名のないリクエストに 400 と `invalid signature` を返すのが正常である。Better Stack の Free は状態コードしか確かめられないため、Better Stack で応答の停止・401（`verify_jwt` が有効に戻った場合）・5xx を3分ごとに検知し、本文の確認（リクエストが関数のコードまで届いていること）は GitHub Actions が補う。
 
 **GitHub Actions を主にしない理由**：時刻指定の実行は、GitHub の混雑で遅れたり飛ばされたりする。このリポジトリでも、1時間ごとの指定に対して、実際の間隔は3〜9時間だった。また、公開リポジトリでは、60日間リポジトリに動きがないと、時刻指定のワークフローが自動で止まる。
