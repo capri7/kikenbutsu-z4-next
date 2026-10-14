@@ -86,7 +86,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `_shared/stripeApiTarget.ts`（E2E で Stripe の API の宛先を偽の Stripe API にする） | ✅ 5パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。`billing-portal` を呼ぶ共通の関数 `invokeEdgeFunction` は Vitest で検証） |
 | Next.js側（Vitest） | ✅ 66パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3・`examCountdown.ts` 9・`categoryProgress.ts` 13・`account.ts` 4・`billing.ts` 4・`Breadcrumbs.tsx` 2・`dataLoader.server.ts` 3） |
-| DB（pgTAP） | ✅ 67ファイル・153件（ロールの権限・RLS・関数・Stripe の通知の処理の状態・未処理の通知の処理し直し） |
+| DB（pgTAP） | ✅ 68ファイル・158件（ロールの権限・RLS・関数・Stripe の通知の処理の状態・未処理の通知の処理し直し・外部キーの列の索引） |
 | E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅・有料会員の画面の出し分け3件 ✅・有料転換と契約の更新・終了と、届く順番が前後した通知、処理に失敗した通知の処理し直し（Webhook）8件 ✅・退会3件 ✅・ログインしていない状態のマイページ2件 ✅・ログイン2件 ✅・未処理の通知の処理し直し3件 ✅（いずれもローカルの Supabase）・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
 
 ## `request-account-deletion`（7パターン）
