@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import HomeCta from './HomeCta'
 import styles from './page.module.css'
@@ -176,12 +177,12 @@ export default function HomePage() {
             <div className={`${styles.dashDevice} ${styles.dashDeviceMain}`}>
               <div className={styles.phoneFrame}>
                 <div className={styles.phoneScreenWrap}>
-                  <img
+                  <Image
                     src="/images/mypage1.svg"
                     alt="全体の学習状況のイメージ"
                     className={styles.phoneScreen}
-                    loading="lazy"
-                    decoding="async"
+                    width={375}
+                    height={667}
                   />
                 </div>
               </div>
@@ -191,12 +192,12 @@ export default function HomePage() {
             <div className={`${styles.dashDevice} ${styles.dashDeviceLeft}`}>
               <div className={styles.phoneFrame}>
                 <div className={styles.phoneScreenWrap}>
-                  <img
+                  <Image
                     src="/images/mypage2.svg"
                     alt="小分野別の進捗イメージ"
                     className={styles.phoneScreen}
-                    loading="lazy"
-                    decoding="async"
+                    width={375}
+                    height={667}
                   />
                 </div>
               </div>
@@ -206,12 +207,12 @@ export default function HomePage() {
             <div className={`${styles.dashDevice} ${styles.dashDeviceRight}`}>
               <div className={styles.phoneFrame}>
                 <div className={styles.phoneScreenWrap}>
-                  <img
+                  <Image
                     src="/images/mypage3.svg"
                     alt="復習リストと誤答リストのイメージ"
                     className={styles.phoneScreen}
-                    loading="lazy"
-                    decoding="async"
+                    width={375}
+                    height={667}
                   />
                 </div>
               </div>

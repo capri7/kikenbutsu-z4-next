@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import TransportationStandardsQuiz from './TransportationStandardsQuiz'
 import shared from '@/app/basics/BasicsShared.module.css'
@@ -814,14 +815,12 @@ export default function TransportationStandardsPage() {
                 <li>
                   <strong>標識の掲示</strong>：車両の<strong>前後の見やすい箇所</strong>に掲げる。
                   <figure className={shared.formulaCard}>
-                    <img
+                    <Image
                       src="/images/basics/law/danger_transport.svg"
                       alt="危険物を運搬するときに掲げる標識の例"
                       className={shared.circuitSvg}
                       width={320}
                       height={320}
-                      loading="lazy"
-                      decoding="async"
                     />
                     <figcaption className={shared.figureCaption}>
                       <p>

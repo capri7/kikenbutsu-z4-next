@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import SignsAndNoticesQuiz from './SignsAndNoticesQuiz'
 import shared from '@/app/basics/BasicsShared.module.css'
@@ -104,14 +105,12 @@ export default function SignsAndNoticesPage() {
 
           <h3>標識の例（給油取扱所）</h3>
           <figure className={shared.formulaCard}>
-            <img
+            <Image
               src="/images/basics/law/Fuel_Dispensing_Facility.svg"
               alt="給油取扱所の標識例（白地に黒字で施設名称を表示）"
               className={shared.circuitSvg}
               width={600}
               height={300}
-              loading="lazy"
-              decoding="async"
             />
             <figcaption className={shared.figureCaption}>
               <p>標識の例：白地・黒字／横長（0.3m × 0.6m以上）</p>
@@ -133,14 +132,12 @@ export default function SignsAndNoticesPage() {
           </div>
 
           <figure className={shared.formulaCard}>
-            <img
+            <Image
               src="/images/basics/law/danger.svg"
               alt="移動タンク貯蔵所の標識例（黒地に黄色の反射塗料で「危」）"
               className={shared.circuitSvg}
               width={320}
               height={320}
-              loading="lazy"
-              decoding="async"
             />
             <figcaption className={shared.figureCaption}>
               <p>移動タンク貯蔵所の例：黒地・黄色の反射塗料「危」／正方形（0.3〜0.4m）</p>
@@ -199,14 +196,12 @@ export default function SignsAndNoticesPage() {
 
           <h3>掲示板の外観例</h3>
           <figure className={shared.formulaCard}>
-            <img
+            <Image
               src="/images/basics/law/bulletin_board.svg"
               alt="掲示板の例（白地・黒字、幅0.3m以上・長さ0.6m以上）"
               className={shared.circuitSvg}
               width={800}
               height={280}
-              loading="lazy"
-              decoding="async"
             />
             <figcaption className={shared.figureCaption}>
               <p>掲示板の例：白地・黒字／横長（0.3×0.6m以上）</p>
@@ -238,14 +233,12 @@ export default function SignsAndNoticesPage() {
           </div>
 
           <figure className={shared.formulaCard}>
-            <img
+            <Image
               src="/images/basics/law/no_open_flames.svg"
               alt="注意表示の例：火気に関する掲示（赤地・白文字系統）"
               className={shared.circuitSvg}
               width={800}
               height={280}
-              loading="lazy"
-              decoding="async"
             />
             <figcaption className={shared.figureCaption}>
               <p>注意表示の例：火気関係（赤系配色）</p>
@@ -258,14 +251,12 @@ export default function SignsAndNoticesPage() {
           </div>
 
           <figure className={shared.formulaCard}>
-            <img
+            <Image
               src="/images/basics/law/no_smoking.svg"
               alt="給油所の注意掲示例：黄赤地に黒字（給油中エンジン停止）"
               className={shared.circuitSvg}
               width={800}
               height={280}
-              loading="lazy"
-              decoding="async"
             />
             <figcaption className={shared.figureCaption}>
               <p>給油取扱所の例：黄赤地・黒字（給油中エンジン停止）</p>

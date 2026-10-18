@@ -275,6 +275,8 @@ export type QuestionRow = {
   headers: unknown
   feedback_mode: string
   image: string | null
+  image_width: number | null
+  image_height: number | null
   statement_explanations: unknown
 }
 

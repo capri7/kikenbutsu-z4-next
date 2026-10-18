@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import ChoicesTable from './ChoicesTable'
 import Breadcrumbs from '@/components/Breadcrumbs'
@@ -230,6 +231,9 @@ useEffect(() => {
     }
   }
 
+  // 図は、DB の制約で幅と高さを必ず持つ（questions_image_size_required）
+  const imageUrl = questionImageUrl(question.image, process.env.NEXT_PUBLIC_SUPABASE_URL)
+
   return (
     <>
     <Breadcrumbs
@@ -250,12 +254,12 @@ useEffect(() => {
 
     <p className={`${styles.questionBody} mb-6`}>{question.question}</p>
 
-      {question.image && (
-        <img
-          src={questionImageUrl(question.image, process.env.NEXT_PUBLIC_SUPABASE_URL) ?? undefined}
+      {imageUrl && question.image_width != null && question.image_height != null && (
+        <Image
+          src={imageUrl}
           alt="問題図"
-          loading="lazy"
-          decoding="async"
+          width={question.image_width}
+          height={question.image_height}
         />
       )}
 

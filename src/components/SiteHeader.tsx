@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -134,7 +135,7 @@ export default function SiteHeader() {
     <header className={`site-header${navOpen ? ' nav-open' : ''}`}>
       <div className="header-container">
         <Link href="/" prefetch={false}>
-          <img src="/images/logo.svg" alt="危険物乙4試験対策サイト" className="logo" width={36} height={36} />
+          <Image src="/images/logo.svg" alt="危険物乙4試験対策サイト" className="logo" width={36} height={36} loading="eager" />
         </Link>
         <p className="site-title">乙種4類危険物取扱者試験対策</p>
         <button
