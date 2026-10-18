@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Breadcrumbs from '@/components/Breadcrumbs'
+import { FIGURE_SIZES } from '@/app/basics/figureSizes'
+import legalFrameworkImage from '@/assets/images/legal-framework.png'
 import LegalFrameworkQuiz from './LegalFrameworkQuiz'
 import shared from '@/app/basics/BasicsShared.module.css'
 import theme from '@/app/basics/law/theme.module.css'
@@ -74,15 +77,11 @@ export default function LegalFrameworkPage() {
             aria-labelledby="legal-framework-title-1"
             aria-describedby="legal-framework-cap-1"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/basics/law/legal-framework.svg"
+            <Image
+              src={legalFrameworkImage}
               alt="法律・政令・省令の関係（上ほど優先、下ほど具体的）を示す図"
               className={shared.circuitSvg}
-              loading="lazy"
-              decoding="async"
-              width={800}
-              height={280}
+              sizes={FIGURE_SIZES}
             />
 
             <figcaption id="legal-framework-cap-1" className={shared.figureCaption}>

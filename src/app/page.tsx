@@ -3,6 +3,12 @@ import Image from 'next/image'
 import Link from 'next/link'
 import HomeCta from './HomeCta'
 import styles from './page.module.css'
+import mypage1 from '@/assets/images/mypage1.png'
+import mypage2 from '@/assets/images/mypage2.png'
+import mypage3 from '@/assets/images/mypage3.png'
+
+// スマホの枠の中の画面は最大 208px 幅（.phoneFrame の幅 228px − 左右の余白 10px×2）
+const PHONE_SCREEN_SIZES = '208px'
 
 export const metadata: Metadata = {
   title: '危険物乙4 試験対策｜無料100問＋1400問以上の練習問題',
@@ -178,11 +184,10 @@ export default function HomePage() {
               <div className={styles.phoneFrame}>
                 <div className={styles.phoneScreenWrap}>
                   <Image
-                    src="/images/mypage1.svg"
+                    src={mypage1}
                     alt="全体の学習状況のイメージ"
                     className={styles.phoneScreen}
-                    width={375}
-                    height={667}
+                    sizes={PHONE_SCREEN_SIZES}
                   />
                 </div>
               </div>
@@ -193,11 +198,10 @@ export default function HomePage() {
               <div className={styles.phoneFrame}>
                 <div className={styles.phoneScreenWrap}>
                   <Image
-                    src="/images/mypage2.svg"
+                    src={mypage2}
                     alt="小分野別の進捗イメージ"
                     className={styles.phoneScreen}
-                    width={375}
-                    height={667}
+                    sizes={PHONE_SCREEN_SIZES}
                   />
                 </div>
               </div>
@@ -208,11 +212,10 @@ export default function HomePage() {
               <div className={styles.phoneFrame}>
                 <div className={styles.phoneScreenWrap}>
                   <Image
-                    src="/images/mypage3.svg"
+                    src={mypage3}
                     alt="復習リストと誤答リストのイメージ"
                     className={styles.phoneScreen}
-                    width={375}
-                    height={667}
+                    sizes={PHONE_SCREEN_SIZES}
                   />
                 </div>
               </div>
