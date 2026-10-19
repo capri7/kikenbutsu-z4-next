@@ -1,6 +1,9 @@
 // src/app/basics/physical_chemistry/types_of_combustion/page.tsx
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Breadcrumbs from '@/components/Breadcrumbs'
+import { FIGURE_SIZES } from '@/app/basics/figureSizes'
+import cokeImage from '@/assets/images/coke.jpg'
 import TypesOfCombustionQuiz from './TypesOfCombustionQuiz'
 import shared from '@/app/basics/BasicsShared.module.css'
 import theme from '@/app/basics/physical_chemistry/theme.module.css'
@@ -130,20 +133,23 @@ export default function TypesOfCombustionPage() {
           </figure>
 
           <figure className={shared.formulaCard}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/images/basics/physical_chemistry/coke_photo.svg"
+            <Image
+              src={cokeImage}
               alt="表面燃焼に用いられるコークス（灰黒色・多孔質固体）の写真"
               className={shared.circuitSvg}
-              loading="lazy"
-              decoding="async"
-              width={800}
-              height={280}
+              sizes={FIGURE_SIZES}
             />
             <figcaption className={shared.figureCaption}>
               ※ コークス：石炭を約1,000～1,100℃で乾留し、揮発分を除去した灰黒色・金属光沢のある多孔質固体。
               炭素含有量は約85～90％。着火温度は高いものの、一度着火すると無炎燃焼に移行し、
               持続的に高温を保って強い火力を発揮します。（表面燃焼の代表例）
+              <p className={shared.muted}>
+                写真：
+                <a href="https://commons.wikimedia.org/wiki/File:Koks_Brennstoff.jpg">Koks Brennstoff</a>
+                （作者：Stahlkocher）、
+                <a href="https://creativecommons.org/licenses/by-sa/3.0/" rel="license">CC BY-SA 3.0</a>
+                、Wikimedia Commons より。大きさと形式を変更しています。この画像も CC BY-SA 3.0 で提供します。
+              </p>
             </figcaption>
           </figure>
 
