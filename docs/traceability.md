@@ -83,7 +83,7 @@
 | NFR-OM-06 | △ | GitHub のルールセット `main-protection`、CI | CI（PR ごと） | PR と CI の成功は運用の決まり（ルールセットで強制しているのは削除と force push の禁止だけ） |
 | NFR-OM-07 | ― | `.github/workflows/deploy.yml`、Vercel の Deployment Checks | CI（migration を含む PR ごとに、適用される予定を表示） | Edge Functions が migration の後に反映されることは、マージ後の実行の時刻で確かめる。アプリが `Deploy` の成功の後に本番に出ることは、マージ後の Vercel のデプロイの記録で確かめる |
 | NFR-MG-01 | ― | ― | ― | 対象外 |
-| NFR-SE-01 | ✅ | RLS・6つの書き込みの関数・権限 | pgTAP（66ファイル・131件） | ― |
+| NFR-SE-01 | ✅ | RLS・6つの書き込みの関数・権限 | pgTAP（69ファイル・166件） | ― |
 | NFR-SE-02 | △ | 各 Edge Functions（JWT から本人を決める） | Deno.test：create-checkout-session/decision.test.ts（トークンから確定した ID を使う） | ほかの4つの関数（退会・予約の取り消し・ゲスト決済・請求情報）は、共通の関数 `getAuthenticatedUser` で JWT から本人を決め、本文のユーザー ID を使っていないことを、コードで確認（2026-10-09） |
 | NFR-SE-03 | ― | Edge Functions の環境変数 | ― | [本番の環境変数](operations.md#本番の環境変数)の表で管理 |
 | NFR-SE-04 | △ | Supabase Auth（漏えいしたパスワードの拒否） | Vitest：leakedPassword.test.ts（拒否されたときの案内） | 拒否の設定そのものは Supabase のダッシュボードの設定 |
