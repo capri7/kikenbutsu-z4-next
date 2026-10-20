@@ -13,6 +13,7 @@ Next.js側にはAPI Routesを持たず、Stripe秘密鍵の使用や外部API連
 | `request-account-deletion` | POST | 必須（Supabase JWT） | 退会予約。有料会員は契約終了日まで猶予する`deletion_requested`フラグを立て、無料会員は即時削除 |
 | `cancel-account-deletion` | POST | 必須（Supabase JWT） | 退会予約の取り消し（`deletion_requested`フラグを戻す） |
 | `stripe-webhook` | POST | Stripe署名検証（`verify_jwt: false`） | Stripeからのイベント通知を受信し、サブスク状態をDBに同期 |
+| `stripe-events-retry` | POST | secret鍵の検証（`apikey` ヘッダー、`verify_jwt: false`） | 未処理のまま残ったStripeの通知を処理し直す。ブラウザやアプリからは呼ばず、`pg_cron` が10分ごとに呼ぶ |
 
 ## リクエスト/レスポンス型定義
 
@@ -110,7 +111,7 @@ type RequestAccountDeletionResponse =
 
 ## `stripe-webhook`
 
-Stripeからのイベント通知を受信する。**リクエスト/レスポンスとも、他6エンドポイントとは形式が異なる。**
+Stripeからのイベント通知を受信する。**リクエスト/レスポンスとも、他7エンドポイントとは形式が異なる。**
 
 - リクエスト：JSONではなくStripeが生成する生のイベントペイロード。`stripe-signature`ヘッダーの署名検証（`stripe.webhooks.constructEventAsync`）でのみ認証し、Supabase JWTは使わない（呼び出し元がStripeのみで、フロントから直接叩かれることがないため）
 - レスポンス：JSONではなく**プレーンテキスト**。Stripeはレスポンスのステータスコードのみを見てリトライ要否を判断するため、構造化されたエラーコードを返す必要がない
@@ -142,6 +143,27 @@ Stripeは同一イベントを複数回配信することがあるため、`stri
 **設計判断：即時レスポンスとバックグラウンド処理の分離**
 
 署名検証と通知の記録（`record_stripe_event()`）は応答の前に完了させて`200`を返し、Stripe APIへの追加呼び出しを伴う実同期処理（`user_profiles`/`subscriptions`更新、`auth.users`削除）は`EdgeRuntime.waitUntil()`でバックグラウンドに回している。Stripe の公式ドキュメントの勧め（時間切れの原因になりうる処理の前に、すぐに `2xx` を返す）に沿った形。通知は応答の前に未処理として記録しているため、バックグラウンドの処理が失敗しても通知は失われず、結果は `finish_stripe_event()` で記録する。
+
+## `stripe-events-retry`
+
+未処理のまま残ったStripeの通知を処理し直す。ブラウザやアプリからは呼ばず、`pg_cron` のジョブ `stripe-events-retry` が10分ごとに `pg_net` で呼ぶ（構成は[設計](design.md)、監視は[運用](operations.md)に書いている）。
+
+- リクエスト：`POST`、ボディは空のJSON（`{}`）。Supabase JWTは使わず（`verify_jwt: false`）、新しい形式のsecret鍵を `apikey` ヘッダーに載せて呼ぶ。呼ぶ側はVaultの `stripe_events_retry_secret_key`、関数側はSecretsの `STRIPE_EVENTS_RETRY_SECRET_KEY` に、同じ鍵を置く
+- 処理の対象：DBの関数 `stripe_events_due_for_retry()` が選ぶ。未処理で、受け取ってから10分以上たち、試行が5回未満で、前回の試行から10・20・40・80分（試行の回数に応じて2倍ずつ）たった通知を、受け取った順に、1回の実行で最大20件
+- 処理の中身：`stripe-webhook` と同じ（`_shared/stripe-events/process.ts`）。署名は、受け取ったときに `stripe-webhook` が確かめているため、ここでは確かめない
+- 監視：処理のあとに、受け取ってから3時間以上たっても未処理の通知（`stripe_events_overdue_count()`）がなければ、Better StackのHeartbeatに成功を送る。あれば、URLの末尾に `/fail` を付けて失敗を送る
+
+```typescript
+// リクエストボディ：{}（apikeyヘッダーにsecret鍵）
+
+// レスポンス（JSON）
+// 200 { processed: number, failed: number, overdue: number }
+//   processed : 今回の実行で処理できた通知の数
+//   failed    : 今回の実行でまた失敗した通知の数（試行が5回に達するまで、次の間隔でまた対象になる）
+//   overdue   : 受け取ってから3時間以上たっても未処理の通知の数
+// 500 { "error": "retry failed" } : 対象や件数の読み込みなど、処理し直しの流れが失敗した
+// 401 : apikeyヘッダーがない、または鍵が違う（何も処理しない）
+```
 
 ## `cancel-account-deletion`
 
