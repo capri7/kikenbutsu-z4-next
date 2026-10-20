@@ -5,6 +5,7 @@ import { withSentryConfig } from "@sentry/nextjs/config";
 // Next.js版の新URLへの301リダイレクト一覧。
 // Google Search Consoleでインデックス済みだった全66件のURLを基に、実際のルート一覧と突き合わせて生成した。
 // 生成日: 2026-08-28
+// 2026-10-20: 第2章（物理・化学）の旧URL 11件を追加（これまで404を返していた）。
 const LEGACY_URL_REDIRECTS: { source: string; destination: string; permanent: boolean }[] = [
   { source: '/basics/properties_prevention/class1_petroleum_properties/Otsux_Prop_Class1_Petroleum_Properties_001.html', destination: '/basics/properties_prevention/class1_petroleum_properties', permanent: true },
   { source: '/basics/law/manufacturing_facility_standards/Otsux_Law_Manufacturing_Facility_Standards_001.html', destination: '/basics/law/manufacturing_facility_standards', permanent: true },
@@ -75,6 +76,17 @@ const LEGACY_URL_REDIRECTS: { source: string; destination: string; permanent: bo
   { source: '/basics/properties_prevention/class4_storage_handling/Otsux_Prop_Class4_Storage_Handling_001.html', destination: '/basics/properties_prevention/class4_storage_handling', permanent: true },
   { source: '/basics/law/class4_substances/Otsux_Law_Class4_Substances_001.html', destination: '/basics/law/class4_substances', permanent: true },
   { source: '/checkout.html', destination: '/checkout', permanent: true },
+  { source: '/basics/physical_chemistry.html', destination: '/basics/physical_chemistry', permanent: true },
+  { source: '/basics/physical_chemistry/combustion_chemistry/Otsux_Phy_Combustion_Chemistry_001.html', destination: '/basics/physical_chemistry/chemistry_of_combustion', permanent: true },
+  { source: '/basics/physical_chemistry/types_of_combustion/Otsux_Phy_Types_of_Combustion_001.html', destination: '/basics/physical_chemistry/types_of_combustion', permanent: true },
+  { source: '/basics/physical_chemistry/ease_of_combustion/Otsux_Phy_Ease_of_Combustion_001.html', destination: '/basics/physical_chemistry/ease_of_combustion', permanent: true },
+  { source: '/basics/physical_chemistry/ignition_and_flash_point/Otsux_Phy_Ignition_and_Flash_Point_001.html', destination: '/basics/physical_chemistry/ignition_and_flash_point', permanent: true },
+  { source: '/basics/physical_chemistry/flammability_range/Otsux_Phy_Flammability_Range_001.html', destination: '/basics/physical_chemistry/flammability_range', permanent: true },
+  { source: '/basics/physical_chemistry/spontaneous_combustion/Otsux_Phy_Spontaneous_Combustion_001.html', destination: '/basics/physical_chemistry/spontaneous_combustion', permanent: true },
+  { source: '/basics/physical_chemistry/dust_explosions/Otsux_Phy_Dust_Explosions_001.html', destination: '/basics/physical_chemistry/dust_explosions', permanent: true },
+  { source: '/basics/physical_chemistry/extinguishing_agents/Otsux_Phy_Extinguishing_Agents_001.html', destination: '/basics/physical_chemistry/extinguishing_agents', permanent: true },
+  { source: '/basics/physical_chemistry/electricity_and_batteries/Otsux_Phy_Electricity_Batteries_001.html', destination: '/basics/physical_chemistry/electricity_batteries', permanent: true },
+  { source: '/basics/physical_chemistry/static_electricity/Otsux_Phy_Static_Electricity_001.html', destination: '/basics/physical_chemistry/static_electricity', permanent: true },
 ];
 
 const nextConfig: NextConfig = {

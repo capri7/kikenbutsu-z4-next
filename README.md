@@ -24,7 +24,7 @@ Next.js 16（App Router）・Supabase・Stripe を使い、認証・決済・進
 - 解く課題：独学の受験者が、弱点の分野をつかめないまま同じ範囲を繰り返し、再受験を重ねること。乙4以外の試験、スマートフォンのアプリ、人による指導は扱わない（[要件定義](docs/requirements.md#プロジェクト概要要件定義)）
 - データ設計：契約履歴を残す制約設計、Webhook の冪等性テーブル、誤答記録の不変性トリガー、退会時の CASCADE / SET NULL の使い分け。migrations から本番のスキーマを再現できることを `supabase db diff` で確認済み（[詳細設計](docs/design.md)）
 - 障害対応：本番で起きた Webhook の 401 障害を、Stripe・Supabase のログ・GitHub Actions の履歴を突き合わせて特定し、復旧（[運用上の学び：verify_jwt と Webhook 認証の落とし穴](docs/operations.md#運用上の学びverify_jwtとwebhook認証の落とし穴)）
-- テスト：分岐ロジックを関数に切り出し、Deno.test 86件・Vitest 70件・Playwright E2E 38件。DB の権限・RLS・関数は pgTAP 166件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[テスト・品質保証](docs/testing.md)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
+- テスト：分岐ロジックを関数に切り出し、Deno.test 86件・Vitest 85件・Playwright E2E 38件。DB の権限・RLS・関数は pgTAP 166件で検証。E2E はローカルの Supabase に分離し、本番に触れない構成（[テスト・品質保証](docs/testing.md)）。4種類のテストと ESLint、Edge Functions の型の検査（`deno check`）を、PR ごとに GitHub Actions で自動実行
 
 ## 全体構成
 
@@ -110,7 +110,7 @@ flowchart LR
 | 対象 | ツール | 件数 | 確かめていること |
 |---|---|---|---|
 | Edge Functions の判定 | Deno.test | 86件 | 決済・退会・Webhook の分岐（判定を `decision.ts` などに切り出して検証）。Webhook の通知の記録と、処理が失敗したときの扱い。請求書の通知から契約を特定する。未処理の通知の処理し直しの流れと、Heartbeat に送る結果。E2E で Stripe の API の宛先を偽の Stripe API にする設定。関数が使う秘密の鍵の決め方 |
-| Next.js の関数 | Vitest | 70件 | 正誤の判定、ログイン後の移動先、Edge Functions の呼び出し、問題の図の URL、漏えいしたパスワードの案内、試験日までの残り日数、分野別の正答率と出題、退会・請求情報の関数（ログインが切れているときの扱いなど）、パンくずの構造化データ（JSON-LD）、問題のページの読み込み（見られない問題をエラーとして記録しない）、ページが読む画像のファイルの存在と大きさ |
+| Next.js の関数 | Vitest | 85件 | 正誤の判定、ログイン後の移動先、Edge Functions の呼び出し、問題の図の URL、漏えいしたパスワードの案内、試験日までの残り日数、分野別の正答率と出題、退会・請求情報の関数（ログインが切れているときの扱いなど）、パンくずの構造化データ（JSON-LD）、問題のページの読み込み（見られない問題をエラーとして記録しない）、ページが読む画像のファイルの存在と大きさ、旧URLのリダイレクト設定（行き先の実在・重複なし） |
 | DB | pgTAP | 166件（69ファイル） | ロールの権限、RLS、関数が本人の記録だけを使うこと。外部キーの列の索引。未処理の通知を処理し直す対象の選び方と、ジョブ |
 | 画面の流れ | Playwright（E2E） | 38件 | 無料登録〜練習問題〜誤答リスト、ログイン、ログインしていない状態でのマイページの保護、Stripe の通知（Webhook）による有料転換と契約の更新・終了（Stripe の代わりに偽の Stripe API から最新の契約を取り直す。届く順番が前後した通知も確かめる）、処理に失敗した通知の処理し直し（再送されたとき、定期的な処理し直し、3時間たっても残ったときの知らせ）、退会（即時削除・予約・取り消し・契約終了の通知による削除）、有料会員の画面の出し分けなど。ローカルの Supabase で動かし、本番に触れない |
 
@@ -197,7 +197,7 @@ npm run dev                        # http://localhost:3000
 ### テスト
 
 ```bash
-# Next.js の単体テスト（Vitest、70件）
+# Next.js の単体テスト（Vitest、85件）
 npm test -- --run
 
 # Edge Functions の判定ロジック（Deno.test、86件）
@@ -265,7 +265,7 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 
 **React Compiler の有効化**：`next.config.ts` で `reactCompiler: true` を設定し、`babel-plugin-react-compiler` を組み込んでいる。メモ化はコンパイラに任せる方針にした。依存配列の書き漏れは表に出にくく、レビューする人がいない個人開発では本番に残りやすいため。
 
-**308 リダイレクトによる旧 URL の引き継ぎ**：バニラ JS 版からの移行で URL の構造が変わり、Google Search Console でインデックス済みの URL が 404 を返していた。まず64件を設定し、その後 `/index.html`、設定漏れの3件（`defined_substances` など）、`/checkout.html` を順に追加して、現在は69件。`next.config.ts` の `redirects()` で `permanent: true` を指定し、308 を返す。`source` に重複がないこと、本番で全件が 308 を返すことを `scripts/check_redirects.sh` で確かめた。
+**308 リダイレクトによる旧 URL の引き継ぎ**：バニラ JS 版からの移行で URL の構造が変わり、Google Search Console でインデックス済みの URL が 404 を返していた。まず64件を設定し、その後 `/index.html`、設定漏れの3件（`defined_substances` など）、`/checkout.html` を順に追加した。さらに、第2章（物理・化学）の旧 URL 11件が未設定で404を返していたため追加し、現在は80件。`next.config.ts` の `redirects()` で `permanent: true` を指定し、308 を返す。`source` の重複と行き先ページの実在は Vitest で、本番で全件が 308 を返すことは `scripts/check_redirects.sh` で確かめた。
 
 **Cookie によるセッションの更新（`src/proxy.ts`）**：Next.js 16 で middleware が proxy に改名されたため、最初から `proxy.ts` で実装している（ランタイムは Node.js）。ユーザーの確認には、Supabase Auth のサーバーで JWT を確かめる `getUser()` を使う。Cookie は Supabase の公式の手順どおり、`request` と `response` の両方で更新している。
 
