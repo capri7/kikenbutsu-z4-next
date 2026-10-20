@@ -47,7 +47,7 @@ Next.js 16（App Router）・Supabase・Stripe を使い、認証・決済・進
 flowchart LR
   user["利用者のブラウザ"]
   next["Next.js 16（Vercel）<br/>画面"]
-  ef["Edge Functions（Supabase）<br/>決済・退会の処理 7つ"]
+  ef["Edge Functions（Supabase）<br/>決済・退会の処理 8つ"]
   supa[("Supabase<br/>Auth・PostgreSQL（RLS・関数）・Storage")]
   stripe["Stripe<br/>Checkout・請求ポータル"]
 
@@ -230,7 +230,7 @@ E2E の接続先は、`.env.local` ではなく `supabase status` から取得�
 - [要件定義・基本設計](docs/requirements.md)：プロジェクト概要、機能一覧、機能要件（受け入れ基準）、非機能要件、画面遷移図・ユーザーフロー
 - [トレーサビリティ](docs/traceability.md)：要件ごとの実現している場所と、自動テスト・手動の確かめ方
 - [詳細設計（DB・設計判断）](docs/design.md)：ER 図、シーケンス図、設計判断のハイライト ①〜⑦、型安全性
-- [API 設計](docs/api.md)：Supabase Edge Functions 7つのリクエスト・レスポンス
+- [API 設計](docs/api.md)：Supabase Edge Functions 8つのリクエスト・レスポンス
 - [運用](docs/operations.md)：本番の環境変数、migration の本番への適用、運用上の学び（Webhook の 401 障害、migration の履歴のずれ）
 - [テスト・品質保証](docs/testing.md)：ケーススタディ、テスト戦略、カバレッジ、E2E の構成と方針
 
