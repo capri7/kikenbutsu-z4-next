@@ -84,7 +84,6 @@ export default function PhysicalChemistryIndexPage() {
       <div className={`site-main ${theme.theme}`}>
         <div className={styles.container}>
           <section className={styles.intro}>
-            <h2 className={styles.sectionHeading}>第2章：基礎的な物理・化学</h2>
             <p className={styles.introText}>
               この章では、燃焼や電気、熱の移動など、危険物の取扱いに必要な物理・化学の基礎知識を学びます。
               <br />
