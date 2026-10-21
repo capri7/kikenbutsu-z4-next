@@ -92,7 +92,6 @@ export default function LawIndexPage() {
       <div className="site-main">
         <div className={styles.container}>
           <section className={styles.intro}>
-            <h2 className={styles.sectionHeading}>第1章：危険物に関する法令</h2>
             <p className={styles.introText}>
               この章では、乙種第4類で最も出題数が多く、合格の鍵を握る「法令」について学びます。
               <br />

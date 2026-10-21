@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { render } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
+import { cleanup, render } from '@testing-library/react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import Breadcrumbs from './Breadcrumbs'
 
@@ -8,6 +8,10 @@ function jsonLdScript(container: HTMLElement) {
   if (!script) throw new Error('JSON-LD の script がない')
   return script
 }
+
+// render した画面を、テストごとに片づける。片づけないと、React が予約した処理が、テスト環境の終了後に動き、
+// 「window is not defined」で全体が失敗することがある。
+afterEach(cleanup)
 
 describe('Breadcrumbs の構造化データ（JSON-LD）', () => {
   it('パンくずの順番・名前・URL を BreadcrumbList として出す。最後の項目には URL を付けない', () => {

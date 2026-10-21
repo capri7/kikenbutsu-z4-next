@@ -118,7 +118,6 @@ export default function PropertiesPreventionIndexPage() {
       <div className={`site-main ${theme.theme}`}>
         <div className={styles.container}>
           <section className={styles.intro}>
-            <h2 className={styles.sectionHeading}>第3章：危険物の性質・火災予防・消火の方法</h2>
             <p className={styles.introText}>
               この章では、危険物の分類や性質、火災予防のための取扱い方法、消火の知識について学びます。
               <br />
