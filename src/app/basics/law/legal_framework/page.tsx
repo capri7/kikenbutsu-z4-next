@@ -47,7 +47,7 @@ export default function LegalFrameworkPage() {
       <div className={`site-main ${theme.theme}`}>
         {/* 1. 消防法の法体系のポイント */}
         <section className={shared.section}>
-          <h2>消防法の法体系</h2>
+          <h2>法律・政令・省令の3層構造</h2>
 
           <div className={shared.bandCard}>
             <p>
@@ -99,7 +99,7 @@ export default function LegalFrameworkPage() {
 
         {/* 3. 用語解説 */}
         <section className={shared.section}>
-          <h2>用語と仕組み</h2>
+          <h2>法令・法・政令・規則の違いと読み替え</h2>
 
           <div className={shared.bandCard}>
             <p className={shared.muted}>まずはこの3つ。ここが分かると、後の条文が一気に読みやすくなります。</p>
@@ -138,11 +138,11 @@ export default function LegalFrameworkPage() {
 
         {/* 4. 具体例テーブル */}
         <section className={shared.section}>
-          <h2>法・政令・規則の例</h2>
+          <h2>法律・政令・規則の名称と具体例</h2>
 
           <div className={shared.tableContainer}>
             <table className={shared.styledTable}>
-              <caption className="sr-only">法・政令・規則の例</caption>
+              <caption className="sr-only">法律・政令・規則の名称と具体例</caption>
               <colgroup>
                 <col style={{ width: '6rem' }} />
                 <col style={{ width: '12rem' }} />
