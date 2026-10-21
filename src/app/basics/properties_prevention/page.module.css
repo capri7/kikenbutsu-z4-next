@@ -33,6 +33,7 @@
 /* 背景・文字色・ホバー色は章のアクセントカラー（--chapter-accent）から自動導出する。
    law / physical_chemistry と同じ方式に統一。 */
 .chapterIndex li {
+  position: relative;
   margin: 0.6em 0;
   font-size: 1rem;
   background-color: color-mix(in srgb, var(--chapter-accent, var(--color-safety)) 8%, white);
@@ -52,6 +53,24 @@
   text-decoration: none;
   color: var(--chapter-accent, var(--color-safety));
   font-weight: 500;
+}
+
+/* 行のどこを押しても、その節のページに移るようにする（文字の上でなくても押せる）。
+   li を基準にして、リンクの ::after で行全体を覆う。 */
+.chapterIndex a::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 0 -4px;
+  border-radius: 6px;
+}
+
+.chapterIndex a:focus-visible {
+  outline: none;
+}
+
+.chapterIndex a:focus-visible::after {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 
 /* タイトル行（未移植項目のタイトル＋「準備中」ラベルを横並びにする） */
