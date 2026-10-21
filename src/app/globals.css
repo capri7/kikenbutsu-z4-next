@@ -309,6 +309,12 @@ a:hover {
   padding: 40px 24px 60px;
 }
 
+/* ページ見出し（h1）の直後のメイン領域は、上の余白を小さくする。
+   h1 自身に下の余白（16px）があるため、40px のままだと見出しと本文が離れすぎる。 */
+.page-title + .site-main {
+  padding-top: 8px;
+}
+
 .main-container {
   width: 100%;
 }
