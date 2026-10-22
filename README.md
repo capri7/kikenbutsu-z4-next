@@ -1,5 +1,7 @@
 # 危険物乙4試験対策 — 弱点特化型学習プラットフォーム
 
+[![Tests](https://github.com/capri7/kikenbutsu-z4-next/actions/workflows/test.yml/badge.svg)](https://github.com/capri7/kikenbutsu-z4-next/actions/workflows/test.yml)
+
 危険物取扱者乙種第4類（乙4）の受験者向けの、有料の学習サービスです（本番稼働中）。
 誤答リスト・復習リスト・分野別の正答率で、弱点を優先して潰す学習の流れを提供します。
 Next.js 16（App Router）・Supabase・Stripe を使い、認証・決済・進捗の管理を含めて、要件定義から設計・実装・運用までを1人で担当しました。
