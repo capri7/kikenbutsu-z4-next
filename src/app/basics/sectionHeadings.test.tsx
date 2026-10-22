@@ -22,7 +22,6 @@ const NOT_FIXED_YET = [
   './law/chapter1_summary/page.tsx',
   './law/defined_substances/page.tsx',
   './law/emergency_measures/page.tsx',
-  './law/firefighting_equipment_standards/page.tsx',
   './law/general_standards_part1/page.tsx',
   './law/general_standards_part2/page.tsx',
   './law/transportation_standards/page.tsx',
