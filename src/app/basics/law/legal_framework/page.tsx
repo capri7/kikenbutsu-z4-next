@@ -138,11 +138,11 @@ export default function LegalFrameworkPage() {
 
         {/* 4. 具体例テーブル */}
         <section className={shared.section}>
-          <h2>法律・政令・規則の名称と具体例</h2>
+          <h2>免状の交付で見る、法・政令・規則のつながり</h2>
 
           <div className={shared.tableContainer}>
             <table className={shared.styledTable}>
-              <caption className="sr-only">法律・政令・規則の名称と具体例</caption>
+              <caption className="sr-only">免状の交付を、法・政令・規則の条文でたどる表</caption>
               <colgroup>
                 <col style={{ width: '6rem' }} />
                 <col style={{ width: '12rem' }} />
@@ -177,7 +177,7 @@ export default function LegalFrameworkPage() {
                     政令第32条の総務省令で定める書類は、次のとおりとする。
                     <ol className={shared.compact}>
                       <li>危険物取扱者試験に合格したことを証明する書類</li>
-                      <li>現に交付を受けている免状（既得免状）という。</li>
+                      <li>現に交付を受けている免状（既得免状）</li>
                     </ol>
                   </td>
                 </tr>
