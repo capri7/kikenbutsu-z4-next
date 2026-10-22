@@ -45,7 +45,7 @@ export default function AdministrativeOrdersAndSuspensionsPage() {
       <div className={`site-main ${theme.theme}`}>
         {/* 1. 措置命令・許可の取消・使用停止命令 */}
         <section className={shared.section}>
-          <h2>措置命令・許可の取消・使用停止命令</h2>
+          <h2>措置命令の意味と6つの種類</h2>
           <div className={shared.bandCard}>
             <p>
               第1章39節では、<strong>措置命令・許可の取消（取消し）・使用停止命令</strong>をセットで整理する。
@@ -177,7 +177,7 @@ export default function AdministrativeOrdersAndSuspensionsPage() {
           </div>
 
           <div className={`${shared.callout} ${shared.calloutNg}`}>
-            <h3>おっとNG!</h3>
+            <h3>おっとNG！</h3>
             <p>
               移動タンクは「事故が起きた」だけじゃない。<strong>事故＋応急措置してない</strong>がセットである。
             </p>
@@ -378,7 +378,7 @@ export default function AdministrativeOrdersAndSuspensionsPage() {
 
         {/* 6. 許可の取消しまたは使用停止命令 */}
         <section className={shared.section}>
-          <h2>許可の取消しまたは使用停止命令</h2>
+          <h2>許可の取消し・使用停止命令の該当類型</h2>
           <div className={shared.bandCard}>
             <p>許可の取消し・使用停止命令につながる代表的な類型を、試験で出やすいものから整理する。</p>
           </div>
