@@ -45,7 +45,7 @@ export default function FirefightingEquipmentStandardsPage() {
       <div className={`site-main ${theme.theme}`}>
         {/* 1. 消火設備と設置基準 */}
         <section className={shared.section}>
-          <h2>消火設備と設置基準</h2>
+          <h2>消火設備の5区分（第1種〜第5種）</h2>
           <div className={shared.bandCard}>
             <p>
               消火設備は、<strong>消火能力や設置場所</strong>などに応じて、<strong>第1種から第5種</strong>までの5区分に分けられる。
@@ -283,7 +283,7 @@ export default function FirefightingEquipmentStandardsPage() {
 
         {/* 3. 設備基準 */}
         <section className={shared.section}>
-          <h2>設備基準</h2>
+          <h2>種別ごとの設備基準（設置距離・配置）</h2>
           <div className={shared.bandCard}>
             <p>
               製造所等に消火設備を設置するときの<strong>設備基準</strong>（種類・能力・配置など）は、下表のとおりである。
@@ -1080,7 +1080,7 @@ export default function FirefightingEquipmentStandardsPage() {
 
         {/* 消火設備と適応する危険物の火災 */}
         <section className={shared.section}>
-          <h3>消火設備と適応する危険物の火災</h3>
+          <h2>消火設備と適応する危険物の火災</h2>
           <div className={shared.bandCard}>
             <p>
               建築物・工作物・電気設備、そして危険物（<strong>第4類〜第6類</strong>）の火災に<strong>どの消火設備が適応するか</strong>を整理する。
