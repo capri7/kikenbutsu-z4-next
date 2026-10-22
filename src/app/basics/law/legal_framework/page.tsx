@@ -138,19 +138,19 @@ export default function LegalFrameworkPage() {
 
         {/* 4. 具体例テーブル */}
         <section className={shared.section}>
-          <h2>法律・政令・規則の名称と具体例</h2>
+          <h2>法律・政令・規則の具体例：免状の交付</h2>
 
           <div className={shared.tableContainer}>
             <table className={shared.styledTable}>
-              <caption className="sr-only">法律・政令・規則の名称と具体例</caption>
+              <caption className="sr-only">法律・政令・規則の具体例：免状の交付</caption>
               <colgroup>
                 <col style={{ width: '6rem' }} />
                 <col style={{ width: '12rem' }} />
               </colgroup>
               <thead>
                 <tr>
-                  <th scope="col" className={shared.stickyCol}>種別</th>
-                  <th scope="col">条文</th>
+                  <th scope="col" className={shared.stickyCol}>法令・条</th>
+                  <th scope="col">規定の内容</th>
                 </tr>
               </thead>
               <tbody>
@@ -165,8 +165,7 @@ export default function LegalFrameworkPage() {
                     政令第32条<br /><small>（免状の交付の申請）</small>
                   </th>
                   <td>
-                    法第13条の2第3項の危険物取扱者免状の交付を受けようとする者は、申請書に総務省令で定める書類を添えて、
-                    当該免状に係る危険物取扱者試験を行った都道府県知事に提出しなければならない。
+                    法第13条の2第3項の危険物取扱者免状の交付を受けようとする者は、申請書に総務省令で定める書類を添えて、当該免状に係る危険物取扱者試験を行った都道府県知事に提出しなければならない。
                   </td>
                 </tr>
                 <tr>
@@ -177,7 +176,7 @@ export default function LegalFrameworkPage() {
                     政令第32条の総務省令で定める書類は、次のとおりとする。
                     <ol className={shared.compact}>
                       <li>危険物取扱者試験に合格したことを証明する書類</li>
-                      <li>現に交付を受けている免状（既得免状）という。</li>
+                      <li>現に交付を受けている免状（既得免状）</li>
                     </ol>
                   </td>
                 </tr>
