@@ -18,7 +18,6 @@ const PAGES = import.meta.glob([
 // h1（パンくずの最後の項目）と同じ言葉の h2 が残っているページ。
 // 直したら、このページを一覧から外す（外さないと、下の最後のテストが失敗する）。
 const NOT_FIXED_YET = [
-  './law/administrative_orders_and_suspensions/page.tsx',
   './law/alarm_systems/page.tsx',
   './law/chapter1_summary/page.tsx',
   './law/defined_substances/page.tsx',
