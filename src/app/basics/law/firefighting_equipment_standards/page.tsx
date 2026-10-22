@@ -180,7 +180,7 @@ export default function FirefightingEquipmentStandardsPage() {
                     <br />
                     及び危険物
                   </th>
-                  <th scope="col">項目</th>
+                  <th scope="col">外壁の構造</th>
                   <th scope="col">1所要単位当たりの数値</th>
                 </tr>
               </thead>
@@ -193,23 +193,23 @@ export default function FirefightingEquipmentStandardsPage() {
                       取扱所
                     </span>
                   </th>
-                  <td>耐火構造</td>
+                  <td>外壁が耐火構造</td>
                   <td>延べ面積<strong>100㎡</strong></td>
                 </tr>
                 <tr>
-                  <td>不燃材料</td>
+                  <td>外壁が耐火構造以外</td>
                   <td>延べ面積<strong>50㎡</strong></td>
                 </tr>
                 <tr>
                   <th scope="rowgroup" rowSpan={2} className={shared.stickyCol}>
                     <span className={`${styles.tag} ${styles.tagCategory2}`}>貯蔵所</span>
                   </th>
-                  <td>耐火構造</td>
+                  <td>外壁が耐火構造</td>
                   <td>延べ面積<strong>150㎡</strong></td>
                 </tr>
                 <tr>
-                  <td>不燃材料</td>
-                  <td>延べ面積<strong>150㎡</strong></td>
+                  <td>外壁が耐火構造以外</td>
+                  <td>延べ面積<strong>75㎡</strong></td>
                 </tr>
                 <tr>
                   <th scope="row" className={shared.stickyCol}>屋外の製造所等</th>
@@ -254,7 +254,7 @@ export default function FirefightingEquipmentStandardsPage() {
             <h4>出る出るポイント！</h4>
             <ul className={shared.compact}>
               <li>
-                面積基準はセットで覚える：製造所・取扱所＝<strong>耐火100㎡／不燃50㎡</strong>、貯蔵所＝<strong>耐火150㎡／不燃150㎡</strong>（両方150）。
+                面積基準はセットで覚える：製造所・取扱所＝外壁が耐火構造なら<strong>100㎡</strong>、それ以外は<strong>50㎡</strong>。貯蔵所＝外壁が耐火構造なら<strong>150㎡</strong>、それ以外は<strong>75㎡</strong>（貯蔵所は製造所・取扱所の1.5倍）。
               </li>
               <li>
                 数量側の単位は<strong>「指定数量の10倍で1所要単位」</strong>。流れは「取り扱い量 ÷ 指定数量 → 10で割る」で一本にしておく。
@@ -1563,7 +1563,7 @@ export default function FirefightingEquipmentStandardsPage() {
               補足：<strong>第4種と第5種の追記</strong>
             </summary>
 
-            <h3>第5種の粉末系消火設備の適応範囲</h3>
+            <h3>第5種の乾燥砂・膨張ひる石・膨張真珠岩の適応範囲</h3>
             <p>
               第5種の消火設備である<strong>乾燥砂・膨張ひる石・膨張真珠岩</strong>は、第1類から第6類までの<strong>すべての危険物火災</strong>に適応する。
             </p>
@@ -1600,7 +1600,7 @@ export default function FirefightingEquipmentStandardsPage() {
           </details>
 
           <div className={shared.examNotes}>
-            <h4>でるでるポイント！</h4>
+            <h4>出る出るポイント！</h4>
             <ul className={shared.compact}>
               <li>
                 第5種の<strong>乾燥砂・膨張ひる石・膨張真珠岩</strong>は、すべての危険物に<strong>横断的に適応</strong>（丸暗記）。
