@@ -20,6 +20,8 @@
   font-weight: 700;
   margin-top: 0.5rem;
   margin-bottom: 0.8rem;
+  /* 目次から飛んだとき、固定のヘッダー（スマートフォン 56px・パソコン 99px）に隠れないようにする */
+  scroll-margin-top: 7rem;
 }
 
 .section h3 {

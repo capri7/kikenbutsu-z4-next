@@ -85,7 +85,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `_shared/userProfilePayload.ts`（`stripe-webhook`・`check-guest-subscription`共通） | ✅ 4パターン |
 | `_shared/stripeApiTarget.ts`（E2E で Stripe の API の宛先を偽の Stripe API にする） | ✅ 5パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。`billing-portal` を呼ぶ共通の関数 `invokeEdgeFunction` は Vitest で検証） |
-| Next.js側（Vitest） | ✅ 91パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3・`examCountdown.ts` 9・`categoryProgress.ts` 13・`account.ts` 4・`billing.ts` 4・`Breadcrumbs.tsx` 2・`dataLoader.server.ts` 3・`pageImages.test.ts`（ページが読む画像）4・`legacyRedirects.test.ts`（旧URLのリダイレクト）15・`chapterHubHeadings.test.tsx`（章トップの見出し）3・`sectionHeadings.test.tsx`（節のページの見出し）3） |
+| Next.js側（Vitest） | ✅ 94パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3・`examCountdown.ts` 9・`categoryProgress.ts` 13・`account.ts` 4・`billing.ts` 4・`Breadcrumbs.tsx` 2・`dataLoader.server.ts` 3・`pageImages.test.ts`（ページが読む画像）4・`legacyRedirects.test.ts`（旧URLのリダイレクト）15・`chapterHubHeadings.test.tsx`（章トップの見出し）3・`sectionHeadings.test.tsx`（節のページの見出しと目次）4・`SectionToc.tsx` 2） |
 | DB（pgTAP） | ✅ 69ファイル・166件（ロールの権限・RLS・関数・Stripe の通知の処理の状態・未処理の通知の処理し直し・外部キーの列の索引） |
 | E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅・有料会員の画面の出し分け3件 ✅・有料転換と契約の更新・終了と、届く順番が前後した通知、処理に失敗した通知の処理し直し（Webhook）8件 ✅・退会3件 ✅・ログインしていない状態のマイページ2件 ✅・ログイン2件 ✅・未処理の通知の処理し直し3件 ✅・章トップの節の一覧のクリック3件 ✅（いずれもローカルの Supabase）・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
 
@@ -134,7 +134,7 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 チェック順序（`priceId`→リダイレクトURL→許可リスト）を意図的にテストで固定した。優先度の低いチェックが先に実行されて誤ったエラーコードを返す、という将来の実装変更によるリグレッションを防ぐため。`checkout-session-info`・`billing-portal`は判定ロジックがほぼ無いので、ユニットテストの対象外とし、E2Eで確かめる方針とした（E2Eは未実装。README の「今後の課題」に挙げている）。
 
-## Next.js側（Vitest、91パターン）
+## Next.js側（Vitest、94パターン）
 
 クイズの正誤判定ロジック（`src/lib/feedback.ts`）を検証している。既にSupabaseへの呼び出しを含まない純粋関数として実装されていたため、Edge Functionsのような切り出し作業は不要だった。
 

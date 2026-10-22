@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Breadcrumbs from '@/components/Breadcrumbs'
+import SectionToc from '@/components/SectionToc'
 import { FIGURE_SIZES } from '@/app/basics/figureSizes'
 import legalFrameworkImage from '@/assets/images/legal-framework.png'
 import LegalFrameworkQuiz from './LegalFrameworkQuiz'
@@ -33,6 +34,15 @@ export const metadata: Metadata = {
   },
 }
 
+// 目次。h2 と同じ順番・同じ文言にする（sectionHeadings.test.tsx が確かめる）。
+const TOC_ITEMS = [
+  { id: 'legal-framework-layers', label: '法律・政令・省令の3層構造' },
+  { id: 'legal-framework-title-1', label: '法律・政令・省令のピラミッド' },
+  { id: 'legal-framework-terms', label: '法令・法・政令・規則の違いと読み替え' },
+  { id: 'legal-framework-example', label: '法律・政令・規則の具体例：免状の交付' },
+  { id: 'quiz-label', label: 'クイズ' },
+]
+
 export default function LegalFrameworkPage() {
   return (
     <>
@@ -45,9 +55,11 @@ export default function LegalFrameworkPage() {
         ]}
       />
       <div className={`site-main ${theme.theme}`}>
+        <SectionToc items={TOC_ITEMS} />
+
         {/* 1. 消防法の法体系のポイント */}
         <section className={shared.section}>
-          <h2>法律・政令・省令の3層構造</h2>
+          <h2 id="legal-framework-layers">法律・政令・省令の3層構造</h2>
 
           <div className={shared.bandCard}>
             <p>
@@ -99,7 +111,7 @@ export default function LegalFrameworkPage() {
 
         {/* 3. 用語解説 */}
         <section className={shared.section}>
-          <h2>法令・法・政令・規則の違いと読み替え</h2>
+          <h2 id="legal-framework-terms">法令・法・政令・規則の違いと読み替え</h2>
 
           <div className={shared.bandCard}>
             <p className={shared.muted}>まずはこの3つ。ここが分かると、後の条文が一気に読みやすくなります。</p>
@@ -138,7 +150,7 @@ export default function LegalFrameworkPage() {
 
         {/* 4. 具体例テーブル */}
         <section className={shared.section}>
-          <h2>法律・政令・規則の具体例：免状の交付</h2>
+          <h2 id="legal-framework-example">法律・政令・規則の具体例：免状の交付</h2>
 
           <div className={shared.tableContainer}>
             <table className={shared.styledTable}>
