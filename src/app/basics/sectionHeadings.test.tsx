@@ -33,7 +33,16 @@ const NOT_FIXED_YET = [
   './properties_prevention/main_class4_dangerous_substances/page.tsx',
 ]
 
-type Found = { path: string; h1: string; h2: string[] }
+type Link = { href: string; label: string }
+type Found = {
+  path: string
+  h1: string
+  h2: string[]
+  // 各 h2 に付いた id から作った、目次に並ぶはずのリンク
+  expectedToc: Link[]
+  // ページの目次（SectionToc）のリンク。目次の無いページは null
+  toc: Link[] | null
+}
 let found: Found[] = []
 
 beforeAll(async () => {
@@ -41,10 +50,19 @@ beforeAll(async () => {
   for (const [path, load] of Object.entries(PAGES)) {
     const { default: Page } = await load()
     const { container, unmount } = render(<Page />)
+    const h2s = [...container.querySelectorAll('h2')]
+    const toc = container.querySelector('nav[aria-labelledby="toc-title"]')
     found.push({
       path,
       h1: container.querySelector('h1')?.textContent?.trim() ?? '',
-      h2: [...container.querySelectorAll('h2')].map((h) => h.textContent?.trim() ?? ''),
+      h2: h2s.map((h) => h.textContent?.trim() ?? ''),
+      expectedToc: h2s.map((h) => ({ href: `#${h.id}`, label: h.textContent?.trim() ?? '' })),
+      toc: toc
+        ? [...toc.querySelectorAll('a')].map((a) => ({
+            href: a.getAttribute('href') ?? '',
+            label: a.textContent?.trim() ?? '',
+          }))
+        : null,
     })
     unmount()
   }
@@ -70,5 +88,13 @@ describe('節のページの見出し', () => {
       .map((p) => p.path)
       .sort()
     expect(same).toEqual([...NOT_FIXED_YET].sort())
+  })
+
+  it('目次のあるページは、目次が h2 をすべて、同じ順番・同じ文言で、h2 の id へのリンクとして並べている', () => {
+    const withToc = found.filter((p) => p.toc !== null)
+    expect(withToc.length).toBeGreaterThan(0)
+    for (const p of withToc) {
+      expect({ path: p.path, toc: p.toc }).toEqual({ path: p.path, toc: p.expectedToc })
+    }
   })
 })
