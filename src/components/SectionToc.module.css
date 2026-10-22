@@ -1,0 +1,52 @@
+/* 節のページの目次。囲みの見た目は BasicsShared.module.css の .bandCard に合わせる。
+   色は、ページの theme（--chapter-accent / --chapter-border）に従う。 */
+.toc {
+  position: relative;
+  max-width: 1100px;
+  margin: 0 auto 1.6rem;
+  background: #fff;
+  border: 1px solid var(--chapter-border, #e5e7eb);
+  border-radius: 8px;
+  padding: 0.9rem 1.2rem 0.9rem 1.4rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.toc::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: var(--chapter-accent, #0b5cab);
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+.title {
+  margin: 0 0 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--chapter-accent, #0b5cab);
+}
+
+.list {
+  margin: 0;
+  padding-left: 1.6rem;
+  line-height: 1.8;
+  list-style: decimal;
+}
+
+.list li {
+  padding: 0.1rem 0;
+}
+
+.list a {
+  color: var(--accent, #2563eb);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.list a:hover {
+  color: var(--accent-hover, #1d4ed8);
+}
