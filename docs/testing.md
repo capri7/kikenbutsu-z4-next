@@ -63,7 +63,7 @@ Edge Functions（Deno）・Next.js（Node/Vite）・DB（PostgreSQL）で実行�
 | 層 | 対象 | ツール |
 |---|---|---|
 | Edge Functions | 分岐ロジック（判定関数として切り出したもの） | `Deno.test` |
-| Next.js単体テスト | ユーティリティ関数（`src/lib`）と、パンくずの部品（`Breadcrumbs.tsx`）の構造化データ。Client Components のテストは未作成 | Vitest（React Testing Library・jsdom は導入済み） |
+| Next.js単体テスト | ユーティリティ関数（`src/lib`）と、パンくずの部品（`Breadcrumbs.tsx`）の構造化データ。Client Components は、パスワード再設定の画面（ResetPasswordForm.tsx）だけ作成済みで、ほかの 108 件は未作成 | Vitest（React Testing Library・user-event・jsdom） |
 | DB | ロールの権限・RLS・関数が本人の記録だけを使うこと | pgTAP（`supabase test db`） |
 | E2Eテスト | 無料登録〜マイページ〜練習問題〜誤答リストの一連の動作（コアフロー、ローカルの Supabase で実装・合格確認済み）、有料会員の画面の出し分け（有料の問題・ヘッダー・退会のカード。契約の行はテストの中で作り、決済は通さない）、Stripe の通知（Webhook）による有料転換と契約の更新・終了（署名した通知を本物の `stripe-webhook` に送り、契約の反映〜有料の問題の解放、解約の予約の反映、契約終了で無料会員に戻ることを確かめる）、退会（無料会員の即時削除、有料会員の退会の予約と取り消し、契約終了の通知による削除。削除で個人の記録が消え、契約の記録は残ることも確かめる）、非同期Server Components | Playwright |
 
@@ -85,7 +85,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `_shared/userProfilePayload.ts`（`stripe-webhook`・`check-guest-subscription`共通） | ✅ 4パターン |
 | `_shared/stripeApiTarget.ts`（E2E で Stripe の API の宛先を偽の Stripe API にする） | ✅ 5パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。`billing-portal` を呼ぶ共通の関数 `invokeEdgeFunction` は Vitest で検証） |
-| Next.js側（Vitest） | ✅ 94パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3・`examCountdown.ts` 9・`categoryProgress.ts` 13・`account.ts` 4・`billing.ts` 4・`Breadcrumbs.tsx` 2・`dataLoader.server.ts` 3・`pageImages.test.ts`（ページが読む画像）4・`legacyRedirects.test.ts`（旧URLのリダイレクト）15・`chapterHubHeadings.test.tsx`（章トップの見出し）3・`sectionHeadings.test.tsx`（節のページの見出しと目次）4・`SectionToc.tsx` 2） |
+| Next.js側（Vitest） | ✅ 103パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3・`examCountdown.ts` 9・`categoryProgress.ts` 13・`account.ts` 4・`billing.ts` 4・`Breadcrumbs.tsx` 2・`dataLoader.server.ts` 3・`pageImages.test.ts`（ページが読む画像）4・`legacyRedirects.test.ts`（旧URLのリダイレクト）15・`chapterHubHeadings.test.tsx`（章トップの見出し）3・`sectionHeadings.test.tsx`（節のページの見出しと目次）4・`SectionToc.tsx` 2・`ResetPasswordForm.tsx` 9） |
 | DB（pgTAP） | ✅ 69ファイル・166件（ロールの権限・RLS・関数・Stripe の通知の処理の状態・未処理の通知の処理し直し・外部キーの列の索引） |
 | E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅・有料会員の画面の出し分け3件 ✅・有料転換と契約の更新・終了と、届く順番が前後した通知、処理に失敗した通知の処理し直し（Webhook）8件 ✅・退会3件 ✅・ログインしていない状態のマイページ2件 ✅・ログイン2件 ✅・未処理の通知の処理し直し3件 ✅・章トップの節の一覧のクリック3件 ✅（いずれもローカルの Supabase）・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
 
@@ -134,7 +134,7 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 チェック順序（`priceId`→リダイレクトURL→許可リスト）を意図的にテストで固定した。優先度の低いチェックが先に実行されて誤ったエラーコードを返す、という将来の実装変更によるリグレッションを防ぐため。`checkout-session-info`・`billing-portal`は判定ロジックがほぼ無いので、ユニットテストの対象外とし、E2Eで確かめる方針とした（E2Eは未実装。README の「今後の課題」に挙げている）。
 
-## Next.js側（Vitest、94パターン）
+## Next.js側（Vitest、103パターン）
 
 クイズの正誤判定ロジック（`src/lib/feedback.ts`）を検証している。既にSupabaseへの呼び出しを含まない純粋関数として実装されていたため、Edge Functionsのような切り出し作業は不要だった。
 
@@ -157,6 +157,8 @@ Edge Functionsの呼び出しの共通関数`src/lib/edge-functions.ts`（5パ�
 パンくずの部品`src/components/Breadcrumbs.tsx`（2パターン）は、検索エンジン向けの構造化データ（JSON-LD）を`<script>`に書き出す。`JSON.stringify`は XSS につながる文字列を無害にしないため、Next.js の公式ガイドどおり`<`を`\u003c`に置き換えている。名前に`</script>`を含めたとき、サーバーが出す HTML の`<script>`が1つのままで、JSON として読み直すと元の名前に戻ることを確かめる（置き換えを外すと、2つ目の`<script>`ができてテストが失敗することを確認済み）。順番・名前・URL が`BreadcrumbList`の形で出ることもあわせて確かめる。
 
 問題のページの読み込み`src/lib/dataLoader.server.ts`（3パターン）は、問題を1行読む。存在しない問題や、無料会員が開いた有料の問題は、RLS により0行になり、ページは「見つからない」を返す。以前は`.single()`（必ず1行ある前提の読み方）を使っていたため、この正常な場合も`console.error`でエラーとして記録していた（E2E の実行中に`JSON object requested, multiple (or no) rows returned`と出ていた）。`.maybeSingle()`に変え、0行は`null`を返してエラーとして記録せず、読み込みの失敗だけを記録することを確かめる。
+
+パスワード再設定の画面`src/app/reset-password/ResetPasswordForm.tsx`（Client Component、9パターン）は、React Testing Library と `@testing-library/user-event` で、利用者の操作の結果を確かめる。Supabase の接続（`createClient`）と画面の移動（`useRouter`）は偽物に差し替える。`createClient` は毎回同じオブジェクトを返す（コンポーネントが `[supabase]` を依存にしているため、毎回違うものを返すと再実行が止まらない）。リンクの確認（セッションの有無でフォームが使えるか）、入力の検査（6文字未満・不一致は通信しない）、更新の成功（入力を空にして、1.5秒後にログイン画面へ）、失敗の経路（以前と同じパスワード・セッションの期限切れ・通信の例外でもボタンが再び押せる）、画面を閉じたときの認証の監視の解除を確かめる。検査の境界（6文字）と監視の解除は、コンポーネントを一時的に壊して、テストが失敗することを確認した。
 
 **セットアップ**：Next.js公式ドキュメントに沿って、Vitest・React Testing Library・jsdomを導入した。`vitest.config.mts`で`supabase/**`を検索対象から除外している（Edge Functions側は`Deno.test`という別のテストランナーを使っており、混在させるとVitestが誤って実行しようとしてエラーになるため）。
 
@@ -212,3 +214,5 @@ E2E は、Vitest・Deno.test・pgTAP・ESLint とあわせて、PR ごとと mai
 ## 単体テストの対象の選び方（Next.js 側）
 
 `src/lib/feedback.ts`・`src/lib/safeRedirect.ts`・`src/lib/edge-functions.ts`・`src/lib/questionImage.ts`・`src/lib/leakedPassword.ts`は着手済み。`src/lib/subscription.ts`の`isSubscribed()`は、判定を DB の関数 `has_active_subscription()` に任せ、呼び出した結果を返すだけになったため、判定の検証は pgTAP で行っている（[詳細設計](design.md) の「⑦ 有料会員の判定」参照）。`account.ts`・`billing.ts`も着手済み。他（`mistakes.ts`・`review.ts`・`progress.ts`）は主にSupabase呼び出しのラッパーで、判定ロジックの比率が低いため優先度は下がる。
+
+Client Components（`'use client'` のファイル109件）は、2026-10-24 時点で `ResetPasswordForm.tsx` だけ作成済み。残り108件の内訳は、節のページの小テスト84、マイページの部品9、問題を解く画面5、認証・決済4、共通の部品6。節のページの小テストは同じ作りの可能性が高く（未確認）、1つずつ書かず、共通の部品に切り出せるかを先に確かめる。優先は、利用者の記録と決済に関わる画面（問題を解く画面、登録・ログイン、決済、退会）。
