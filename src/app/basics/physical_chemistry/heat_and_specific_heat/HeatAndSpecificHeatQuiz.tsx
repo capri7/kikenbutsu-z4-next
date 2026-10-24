@@ -37,12 +37,12 @@ export default function HeatAndSpecificHeatQuiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">
         500gの水を20℃から80℃まで加熱するのに必要な熱量は何Jか。水の比熱を4.2J/(g・K)とする。
       </p>
 
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           const showResult = selected !== null

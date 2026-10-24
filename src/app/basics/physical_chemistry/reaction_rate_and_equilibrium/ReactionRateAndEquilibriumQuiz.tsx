@@ -37,12 +37,12 @@ export default function ReactionRateAndEquilibriumQuiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">
         N2＋3H2⇄2NH3＋92.2kJが平衡状態にあるとき、圧力を上げると、平衡はどちらの方向に移動するか。
       </p>
 
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           const showResult = selected !== null

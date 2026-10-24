@@ -54,11 +54,11 @@ export default function ElectroChemicalSeriesQuiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">
         常温の乾燥空気中で酸化されない金属はどれか。
       </p>
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
 
 
         {OPTIONS.map((opt) => {

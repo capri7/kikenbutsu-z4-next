@@ -35,13 +35,13 @@ export default function TypesOfCombustionQuiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">
         燃焼のとき、可燃性ガスを周囲の空気中に噴き出して拡散させながら混ざり合い、
         その境界で炎を保つ燃焼様式は次のうちどれか。
       </p>
 
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           const showResult = selected !== null

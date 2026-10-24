@@ -52,12 +52,12 @@ export default function OxidationAndReductionQuiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">
         過酸化水素H<sub>2</sub>O<sub>2</sub>は、過マンガン酸カリウムKMnO<sub>4</sub>のような強い酸化剤に対しては何としてはたらくか。
       </p>
 
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           const showResult = selected !== null

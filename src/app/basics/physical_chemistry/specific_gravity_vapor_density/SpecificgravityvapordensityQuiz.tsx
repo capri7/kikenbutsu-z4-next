@@ -37,12 +37,12 @@ export default function SpecificGravityVaporDensityQuiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">
         ベンゼン（C6H6、分子量78）の蒸気比重に最も近い値はどれか。空気の平均分子量を29とする。
       </p>
 
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           const showResult = selected !== null

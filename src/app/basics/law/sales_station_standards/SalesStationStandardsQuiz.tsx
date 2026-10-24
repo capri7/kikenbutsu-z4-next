@@ -34,14 +34,14 @@ export default function SalesStationStandardsQuiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">
         （A）と（B）に当てはまる数字として適切な組み合わせは次のうちどれか。
         <br />
         「販売取扱所は指定数量の倍数が（A）を超え（B）以下のものを第二種とする。」
       </p>
 
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           const showResult = selected !== null
