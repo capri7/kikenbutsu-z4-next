@@ -79,9 +79,11 @@ export default function ElementsCompoundsMixturesQuiz() {
       )}
 
       {selected && (
-        <button type="button" className={shared.quizRetry} onClick={handleRetry}>
-          もう一度解く
-        </button>
+        <div className={shared.quizRetryWrap}>
+          <button type="button" className={shared.quizRetry} onClick={handleRetry}>
+            もう一度挑戦する
+          </button>
+        </div>
       )}
     </div>
   )

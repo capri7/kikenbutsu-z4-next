@@ -61,7 +61,7 @@ export default function ElectricityAndBatteriesQuiz() {
                   disabled={selected !== null}
                   onChange={() => handleSelect(opt.value)}
                 />
-                <code>{opt.label}</code>
+                {opt.label}
               </label>
             </li>
           )

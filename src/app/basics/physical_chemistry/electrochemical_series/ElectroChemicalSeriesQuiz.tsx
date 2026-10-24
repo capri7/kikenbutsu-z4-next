@@ -54,11 +54,11 @@ export default function ElectroChemicalSeriesQuiz() {
   }
 
   return (
-    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
+    <div className={shared.quizForm}>
       <p id="q1-label">
         常温の乾燥空気中で酸化されない金属はどれか。
       </p>
-      <ul className={shared.quizOptions}>
+      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
 
 
         {OPTIONS.map((opt) => {
@@ -96,9 +96,11 @@ export default function ElectroChemicalSeriesQuiz() {
         </div>
       )}
       {selected && (
-        <button type="button" className={shared.quizRetry} onClick={handleRetry}>
-          もう一度解く
-        </button>
+        <div className={shared.quizRetryWrap}>
+          <button type="button" className={shared.quizRetry} onClick={handleRetry}>
+            もう一度挑戦する
+          </button>
+        </div>
       )}
     </div>
   )
