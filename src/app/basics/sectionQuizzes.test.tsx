@@ -23,33 +23,6 @@ const SOURCES = import.meta.glob(['./*/*/*.tsx', '!./**/*.test.tsx', '!./**/page
 // 小テストではない 'use client' の部品。ここに足すときは、専用のテストを書く
 const NOT_QUIZ_CLIENT_COMPONENTS = ['./physical_chemistry/static_electricity/FoilElectroscopeDiagram.tsx']
 
-// 下の「統一した仕様」を、まだ満たしていない小テスト。直したら、一覧から外す。
-// （外さないと、最後のテストが失敗する）
-const NOT_UNIFIED_YET = [
-  './law/safety_supervisors/SafetySupervisorsQuiz.tsx',
-  './physical_chemistry/acids_and_bases/AcidsAndBasesQuiz.tsx',
-  './physical_chemistry/basics_of_chemistry/BasicsOfChemistryQuiz.tsx',
-  './physical_chemistry/boiling_point_vapor_pressure/BoilingPointVaporPressureQuiz.tsx',
-  './physical_chemistry/classification_of_elements/ClassificationOfElementsQuiz.tsx',
-  './physical_chemistry/electricity_batteries/ElectricityAndBatteriesQuiz.tsx',
-  './physical_chemistry/electrochemical_series/ElectroChemicalSeriesQuiz.tsx',
-  './physical_chemistry/elements_compounds_mixtures/ElementsCompoundsMixturesQuiz.tsx',
-  './physical_chemistry/gas_laws/GasLawsQuiz.tsx',
-  './physical_chemistry/heat_and_specific_heat/HeatAndSpecificHeatQuiz.tsx',
-  './physical_chemistry/heat_transfer/HeatTransferQuiz.tsx',
-  './physical_chemistry/metal_corrosion/MetalCorrosionQuiz.tsx',
-  './physical_chemistry/mixing_hazards/MixingHazardsQuiz.tsx',
-  './physical_chemistry/organic_compounds/OrganicCompoundsQuiz.tsx',
-  './physical_chemistry/oxidation_and_reduction/OxidationAndReductionQuiz.tsx',
-  './physical_chemistry/physical_and_chemical_changes/PhysicalAndChemicalChangesQuiz.tsx',
-  './physical_chemistry/polymer_materials/PolymerMaterialsQuiz.tsx',
-  './physical_chemistry/properties_of_major_gases/PropertiesOfMajorGasesQuiz.tsx',
-  './physical_chemistry/reaction_rate_and_equilibrium/ReactionRateAndEquilibriumQuiz.tsx',
-  './physical_chemistry/specific_gravity_vapor_density/SpecificgravityvapordensityQuiz.tsx',
-  './physical_chemistry/states_of_matter/StatesOfMatterQuiz.tsx',
-  './physical_chemistry/thermal_expansion/ThermalExpansionQuiz.tsx',
-]
-
 const RETRY_LABEL = 'もう一度挑戦する'
 
 const ENTRIES = Object.entries(QUIZZES)
@@ -144,19 +117,9 @@ async function violations(Quiz: ComponentType): Promise<string[]> {
 describe('節のページの小テスト：統一した仕様', () => {
   // 仕様：選択肢は role="radiogroup" で囲み、解説は「正解」か「不正解」で始め、
   // 再挑戦のボタンは「もう一度挑戦する」の文言で quizRetryWrap の中に置き、選択肢の文字は装飾しない
-  it.each(ENTRIES)('%s', async (path, load) => {
+  it.each(ENTRIES)('%s', async (_path, load) => {
     const { default: Quiz } = await load()
-    const found = await violations(Quiz)
-    if (NOT_UNIFIED_YET.includes(path)) {
-      // まだ直していない一覧のページ。直したら、一覧から外す
-      expect(found, `${path} は仕様を満たした。NOT_UNIFIED_YET から外す`).not.toEqual([])
-    } else {
-      expect(found).toEqual([])
-    }
-  })
-
-  it('NOT_UNIFIED_YET に、存在しない小テストが残っていない', () => {
-    expect(NOT_UNIFIED_YET.filter((p) => !(p in QUIZZES))).toEqual([])
+    expect(await violations(Quiz)).toEqual([])
   })
 })
 
