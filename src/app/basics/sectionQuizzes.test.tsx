@@ -85,14 +85,16 @@ async function violations(Quiz: ComponentType): Promise<string[]> {
   const found: string[] = []
 
   const first = render(<Quiz />)
-  const group = first.container.querySelector('[role="radiogroup"]')
-  if (!group) found.push('選択肢の囲みが role="radiogroup" ではない')
+  // 選択肢の囲みは、外側の div の role="group"。ul に role を付けると、li がリストの外として扱われる（axe-core：listitem）
+  const group = first.container.querySelector('[role="group"]')
+  if (!group) found.push('選択肢の囲みが role="group" ではない')
   else {
     const labelId = group.getAttribute('aria-labelledby')
     if (!labelId || !first.container.querySelector(`#${labelId}`)) {
-      found.push('radiogroup の aria-labelledby が、問題文を指していない')
+      found.push('group の aria-labelledby が、問題文を指していない')
     }
   }
+  if (first.container.querySelector('ul[role]')) found.push('選択肢の ul に role が付いている（li がリストの外になる）')
   if (first.container.querySelector('label code')) found.push('選択肢の文字を <code> で囲んでいる')
   const count = screen.getAllByRole('radio').length
   cleanup()
@@ -115,7 +117,7 @@ async function violations(Quiz: ComponentType): Promise<string[]> {
 }
 
 describe('節のページの小テスト：統一した仕様', () => {
-  // 仕様：選択肢は role="radiogroup" で囲み、解説は「正解」か「不正解」で始め、
+  // 仕様：選択肢は外側の div の role="group" で囲み（ul には role を付けない）、解説は「正解」か「不正解」で始め、
   // 再挑戦のボタンは「もう一度挑戦する」の文言で quizRetryWrap の中に置き、選択肢の文字は装飾しない
   it.each(ENTRIES)('%s', async (_path, load) => {
     const { default: Quiz } = await load()
