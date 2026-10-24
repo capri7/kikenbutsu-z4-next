@@ -1,105 +1,42 @@
-'use client'
-
-import { useState, type ReactNode } from 'react'
-import shared from '@/app/basics/BasicsShared.module.css'
-
-type Option = {
-  value: string
-  label: string
-  correct: boolean
-}
-
-const OPTIONS: Option[] = [
-  { value: 'opt1', label: '酸性', correct: false },
-  { value: 'opt2', label: '中性', correct: false },
-  { value: 'opt3', label: '塩基性', correct: true },
-  { value: 'opt4', label: '水に溶けない', correct: false },
-]
-
-const FEEDBACK: Record<string, ReactNode> = {
-  opt1: (
-    <>
-      不正解です。「酸性塩」という分類名から連想しやすいですが、実際の水溶液は酸性ではありません。
-    </>
-  ),
-  opt2: (
-    <>
-      不正解です。NaHCO<sub>3</sub>水溶液は中性ではなく、弱い塩基性を示します。
-    </>
-  ),
-  opt3: (
-    <>
-      正解です！ NaHCO<sub>3</sub>は組成上「酸のHが残っている」ため酸性塩に分類されますが、実際に水に溶かすと加水分解によって弱い塩基性を示します。塩の分類名（正塩・酸性塩・塩基性塩）は組成による分類であり、水溶液の実際の性質とは必ずしも一致しません。
-    </>
-  ),
-  opt4: (
-    <>
-      不正解です。NaHCO<sub>3</sub>は水に溶ける塩です。
-    </>
-  ),
-}
+import SingleChoiceQuiz from '@/app/basics/SingleChoiceQuiz'
 
 export default function AcidsAndBasesQuiz() {
-  const [selected, setSelected] = useState<string | null>(null)
-
-  const handleSelect = (value: string) => {
-    if (selected) return
-    setSelected(value)
-  }
-
-  const handleRetry = () => {
-    setSelected(null)
-  }
-
   return (
-    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
-      <p id="q1-label">
-        炭酸水素ナトリウムNaHCO<sub>3</sub>は、塩の分類上「酸性塩」に分類されるが、その水溶液は何性を示すか。
-      </p>
-
-      <ul className={shared.quizOptions}>
-        {OPTIONS.map((opt) => {
-          const isSelected = selected === opt.value
-          const showResult = selected !== null
-          let optionClass = shared.quizOption
-          if (showResult && isSelected) {
-            optionClass += ' ' + (opt.correct ? shared.quizOptionCorrect : shared.quizOptionWrong)
-          }
-          if (showResult) {
-            optionClass += ' ' + shared.quizOptionLocked
-          }
-
-          return (
-            <li key={opt.value}>
-              <label className={optionClass}>
-                <input
-                  type="radio"
-                  name="q1"
-                  value={opt.value}
-                  checked={isSelected}
-                  disabled={selected !== null}
-                  onChange={() => handleSelect(opt.value)}
-                />
-                {opt.label}
-              </label>
-            </li>
-          )
-        })}
-      </ul>
-
-      {selected && (
-        <div className={shared.quizFeedback} aria-live="polite">
-          {FEEDBACK[selected]}
-        </div>
-      )}
-
-      {selected && (
-        <div className={shared.quizRetryWrap}>
-          <button type="button" className={shared.quizRetry} onClick={handleRetry}>
-            もう一度挑戦する
-          </button>
-        </div>
-      )}
-    </div>
+    <SingleChoiceQuiz
+      question={
+        <>
+          炭酸水素ナトリウムNaHCO<sub>3</sub>は、塩の分類上「酸性塩」に分類されるが、その水溶液は何性を示すか。
+        </>
+      }
+      options={[
+        { id: 'opt1', label: '酸性' },
+        { id: 'opt2', label: '中性' },
+        { id: 'opt3', label: '塩基性' },
+        { id: 'opt4', label: '水に溶けない' },
+      ]}
+      correct="opt3"
+      feedback={{
+        opt1: (
+          <>
+            不正解です。「酸性塩」という分類名から連想しやすいですが、実際の水溶液は酸性ではありません。
+          </>
+        ),
+        opt2: (
+          <>
+            不正解です。NaHCO<sub>3</sub>水溶液は中性ではなく、弱い塩基性を示します。
+          </>
+        ),
+        opt3: (
+          <>
+            正解です！ NaHCO<sub>3</sub>は組成上「酸のHが残っている」ため酸性塩に分類されますが、実際に水に溶かすと加水分解によって弱い塩基性を示します。塩の分類名（正塩・酸性塩・塩基性塩）は組成による分類であり、水溶液の実際の性質とは必ずしも一致しません。
+          </>
+        ),
+        opt4: (
+          <>
+            不正解です。NaHCO<sub>3</sub>は水に溶ける塩です。
+          </>
+        ),
+      }}
+    />
   )
 }
