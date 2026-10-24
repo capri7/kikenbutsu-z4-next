@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import axe from 'axe-core'
 import shared from '@/app/basics/BasicsShared.module.css'
 import SingleChoiceQuiz from './SingleChoiceQuiz'
 
@@ -159,5 +160,26 @@ describe('SingleChoiceQuiz：型（tsc で確かめる。実行時には何も�
     // @ts-expect-error 選択肢に無い id の解説がある
     const extra = <SingleChoiceQuiz question="q" options={[{ id: 'a', label: '甲' }, { id: 'b', label: '乙' }]} correct="a" feedback={{ a: 'x', b: 'y', z: 'w' }} />
     expect([ok, missing, unknownCorrect, single, extra]).toHaveLength(5)
+  })
+})
+
+// アクセシビリティ（axe-core）。共通部品に対して、数通りのデータで1回ずつ動かす。
+// 色のコントラストは、jsdom では判定できないため対象にしない（Lighthouse CI の Accessibility で見る）
+async function axeViolations(container: HTMLElement) {
+  const results = await axe.run(container, { rules: { 'color-contrast': { enabled: false } } })
+  return results.violations.map((v) => `${v.id}（${v.impact}）：${v.nodes.length}件`)
+}
+
+describe('SingleChoiceQuiz：アクセシビリティ（axe-core）', () => {
+  it.each([
+    ['3択（文字列）', ThreeChoices],
+    ['4択（JSX の問題文・解説）', FourChoices],
+  ])('%s：初期と回答後で、違反がない', async (_name, Quiz) => {
+    const { container } = render(<Quiz />)
+    expect(await axeViolations(container)).toEqual([])
+
+    // 1つ目の選択肢を選んだあと（解説と再挑戦のボタンが出た状態）
+    await userEvent.setup().click(radios()[0])
+    expect(await axeViolations(container)).toEqual([])
   })
 })
