@@ -34,12 +34,12 @@ export default function IndoorStorageStandardsQuiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">
         独立専用屋内貯蔵所のうち、平家建以外の建築物について、各階の床面積の合計の基準として正しいものはどれか。
       </p>
 
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           const showResult = selected !== null

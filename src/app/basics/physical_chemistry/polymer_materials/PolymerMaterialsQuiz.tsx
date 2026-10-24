@@ -54,11 +54,11 @@ export default function PolymerMaterialsQuiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">
         石油から作られるプラスチックの一般的な特徴について、次のうち誤っているのはどれか。
       </p>
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           const showResult = selected !== null
@@ -94,9 +94,11 @@ export default function PolymerMaterialsQuiz() {
         </div>
       )}
       {selected && (
-        <button type="button" className={shared.quizRetry} onClick={handleRetry}>
-          もう一度解く
-        </button>
+        <div className={shared.quizRetryWrap}>
+          <button type="button" className={shared.quizRetry} onClick={handleRetry}>
+            もう一度挑戦する
+          </button>
+        </div>
       )}
     </div>
   )

@@ -34,10 +34,10 @@ export default function SimpleTankStorageStandardsQuiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">簡易貯蔵タンク1基の容量の上限として、正しいのはどれか。</p>
 
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           const showResult = selected !== null

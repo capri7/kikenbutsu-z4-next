@@ -46,10 +46,10 @@ export default function BufferSpaceRequirementsQuiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">屋外タンク貯蔵所で指定数量の倍数が4,000を超える場合、適切な保有空地は次のうちどれか。</p>
 
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           const showResult = selected !== null

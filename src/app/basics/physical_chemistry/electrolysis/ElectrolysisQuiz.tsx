@@ -37,12 +37,12 @@ export default function ElectrolysisQuiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">
         硫酸銅（Ⅱ）水溶液（CuSO4水溶液）を白金電極で電気分解したとき、陰極で起こる変化として正しいものはどれか。
       </p>
 
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           const showResult = selected !== null

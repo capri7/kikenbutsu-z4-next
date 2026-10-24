@@ -34,12 +34,12 @@ export default function Class4SubstancesQuiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">
         (...)に当てはまるものは次のうちどれか。第1石油類の定義では「1気圧において引火点が(...)のものとする。」
       </p>
 
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           const showResult = selected !== null

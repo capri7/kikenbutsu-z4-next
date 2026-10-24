@@ -29,8 +29,8 @@ const OPTIONS: Option[] = [
 
 const FEEDBACK: Record<string, string> = {
   opt2: '正解です。危険物保安監督者になれるのは、甲種または乙種の危険物取扱者で、製造所等における通算6か月以上の実務経験がある場合だけです。丙種だけでは条件を満たしません。',
-  opt1: 'この肢は正しい内容です。甲種危険物取扱者が製造所等で通算6か月以上の実務経験を積んでいれば、危険物保安監督者になることができます。誤っているのは「丙種でも監督者になれる」とする選択肢です。',
-  opt3: 'この肢は正しい内容です。乙種危険物取扱者も、製造所等で通算6か月以上の実務経験があれば危険物保安監督者になれます（ただし免状で指定された類に限られます）。誤っているのは「丙種でも監督者になれる」とする選択肢です。',
+  opt1: '不正解です。この肢は正しい内容です。甲種危険物取扱者が製造所等で通算6か月以上の実務経験を積んでいれば、危険物保安監督者になることができます。誤っているのは「丙種でも監督者になれる」とする選択肢です。',
+  opt3: '不正解です。この肢は正しい内容です。乙種危険物取扱者も、製造所等で通算6か月以上の実務経験があれば危険物保安監督者になれます（ただし免状で指定された類に限られます）。誤っているのは「丙種でも監督者になれる」とする選択肢です。',
 }
 
 export default function SafetySupervisorsQuiz() {
@@ -46,10 +46,10 @@ export default function SafetySupervisorsQuiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">危険物保安監督者になるための条件の一つとして、誤っているものはどれか。</p>
 
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           const showResult = selected !== null
@@ -81,7 +81,6 @@ export default function SafetySupervisorsQuiz() {
 
       {selected && (
         <div className={shared.quizFeedback} aria-live="polite">
-          {selected === 'opt2' ? '✅ ' : '❌ 不正解です。'}
           {FEEDBACK[selected]}
         </div>
       )}

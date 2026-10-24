@@ -34,12 +34,12 @@ export default function GeneralStandardsPart1Quiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">
         第1類危険物のうち<strong>「アルカリ金属の過酸化物」</strong>の取扱基準として、<strong>最も適切</strong>なものは次のうちどれか。
       </p>
 
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           const showResult = selected !== null

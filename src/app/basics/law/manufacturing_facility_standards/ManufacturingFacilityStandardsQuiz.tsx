@@ -34,12 +34,12 @@ export default function ManufacturingFacilityStandardsQuiz() {
   }
 
   return (
-    <div className={shared.quizForm}>
+    <div className={shared.quizForm} role="group" aria-labelledby="q1-label">
       <p id="q1-label">
         電気設備が点火源となり爆発するおそれがある場所（粉じん・可燃性ガス・危険物等）に設置する電気設備について、当てはまるものは次のうちどれか。
       </p>
 
-      <ul className={shared.quizOptions} role="radiogroup" aria-labelledby="q1-label">
+      <ul className={shared.quizOptions}>
         {OPTIONS.map((opt) => {
           const isSelected = selected === opt.value
           const showResult = selected !== null
