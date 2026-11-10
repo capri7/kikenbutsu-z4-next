@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => {
     setSession: vi.fn(),
     exchangeCodeForSession: vi.fn(),
     updateUser: vi.fn(),
+    verifyOtp: vi.fn(),
     onAuthStateChange: vi.fn(),
   }
   return { unsubscribe, auth, client: { auth }, push: vi.fn() }
@@ -32,10 +33,12 @@ beforeEach(() => {
   })
   mocks.auth.getSession.mockResolvedValue({ data: { session: null } })
   mocks.auth.updateUser.mockResolvedValue({ error: null })
+  mocks.auth.verifyOtp.mockResolvedValue({ data: {}, error: null })
 })
 
 afterEach(() => {
   cleanup()
+  window.history.replaceState({}, '', '/')
 })
 
 async function renderReady() {
@@ -157,5 +160,86 @@ describe('ResetPasswordForm', () => {
     unmount()
 
     expect(mocks.unsubscribe).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('ResetPasswordForm（メールのリンクが token_hash の形のとき）', () => {
+  async function renderWithTokenHash() {
+    window.history.replaceState({}, '', '/reset-password?token_hash=hash123&type=recovery')
+    const user = userEvent.setup()
+    render(<ResetPasswordForm />)
+    const button = screen.getByRole('button', { name: '更新する' }) as HTMLButtonElement
+    await waitFor(() => expect(button.disabled).toBe(false))
+    return {
+      user,
+      button,
+      pw1: screen.getByLabelText('新しいパスワード'),
+      pw2: screen.getByLabelText('新しいパスワード（確認）'),
+    }
+  }
+
+  it('開いただけでは鍵を使わず、フォームが使える', async () => {
+    const { button } = await renderWithTokenHash()
+
+    expect(button.disabled).toBe(false)
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(mocks.auth.verifyOtp).not.toHaveBeenCalled()
+  })
+
+  it('押すと、鍵を確かめてからパスワードを更新する', async () => {
+    const { user, button, pw1, pw2 } = await renderWithTokenHash()
+
+    await user.type(pw1, 'abcdef')
+    await user.type(pw2, 'abcdef')
+    await user.click(button)
+
+    expect(
+      await screen.findByText('パスワードを更新しました。ログイン画面からサインインしてください。'),
+    ).toBeTruthy()
+    expect(mocks.auth.verifyOtp).toHaveBeenCalledWith({ token_hash: 'hash123', type: 'recovery' })
+    expect(mocks.auth.verifyOtp.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.auth.updateUser.mock.invocationCallOrder[0],
+    )
+  })
+
+  it('鍵が無効なら、更新せずにリンクの警告を出す（失敗の経路）', async () => {
+    mocks.auth.verifyOtp.mockResolvedValue({
+      data: {},
+      error: { code: 'otp_expired', message: 'Email link is invalid or has expired' },
+    })
+    const { user, button, pw1, pw2 } = await renderWithTokenHash()
+
+    await user.type(pw1, 'abcdef')
+    await user.type(pw2, 'abcdef')
+    await user.click(button)
+
+    expect(await screen.findByRole('alert')).toBeTruthy()
+    expect(mocks.auth.updateUser).not.toHaveBeenCalled()
+  })
+
+  it('更新が失敗してやり直すときは、使い終わった鍵をもう一度使わない（失敗の経路）', async () => {
+    mocks.auth.updateUser.mockResolvedValueOnce({
+      error: { code: 'same_password', message: 'New password should be different from the old password.' },
+    })
+    const { user, button, pw1, pw2 } = await renderWithTokenHash()
+
+    await user.type(pw1, 'abcdef')
+    await user.type(pw2, 'abcdef')
+    await user.click(button)
+    expect(
+      await screen.findByText('新しいパスワードは以前のパスワードと異なる必要があります。'),
+    ).toBeTruthy()
+
+    await user.clear(pw1)
+    await user.clear(pw2)
+    await user.type(pw1, 'ghijkl')
+    await user.type(pw2, 'ghijkl')
+    await user.click(button)
+
+    expect(
+      await screen.findByText('パスワードを更新しました。ログイン画面からサインインしてください。'),
+    ).toBeTruthy()
+    expect(mocks.auth.verifyOtp).toHaveBeenCalledTimes(1)
+    expect(mocks.auth.updateUser).toHaveBeenCalledTimes(2)
   })
 })
