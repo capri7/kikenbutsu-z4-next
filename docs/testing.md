@@ -85,7 +85,7 @@ Edge Functionsは実際のSupabase/Stripe呼び出しと分岐ロジックが密
 | `_shared/userProfilePayload.ts`（`stripe-webhook`・`check-guest-subscription`共通） | ✅ 4パターン |
 | `_shared/stripeApiTarget.ts`（E2E で Stripe の API の宛先を偽の Stripe API にする） | ✅ 5パターン |
 | `checkout-session-info`・`billing-portal` | 対象外（判定ロジックがほぼ無いため。`billing-portal` を呼ぶ共通の関数 `invokeEdgeFunction` は Vitest で検証） |
-| Next.js側（Vitest） | ✅ 196パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3・`examCountdown.ts` 9・`categoryProgress.ts` 13・`account.ts` 4・`billing.ts` 4・`Breadcrumbs.tsx` 2・`dataLoader.server.ts` 3・`pageImages.test.ts`（ページが読む画像）4・`legacyRedirects.test.ts`（旧URLのリダイレクト）15・`chapterHubHeadings.test.tsx`（章トップの見出し）3・`sectionHeadings.test.tsx`（節のページの見出しと目次）4・`SectionToc.tsx` 2・`ResetPasswordForm.tsx` 9・`SingleChoiceQuiz.test.tsx`（小テストの共通の部品）9・`sectionQuizzes.test.tsx`（節のページの小テストのデータ）84） |
+| Next.js側（Vitest） | ✅ 200パターン（`feedback.ts` 9・`safeRedirect.ts` 10・`edge-functions.ts` 5・`questionImage.ts` 4・`leakedPassword.ts` 3・`examCountdown.ts` 9・`categoryProgress.ts` 13・`account.ts` 4・`billing.ts` 4・`Breadcrumbs.tsx` 2・`dataLoader.server.ts` 3・`pageImages.test.ts`（ページが読む画像）4・`legacyRedirects.test.ts`（旧URLのリダイレクト）15・`chapterHubHeadings.test.tsx`（章トップの見出し）3・`sectionHeadings.test.tsx`（節のページの見出しと目次）4・`SectionToc.tsx` 2・`ResetPasswordForm.tsx` 13・`SingleChoiceQuiz.test.tsx`（小テストの共通の部品）9・`sectionQuizzes.test.tsx`（節のページの小テストのデータ）84） |
 | DB（pgTAP） | ✅ 69ファイル・166件（ロールの権限・RLS・関数・Stripe の通知の処理の状態・未処理の通知の処理し直し・外部キーの列の索引） |
 | E2E（Playwright） | コアフロー3件 ✅・低速回線の回帰テスト2件 ✅・マイページへの戻りの回帰テスト4件 ✅・無料32問の回帰テスト8件 ✅・有料会員の画面の出し分け3件 ✅・有料転換と契約の更新・終了と、届く順番が前後した通知、処理に失敗した通知の処理し直し（Webhook）8件 ✅・退会3件 ✅・ログインしていない状態のマイページ2件 ✅・ログイン2件 ✅・未処理の通知の処理し直し3件 ✅・章トップの節の一覧のクリック3件 ✅（いずれもローカルの Supabase）・Suspense境界ケーススタディ 未実装・`checkout-session-info`/`billing-portal` 未実装 |
 
@@ -134,7 +134,7 @@ Stripe Checkoutセッション作成前のリクエストバリデーション�
 
 チェック順序（`priceId`→リダイレクトURL→許可リスト）を意図的にテストで固定した。優先度の低いチェックが先に実行されて誤ったエラーコードを返す、という将来の実装変更によるリグレッションを防ぐため。`checkout-session-info`・`billing-portal`は判定ロジックがほぼ無いので、ユニットテストの対象外とし、E2Eで確かめる方針とした（E2Eは未実装。README の「今後の課題」に挙げている）。
 
-## Next.js側（Vitest、196パターン）
+## Next.js側（Vitest、200パターン）
 
 クイズの正誤判定ロジック（`src/lib/feedback.ts`）を検証している。既にSupabaseへの呼び出しを含まない純粋関数として実装されていたため、Edge Functionsのような切り出し作業は不要だった。
 
@@ -158,7 +158,9 @@ Edge Functionsの呼び出しの共通関数`src/lib/edge-functions.ts`（5パ�
 
 問題のページの読み込み`src/lib/dataLoader.server.ts`（3パターン）は、問題を1行読む。存在しない問題や、無料会員が開いた有料の問題は、RLS により0行になり、ページは「見つからない」を返す。以前は`.single()`（必ず1行ある前提の読み方）を使っていたため、この正常な場合も`console.error`でエラーとして記録していた（E2E の実行中に`JSON object requested, multiple (or no) rows returned`と出ていた）。`.maybeSingle()`に変え、0行は`null`を返してエラーとして記録せず、読み込みの失敗だけを記録することを確かめる。
 
-パスワード再設定の画面`src/app/reset-password/ResetPasswordForm.tsx`（Client Component、9パターン）は、React Testing Library と `@testing-library/user-event` で、利用者の操作の結果を確かめる。Supabase の接続（`createClient`）と画面の移動（`useRouter`）は偽物に差し替える。`createClient` は毎回同じオブジェクトを返す（コンポーネントが `[supabase]` を依存にしているため、毎回違うものを返すと再実行が止まらない）。リンクの確認（セッションの有無でフォームが使えるか）、入力の検査（6文字未満・不一致は通信しない）、更新の成功（入力を空にして、1.5秒後にログイン画面へ）、失敗の経路（以前と同じパスワード・セッションの期限切れ・通信の例外でもボタンが再び押せる）、画面を閉じたときの認証の監視の解除を確かめる。検査の境界（6文字）と監視の解除は、コンポーネントを一時的に壊して、テストが失敗することを確認した。
+パスワード再設定の画面`src/app/reset-password/ResetPasswordForm.tsx`（Client Component、13パターン）は、React Testing Library と `@testing-library/user-event` で、利用者の操作の結果を確かめる。Supabase の接続（`createClient`）と画面の移動（`useRouter`）は偽物に差し替える。`createClient` は毎回同じオブジェクトを返す（コンポーネントが `[supabase]` を依存にしているため、毎回違うものを返すと再実行が止まらない）。リンクの確認（セッションの有無でフォームが使えるか）、入力の検査（6文字未満・不一致は通信しない）、更新の成功（入力を空にして、1.5秒後にログイン画面へ）、失敗の経路（以前と同じパスワード・セッションの期限切れ・通信の例外でもボタンが再び押せる）、画面を閉じたときの認証の監視の解除を確かめる。検査の境界（6文字）と監視の解除は、コンポーネントを一時的に壊して、テストが失敗することを確認した。
+
+メールのリンクが `token_hash` の形（`/reset-password?token_hash=…&type=recovery`）のときは、開いただけでは鍵を使わず、「更新する」を押したときに `verifyOtp` で確かめてからパスワードを更新することを確かめる（4パターン）。メールの安全確認の仕組みがリンクを先に開くと、1回きりの鍵が使われて利用者には「無効」と表示されるため（Supabase「Email Templates」の Email prefetching）。失敗の経路は、鍵が無効なら更新しないこと、更新が失敗してやり直すときに使い終わった鍵をもう一度使わないこと。開いたときに鍵を使う形と、使い終わった鍵を消さない形に一時的に壊して、テストが失敗することを確認した。
 
 節のページの小テスト（`src/app/basics/*/*/*Quiz.tsx`）は、問題文・選択肢・正解・解説のデータだけを持ち、動き（選択・固定・解説・解き直し）は共通の部品 `src/app/basics/SingleChoiceQuiz.tsx`（Client Component）に任せる。以前は同じ作りの部品が83ファイルに重複していた。その状態でテストを先に入れたところ、22件に作りの違い（再挑戦のボタンの文言と囲み・解説の書き出し・選択肢の文字の装飾）と、83件すべてに選択肢の囲みの違反（`ul` に `role="radiogroup"` を付けると、`li` がリストの外として扱われ、axe-core の `listitem` に当たる）が見つかり、直した。そのあと共通の部品に切り出し（1件を移す PR、残り82件を移す PR）、重複していた83件ぶんの動作のテストを、共通の部品のテストに置き換えた。
 
