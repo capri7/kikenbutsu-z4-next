@@ -44,6 +44,9 @@ export default function ResetPasswordForm() {
 
   const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // メールのリンクの token_hash。開いただけでは使わず、「更新する」を押したときに使う
+  // （メールの安全確認の仕組みがリンクを先に開いても、1回きりの鍵が使われないようにする）
+  const recoveryTokenHash = useRef<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -87,6 +90,16 @@ export default function ResetPasswordForm() {
       setLinkWarning(false)
       setFeedback('リンクを確認しています…')
       setFeedbackType('ok')
+
+      const params = new URLSearchParams(window.location.search)
+      const tokenHash = params.get('token_hash')
+      if (tokenHash && params.get('type') === 'recovery') {
+        recoveryTokenHash.current = tokenHash
+        setFormEnabled(true)
+        setLinkWarning(false)
+        setFeedback('')
+        return
+      }
 
       await adoptSessionFromHashIfNeeded()
       if (cancelled) return
@@ -150,6 +163,19 @@ export default function ResetPasswordForm() {
 
     setBusy(true)
     try {
+      const tokenHash = recoveryTokenHash.current
+      if (tokenHash) {
+        const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' })
+        if (verifyError) {
+          setLinkWarning(true)
+          setFeedback('リンクの有効期限が切れているか無効です。メールのリンクからもう一度お試しください。')
+          setFeedbackType('error')
+          return
+        }
+        // 鍵は使い終わった。更新が失敗してやり直すときは、このセッションで更新する
+        recoveryTokenHash.current = null
+      }
+
       const { error } = await supabase.auth.updateUser({ password: pw1 })
       if (error) {
         const code = (error.code || '').toLowerCase()
